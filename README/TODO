@@ -1,0 +1,30 @@
+------------
+ IMPORTANT
+------------
+
+Refactoring to Integers for Signals.
+ - save intermediate STGs for mpsat with numbers instead of signal names
+
+
+Cache for preset tree calculation:
+ remove 'em or implement as 'two level cache', i.e. split cached sets and cache these halfs.
+ 
+Preset trees are still binary, change this, runtime?
+
+Install better graphviz version
+
+
+
+Benchmarks: CSC-Aware with repeated Contraction
+
+Implement: Using reachability analysis for redundant places, etc.
+Implement: Safe contractions
+Implement: Dynamic signature checking for bisimulation calculation
+
+
+------
+ DONE
+------
+
+Implement: After repeated contraction, check CSC again, seems to be unnecessary
+Implement: Command line option for repeated contraction

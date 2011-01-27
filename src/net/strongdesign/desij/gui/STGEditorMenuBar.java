@@ -1,0 +1,144 @@
+package net.strongdesign.desij.gui;
+
+import java.awt.event.*;
+
+import javax.swing.*;
+
+public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
+	private static final long serialVersionUID = -9095831294193194005L;
+	
+	private final STGEditorAction FILE = new STGEditorAction("File", KeyEvent.VK_F, null, 0, this);
+	private final STGEditorAction EDIT = new STGEditorAction("Edit", KeyEvent.VK_E, null, 0, this);
+	private final STGEditorAction VIEW = new STGEditorAction("View", KeyEvent.VK_V, null, 0, this);
+	private final STGEditorAction PETRINET = new STGEditorAction("Petri net", KeyEvent.VK_P, null, 0, this);
+	private final STGEditorAction STG = new STGEditorAction("STG", KeyEvent.VK_S, null, 0, this);
+	private final STGEditorAction DECOMPOSITION = new STGEditorAction("Decomposition", KeyEvent.VK_D, null, 0, this);
+	private final STGEditorAction HELP = new STGEditorAction("Help", KeyEvent.VK_H, null, 0, this);
+
+
+	
+	public STGEditorMenuBar(STGEditorFrame frame, STGLayoutCache cache) {
+		super();
+
+		JMenu file = new JMenu(FILE);
+		add(file);
+		JMenu edit = new JMenu(EDIT);
+		add(edit);
+		JMenu view = new JMenu(VIEW);
+		add(view);
+		JMenu petrinet = new JMenu(PETRINET);
+		add(petrinet);
+		JMenu stg = new JMenu(STG);
+		add(stg);
+		JMenu decomposition = new JMenu(DECOMPOSITION);
+		add(decomposition);
+		JMenu help = new JMenu(HELP);
+		add(help);
+		
+
+		
+		
+		file.add(frame.NEW);
+		file.add(frame.OPEN);
+		file.add(frame.SAVE);
+		file.add(frame.SAVE_AS);
+		file.add(new JSeparator());
+	//	file.add(editor.PRINT);
+	//	file.add(editor.PRINT_VISIBLE);
+		file.add(frame.EXIT);
+		
+
+	//	edit.add(editor.SELECT_ALL);
+	//	edit.add(editor.SHRINK);
+	//	edit.add(editor.ENLARGE);
+		edit.add(frame.COPY_STG);
+		file.add(new JSeparator());
+		edit.add(frame.LAYOUT);
+		
+		
+		
+//		view.add(editor.ZOOM_IN);
+//		view.add(editor.ZOOM_OUT);
+//		view.add(editor.ROTATE_CW);
+//		view.add(editor.ROTATE_ACW);
+//		view.add(editor.SHADOWS);
+//		view.add(editor.GRID);
+//		view.add(editor.ALIGN_GRID);
+//		view.add(editor.CYCLES);
+		
+		petrinet.add(frame.RG);
+//		petrinet.add(editor.ADD_PLACE);
+//		petrinet.add(editor.ADD_TRANSITION);
+//		petrinet.add(editor.ADD_ARC_PLACE_TRANSITION);
+//		petrinet.add(editor.ADD_ARC_TRANSITION_PLACE);
+//		petrinet.add(editor.SUB_ARC_PLACE_TRANSITION);
+//		petrinet.add(editor.SUB_ARC_TRANSITION_PLACE);
+
+		
+		stg.add(frame.SIGNAL_TYPE);
+		
+		decomposition.add(frame.INITIAL_PARTITION);
+		decomposition.add(frame.REDUCE);
+
+		help.add(frame.ABOUT);
+			
+		
+		/*
+		JMenu edit = new JMenu("Edit");
+		add(edit);
+		newItem(edit, "Select all", 0);
+		newItem(edit, "Invert selection", 0);
+		newItem(edit, "Remove", 0);
+		
+		
+//		**************************************
+		
+		JMenu deco = new JMenu("Decomposition");
+		add(deco);
+		newItem(deco, "Create Initial Partition", KeyEvent.VK_I);
+		newItem(deco, "Reduce", 0);
+		newItem(deco, "Enable Decomposition Operations", KeyEvent.VK_O);
+		newItem(deco, "Enable Forced Deletion", KeyEvent.VK_D);		
+		newItem(deco, "Change signal type", 0);		
+		
+		
+//		**************************************
+		JMenu pn = new JMenu("Petri net");
+		add(pn);
+		newItem(pn, "Rename places", 0);
+		newItem(pn, "Create reachability graph", 0);
+		
+		
+//		**************************************		
+		JMenu layout = new JMenu("Layout");
+		add(layout);
+		newItem(layout, "Apply Spring Layout", KeyEvent.VK_Y);
+        layout.add(new JSeparator());
+		newItem(layout, "Zoom in", KeyEvent.VK_PLUS);
+		newItem(layout, "Zoom out", KeyEvent.VK_MINUS);
+        newItem(layout, "Show all Nodes", KeyEvent.VK_N);
+        layout.add(new JSeparator());
+        newItem(layout, "Shrink", KeyEvent.VK_C);
+        newItem(layout, "Enlarge", KeyEvent.VK_V);
+        
+		
+		
+		
+		
+//		**************************************
+		JMenu help = new JMenu("Help");
+		
+		add(deco);
+		add(layout);
+		add(help);
+		
+		*/
+	}
+
+
+
+
+	public void actionPerformed(ActionEvent e) {
+	}
+	
+}
