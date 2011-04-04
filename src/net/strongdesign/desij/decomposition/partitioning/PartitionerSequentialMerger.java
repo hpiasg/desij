@@ -41,7 +41,7 @@ import net.strongdesign.stg.traversal.ConditionFactory;
  * Replacement for PartitionerConcurrencyReduction
  *
  */
-public class PartitionerSequentialMerger implements IPartitioningStrategy, ICompatibilityChecker {
+public class PartitionerSequentialMerger implements IPartitioningStrategy, ICompatibilityChecker, IBasicStrategy {
 	
 	private STG specification;
 	
@@ -92,7 +92,7 @@ public class PartitionerSequentialMerger implements IPartitioningStrategy, IComp
 		if (oldPartition.getPartition().size() < 2) return oldPartition;
 		
 		componentOutputs = new ArrayList<Collection<Integer>>(oldPartition.getPartition().size());
-				
+		
 		for (List<String> signals : oldPartition.getPartition())
 			componentOutputs.add(specification.getSignalNumbers(signals)); 
 		
@@ -122,6 +122,18 @@ public class PartitionerSequentialMerger implements IPartitioningStrategy, IComp
 		return newPartition;
 	}
 		
+	/**
+	 * ... also used by a combined heuristic
+	 * 
+	 * @param oldPartition
+	 */
+	public void initializationForImprovement(List<Collection<Integer>> componentOutputs, 
+			List<Collection<Integer>> relevantSignals, Partition oldPartition) throws STGException {
+		
+		this.componentOutputs = componentOutputs;
+		this.relevantSignals = relevantSignals;
+	}
+
 	/* (non-Javadoc)
 	 * @see net.strongdesign.desij.decomposition.partitioning.ICompatibilityChecker#checkCompatibility(int, int)
 	 * returns -1.0 for incompatible pairs and for compatibles the percentage or degree resp. of sequential pairs
@@ -282,6 +294,14 @@ public class PartitionerSequentialMerger implements IPartitioningStrategy, IComp
 			return false; // signal1 and signal2 are sequential
 		else // pairChart[indexSignal1][indexSignal2] == +1
 			return true; 						
+	}
+
+	@Override
+	public boolean areCompatible(int element1, int element2) {
+		if (checkCompatibility(element1, element2) > 0.0)
+			return true;
+		else
+			return false;
 	}
 
 }

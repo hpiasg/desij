@@ -31,6 +31,10 @@ import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.traversal.Condition;
 
+/**
+ * @author Dominic Wist
+ *
+ */
 public class CSCPartition {
 	
 	private Map<Integer,STG> output2Component;
@@ -42,6 +46,11 @@ public class CSCPartition {
 	
 	// abort condition for consolidating components
 	private Condition<Collection<STG>> forbidConsolitionCondition;
+	
+	// information used by a combined partitioning heuristic
+	// a true entry means compatible and no entry (i.e. null) means not compatible
+	// for each compatible pair: there will always be both symmetric entries 
+	private Map<STG,Map<STG,Boolean>> compatibilityChart;
 	
 	public CSCPartition(Collection<STG> components, Condition<Collection<STG>> forbidConsolidation) {
 		
@@ -65,11 +74,15 @@ public class CSCPartition {
 		}
 		
 		forbidConsolitionCondition = forbidConsolidation;
+		
+		compatibilityChart = new HashMap<STG, Map<STG,Boolean>>();
 	}
 	
 	public boolean useSignalForComponent(Integer output, STG component) {
 		
 		STG auxiliaryComponent = output2Component.get(output);
+		
+		setCompatibilty(component, auxiliaryComponent); // information used by a combined heuristic
 		
 		if (auxiliaryComponent == component) return true; // should be impossible, actually 
 		
@@ -81,12 +94,72 @@ public class CSCPartition {
 		if ( forbidConsolitionCondition.fulfilled(componentConsolidationSet) )
 			return false; // no component consolidation --> conflict can not be avoided
 		
+		// update all necessary entries in component2Components
 		for (STG comp : componentConsolidationSet) 
 			component2Components.put(comp, componentConsolidationSet);
 		
 		return true;
 	}
 	
+	
+	/**
+	 * Ensures the consistency of compatibilityChart
+	 * that means for one compatible pair there are two symmetric entries
+	 * 
+	 * @param component
+	 * @param auxiliaryComponent
+	 */
+	private void setCompatibilty(STG component, STG auxiliaryComponent) {
+		
+		// first entry
+		Map<STG, Boolean> entry = compatibilityChart.get(component);
+		if (entry == null) {
+			entry = new HashMap<STG, Boolean>();
+			compatibilityChart.put(component, entry);
+		}
+ 		entry.put(auxiliaryComponent, true);
+			
+		// symmetric entry
+ 		entry = compatibilityChart.get(auxiliaryComponent);
+ 		if (entry == null) { // must correlate to "if (entry == null)" from above 
+			entry = new HashMap<STG, Boolean>();
+			compatibilityChart.put(auxiliaryComponent, entry);
+			
+ 		}
+ 		entry.put(component, true);
+	
+	}
+	
+	
+	/**
+	 * Information whether component1 and component2 are in a "critical <--> delay component"-relation
+	 * it is for PartitionerIrreducibleCSCAvoidance
+	 * 
+	 * @param output1
+	 * @param output2
+	 * @return
+	 */
+	public boolean getCompatibility(int output1, int output2) {
+		
+		STG component1 = output2Component.get(output1); // according to the oldPartition
+		STG component2 = output2Component.get(output2); // according to the oldPartition
+		
+		if (component1 == component2) return true; // actually impossible --> just to assure
+		
+		Map<STG,Boolean> firstLevelAccess = compatibilityChart.get(component1);
+		if (firstLevelAccess != null) 
+			if (firstLevelAccess.get(component2) != null)
+				return true;
+		
+		return false;
+	}
+
+	/**
+	 * Helper routine for delay transition detector
+	 * @param output
+	 * @param component
+	 * @return
+	 */
 	public boolean signalAvoidsComponentGrowth(Integer output, STG component) {
 		
 		Set<STG> consolidatedComponents = component2Components.get(component);

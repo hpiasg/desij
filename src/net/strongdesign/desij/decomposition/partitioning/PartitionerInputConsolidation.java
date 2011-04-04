@@ -35,7 +35,7 @@ import net.strongdesign.stg.traversal.ConditionFactory;
  * @author Dominic Wist
  *
  */
-public class PartitionerInputConsolidation implements IPartitioningStrategy, ICompatibilityChecker {
+public class PartitionerInputConsolidation implements IPartitioningStrategy, ICompatibilityChecker, IBasicStrategy {
 	
 	private STG specification;
 	
@@ -62,7 +62,7 @@ public class PartitionerInputConsolidation implements IPartitioningStrategy, ICo
 		if (oldPartition.getPartition().size() < 2) return oldPartition;
 		
 		componentOutputs = new ArrayList<Collection<Integer>>(oldPartition.getPartition().size());
-				
+		
 		for (List<String> signals : oldPartition.getPartition())
 			componentOutputs.add(specification.getSignalNumbers(signals)); 
 		
@@ -96,6 +96,16 @@ public class PartitionerInputConsolidation implements IPartitioningStrategy, ICo
 		return newPartition;
 	}
 	
+
+	/**
+	 * ... also used by a combined heuristic
+	 * @param oldPartition
+	 */
+	public void initializationForImprovement(List<Collection<Integer>> componentOutputs, 
+			List<Collection<Integer>> relevantSignals, Partition oldPartition) throws STGException {
+		this.componentOutputs = componentOutputs;
+		this.relevantSignals = relevantSignals;
+	}
 
 	/* (non-Javadoc)
 	 * @see net.strongdesign.desij.decomposition.partitioning.ICompatibilityChecker#exceedsMaximalElementCount(java.util.Collection<Integer> mc)
@@ -215,5 +225,13 @@ public class PartitionerInputConsolidation implements IPartitioningStrategy, ICo
 			triggers.addAll(l);
 		
 		return triggers;
+	}
+
+	@Override
+	public boolean areCompatible(int element1, int element2) {
+		if (checkCompatibility(element1, element2) > 0.0)
+			return true;
+		else
+			return false;
 	}
 }

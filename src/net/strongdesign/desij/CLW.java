@@ -206,7 +206,7 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- avoidcsc: integrate outputs that avoid irreducible CSC conflicts in the components" +
 			"\n\t- reduceconc: reduce concurrency between outputs for some component" +
 			"\n\t- lockedsignals: generate one component if outputs are locked" +
-			"\n\t- best: let choose desij an optimal partition" +
+			"\n\t- best: combines all heuristics via majority voting of the respective compatibility critera of two components" +
 			"\n\t- file:<filename>: choose partition from file")
 	public  CommandLineParameter PARTITION = 
 		new CommandLineParameter("partition", "", "finest", false);

@@ -238,14 +238,12 @@ public class Partition {
 	public static Partition getBestPartition(STG stg) throws STGException {
 				
 		IPartitioningStrategy partitioner =
-//			new net.strongdesign.desij.decomposition.partitioning.PartitionerInputConsolidation(stg);
-//			new net.strongdesign.desij.decomposition.partitioning.PartitionerIrreducibleCSCAvoidance(stg);
-			new net.strongdesign.desij.decomposition.partitioning.PartitionerConcurrencyReduction(stg);
+			new net.strongdesign.desij.decomposition.partitioning.PartitionerCombineAll(stg);
 		
 		Partition result = null;
 		try {
-//			result = partitioner.improvePartition(getFinestPartition(stg, null));
-			result = partitioner.improvePartition(getRoughestPartition(stg, null));
+			result = partitioner.improvePartition(getFinestPartition(stg, null));
+//			result = partitioner.improvePartition(getRoughestPartition(stg, null));
 		}
 		catch (PartitioningException e) {
 			// maybe do something against this problem or leave it

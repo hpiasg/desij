@@ -21,6 +21,7 @@ package net.strongdesign.desij.decomposition.partitioning;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
@@ -37,7 +38,7 @@ import net.strongdesign.util.Pair;
  * @author Dominic Wist
  *
  */
-public class PartitionerIrreducibleCSCAvoidance implements IPartitioningStrategy {
+public class PartitionerIrreducibleCSCAvoidance implements IPartitioningStrategy, IBasicStrategy {
 	
 	private STG specification;
 	
@@ -48,6 +49,8 @@ public class PartitionerIrreducibleCSCAvoidance implements IPartitioningStrategy
 	
 	// How many signals each partition member can have at maximum 
 	private int signalLimit = 20; // should be defined by the use; -1 means unlimited	
+	
+	private List<Collection<Integer>> componentOutputs; // just for combined heuristic needed, not in stand-alone mode
 
 	/**
 	 * Constructor
@@ -65,6 +68,37 @@ public class PartitionerIrreducibleCSCAvoidance implements IPartitioningStrategy
 		
 		if (oldPartition.getPartition().size() < 2) return oldPartition;
 				
+		initializationForImprovement(null, null, oldPartition);
+		
+		// build the new Partition
+		Partition result = partition.getModifiedPartitionFor(specification);
+		
+		if (eachConflictAvoided)
+			return result;
+		else
+			throw new PartitioningException("Not each irreducible CSC conflict could be avoided!", result);
+	}
+
+	private boolean avoidConflict(STG criticalComponent, Pair<Transition, Transition> splittablePair) {
+		
+//		ICSCSolvingSignalFinder signalFinder = new SimpleSignalFinder(
+//				specification, criticalComponent, splittablePair, partition);
+		ICSCSolvingSignalFinder signalFinder = new LPSignalFinder(
+				specification, criticalComponent, splittablePair, partition);
+		
+		Integer signalForAvoidance = signalFinder.execute();
+		
+		if (signalForAvoidance != null) 
+			if ( partition.useSignalForComponent(signalForAvoidance, criticalComponent) )
+				return true;
+		
+		return false;
+	}
+
+	@Override
+	public void initializationForImprovement(List<Collection<Integer>> componentOutputs, 
+			List<Collection<Integer>> relevantSignals, Partition oldPartition) throws STGException {
+		
 		IrreducibleCSCDetector cscDetector;
 		try {
 			cscDetector = new IrreducibleCSCDetector(specification, "DecoForPartitioning", oldPartition);			
@@ -90,33 +124,28 @@ public class PartitionerIrreducibleCSCAvoidance implements IPartitioningStrategy
 						affectedComponents.remove(criticalComponent);
 					
 				}
-				if (affectedComponents.isEmpty()) break; // runtime optimisation
+				if (affectedComponents.isEmpty()) break; // runtime optimization
 			}
 			
 			if (!affectedComponents.isEmpty()) eachConflictAvoided = false;
 		}
 		
-		// build the new Partition
-		Partition result = partition.getModifiedPartitionFor(specification);
-		
-		if (eachConflictAvoided)
-			return result;
-		else
-			throw new PartitioningException("Not each irreducible CSC conflict could be avoided!", result);
+		// just for combined heuristic, otherwise it is "null"
+		this.componentOutputs = componentOutputs; 		
 	}
 
-	private boolean avoidConflict(STG criticalComponent, Pair<Transition, Transition> splittablePair) {
+	@Override
+	public boolean areCompatible(int element1, int element2) {
 		
-//		ICSCSolvingSignalFinder signalFinder = new SimpleSignalFinder(
-//				specification, criticalComponent, splittablePair, partition);
-		ICSCSolvingSignalFinder signalFinder = new LPSignalFinder(
-				specification, criticalComponent, splittablePair, partition);
+		if (element1 == element2) return true;
 		
-		Integer signalForAvoidance = signalFinder.execute();
+		Collection<Integer> outputs1 = componentOutputs.get(element1);
+		Collection<Integer> outputs2 = componentOutputs.get(element2);
 		
-		if (signalForAvoidance != null) 
-			if ( partition.useSignalForComponent(signalForAvoidance, criticalComponent) )
-				return true;
+		if (outputs1 != null && outputs2 != null) 
+			if (outputs1.size() > 0 && outputs2.size() > 0)
+				return partition.getCompatibility(outputs1.iterator().next(), 
+						outputs2.iterator().next());
 		
 		return false;
 	}

@@ -337,17 +337,17 @@ public abstract class STGUtil {
 	public static Set<Transition> removeRedundantTransitions(STG stg, NodeRemover remover) {
 		Set<Transition> result = new HashSet<Transition>();
 		
-		result.addAll(removeLoopOnlyTransitions(stg, remover));
-		result.addAll(DuplicateTransitionRemover.removeDuplicateTransitions(stg, remover));
-		
-		return result;
-		/*Condition<Transition> redTransition = ConditionFactory.getRedundantTransitionCondition(stg);
+//		result.addAll(removeLoopOnlyTransitions(stg, remover));
+//		result.addAll(DuplicateTransitionRemover.removeDuplicateTransitions(stg, remover));
+//		
+//		return result;
+		Condition<Transition> redTransition = ConditionFactory.getRedundantTransitionCondition(stg);
 		while (true) {
-			List<Transition> t = stg.getTransitions(redTransition);
+			java.util.List<Transition> t = stg.getTransitions(redTransition);
 			if (t.size()==0) return result;
 			remover.removeTransition(t.get(0));
 			result.add(t.get(0));
-		}*/
+		}
 	}
 
 	private static Collection<? extends Transition> removeLoopOnlyTransitions(STG stg, NodeRemover remover) {
