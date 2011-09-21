@@ -29,6 +29,7 @@ import net.strongdesign.util.HelperApplications;
 import net.strongdesign.util.Pair;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -184,6 +185,42 @@ public class StateGraph {
 		} catch (IOException e) {
 			throw new DesiJException("Error involving petrify: " + e.getMessage());
 		}
+	}
+	
+	/**
+	 * Logic synthesis using petrify on a remote server
+	 * @param fileName
+	 * @param host
+	 * @return
+	 * @throws IOException 
+	 * @throws STGException 
+	 * @throws ParseException 
+	 * @throws FileNotFoundException 
+	 */
+	public static Pair<String,Integer> synthesiseSTGWithPetrify(String fileName, 
+			String host, String username, String password) throws ParseException, STGException {
+		
+		try {
+			Pair<File, File> cStgEq = HelperApplications.doSynthesisViaSsh(fileName, host, username, password);
+		
+			int newSignals = 0;
+			String streamSTG = FileSupport.loadFileFromDisk(cStgEq.a);
+			if (streamSTG != null && !streamSTG.equals("")) {
+				STG tmpSTG = STGFile.convertToSTG(streamSTG, false);
+				if (tmpSTG != null)
+					newSignals= tmpSTG.getSignals().size();
+			}
+			
+			String streamEq = FileSupport.loadFileFromDisk(cStgEq.b);
+			if (streamEq != null && !streamEq.equals("")) {
+				return Pair.getPair(streamEq, newSignals);
+			}
+			else 
+				return null;
+		} catch (Exception e) {
+			throw new DesiJException("Error involving remote logic synthesis: " + e.getMessage());
+		}
+		
 	}
 	
 }

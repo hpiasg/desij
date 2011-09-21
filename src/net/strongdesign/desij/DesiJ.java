@@ -863,13 +863,33 @@ public class DesiJ {
 											
 						Pair<String,Integer>  synthesisResult = null;
 						
-						if (CLW.instance.SYNTHESIS_TOOL.getValue().equals("mpsat")) {
+						if (CLW.instance.SYNTHESIS_TOOL.getValue().equalsIgnoreCase("mpsat")) {
 							if (component.getPlaces(ConditionFactory.getPlaceMarkingCondition(2)).isEmpty()) {
 								synthesisResult = Unfolding.synthesiseSTGWithPunfMpsat(componentName);							
 							}
 						}
-						else if (CLW.instance.SYNTHESIS_TOOL.getValue().equals("petrify")) {
-							synthesisResult = StateGraph.synthesiseSTGWithPetrify(componentName);
+						else if (CLW.instance.SYNTHESIS_TOOL.getValue().equalsIgnoreCase("petrify")) {
+							if (CLW.instance.SERVER_INFO.getValue().equals("")) {
+								synthesisResult = StateGraph.synthesiseSTGWithPetrify(componentName);
+							}
+							else {
+								String[] serverInfo = CLW.instance.SERVER_INFO.getValue().split(":");
+								if (serverInfo[0].equalsIgnoreCase("localhost") || serverInfo[0].equals("127.0.0.1")) {
+									// local call
+									synthesisResult = StateGraph.synthesiseSTGWithPetrify(componentName);
+								}
+								else { // real remote call
+									switch (serverInfo.length) {
+										case 1:		synthesisResult = StateGraph.synthesiseSTGWithPetrify(
+														componentName, serverInfo[0], "", ""); break;
+										case 2:		synthesisResult = StateGraph.synthesiseSTGWithPetrify(
+														componentName, serverInfo[0], serverInfo[1], ""); break;
+										default:	synthesisResult = StateGraph.synthesiseSTGWithPetrify(
+														componentName, serverInfo[0], serverInfo[1], serverInfo[2]);
+									}
+								}
+								
+							}
 						}
 						
 						

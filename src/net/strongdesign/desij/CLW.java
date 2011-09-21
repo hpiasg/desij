@@ -430,8 +430,15 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- other: for your own tool, the tool name must be included then in syn-param")
 	public  CommandLineParameter SYNTHESIS_TOOL = 
 		new CommandLineParameter("syn-tool", "mpsat,petrify", "mpsat", false);
-	
+			
 	// *******************************************************************
+	
+	@Help("Information (IP-Adress, login, password) about the server which is doing synthesis." + 
+			"\n\t- Format: <IP-adress>:<username>:<password>")
+	public  CommandLineParameter SERVER_INFO = 
+		new CommandLineParameter("serverinfo", "", "", false);
+	
+	//	 *******************************************************************
 
 	@Help("The following parameters are used when synthesising is enabled.")
 	public  CommandLineParameter SYNTHESIS_CL =

@@ -8,4 +8,4 @@ SimpleCharStream.java
 Token.java
 TokenMgrError.java
 .fatjar
-desij.logfile*
+*.log*
