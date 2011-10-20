@@ -39,6 +39,8 @@ import net.strongdesign.util.Pair;
 import net.strongdesign.util.PresetTree;
 
 public abstract class AbstractTreeDecomposition extends AbstractDecomposition {
+	
+	public static STG RootSpecification = null;
     
 	
 	public AbstractTreeDecomposition(String filePrefix) {
@@ -64,7 +66,8 @@ public abstract class AbstractTreeDecomposition extends AbstractDecomposition {
 		
 		logging(stg, DecompositionEvent.TREE_START, null);		
 	
-		this.specification = stg;
+		this.specification = stg; // will be changed during the decomposition process --> former versions can be recovered using the Undo-Stack
+		RootSpecification = stg.clone(); // important to know the overall specifications, esp. for the BasicDecompositions used during the Tree-Traversal
 		
 		//The final components
 		Collection<STG> components = new LinkedList<STG>();
@@ -100,10 +103,13 @@ public abstract class AbstractTreeDecomposition extends AbstractDecomposition {
 			decomposeTree(stg, tree, components);
 			
 			logging(stg, DecompositionEvent.FINISHED, null);
+			
+			RootSpecification = null; // tidy up, such that it doesn't influence other decompositions
 						
 			return components;
 		}
 		else { // tree == null
+			RootSpecification = null; // tidy up, that it doesn't influence other decompositions
 			return new BasicDecomposition(filePrefix).decompose(stg, partition);
 		}
 		

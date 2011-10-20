@@ -138,7 +138,7 @@ public class CLW extends CommandLineWrapper {
 	
 	@Help("Decomposition algorithm")
 	public  CommandLineParameter VERSION = 
-	new CommandLineParameter("version", "csc-aware,basic,lazy-single,lazy-multi,tree", "tree", false);
+	new CommandLineParameter("version", "csc-aware,irr-csc-aware,basic,lazy-single,lazy-multi,tree", "tree", false);
 	
 	// *******************************************************************
 

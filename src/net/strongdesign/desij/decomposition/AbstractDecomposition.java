@@ -265,8 +265,9 @@ public abstract class AbstractDecomposition   {
 							}
 							else {
 								logging(stg, DecompositionEvent.SELF_TRIGGERING_NOT_REMOVED, place);
-								stg.undoToMarker(UndoMarker.BEFORE_CONTRACTION);
-								tried.add(actTransition);
+								stg.undoToMarker(UndoMarker.BEFORE_CONTRACTION); // a posteriori it seems syntactically impossible to contract
+								tried.add(actTransition); 
+								//triedSyntactic.add(actTransition); // However, the signal MUST be backtracked to avoid this conflict --> also when out-det is enabled
 
 								fault = true; 
 								break fp;
@@ -374,7 +375,7 @@ public abstract class AbstractDecomposition   {
 			}
 		}
 
-		return Reason.OK;
+		return Reason.OK; // a priori it seems OK to contract this transition
 	}
 
 

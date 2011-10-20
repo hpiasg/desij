@@ -22,6 +22,7 @@ package net.strongdesign.desij.decomposition;
 import java.util.*;
 
 import net.strongdesign.desij.CLW;
+import net.strongdesign.desij.decomposition.tree.AbstractTreeDecomposition;
 import net.strongdesign.stg.*;
 import net.strongdesign.stg.traversal.*;
 import net.strongdesign.util.Pair;
@@ -103,12 +104,16 @@ public class BasicDecomposition extends AbstractDecomposition {
 					//Integer newInput = remainingTransitions.a.iterator().next().getLabel().getSignal();
 					
 					Integer newInput = null;
+					STG overallSpec = AbstractTreeDecomposition.RootSpecification; // when BasicDecomposition is used in the context of TreeDecomposition
+					if (overallSpec == null) // we're not in context of an enclosing TreeDecomposition
+						overallSpec = this.specification;
+					
 					for (Transition subjectToDelambdarisation : remainingTransitions.a) {
-						Transition specTransition = this.specification.getTransition(subjectToDelambdarisation.getIdentifier()); 
+						Transition specTransition = overallSpec.getTransition(subjectToDelambdarisation.getIdentifier()); 
 						Integer correspondingSpecTransitionSignal = specTransition.getLabel().getSignal(); 
 						
 						// test whether subjectToDelambdarisation is a SpecDummy or not
-						if (this.specification.getSignature(correspondingSpecTransitionSignal) == Signature.DUMMY) 
+						if (overallSpec.getSignature(correspondingSpecTransitionSignal) == Signature.DUMMY) 
 							continue;
 						else {
 							newInput = subjectToDelambdarisation.getLabel().getSignal();

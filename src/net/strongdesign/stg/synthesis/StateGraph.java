@@ -62,13 +62,13 @@ public class StateGraph {
 				try {
 					nextState = state.applySignalEdge(edge);
 				} catch (IllegalArgumentException e) {
-					throw new SynthesisException("STG is not consistent");
+					throw new SynthesisException("STG is not consistent", stg);
 				}
 				
 				//calculate next marking
 				Set<Marking> markings = sys.getNextStates(marking, edge);
-				if (markings.size()>1) throw new SynthesisException("Dynamic autoconflict");	
-				if (markings.size()<1) throw new SynthesisException("Internal error");	
+				if (markings.size()>1) throw new SynthesisException("Dynamic autoconflict", stg);	
+				if (markings.size()<1) throw new SynthesisException("Internal error", stg);	
 				Marking nextMarking = markings.iterator().next();
 				
 				//is this marking known already to finished or border?
@@ -79,7 +79,7 @@ public class StateGraph {
 				//Yes, check if the STG is consistent
 				if (knownState != null) { 
 					if ( !knownState.equals(nextState) )
-						throw new SynthesisException("STG is not consistent");
+						throw new SynthesisException("STG is not consistent", stg);
 				}
 				//No, add it to border
 				else {
@@ -106,11 +106,11 @@ public class StateGraph {
 					break;
 				case LOW:
 					if (change == SignalValue.MINUS)
-						throw new SynthesisException("STG is not consistent");
+						throw new SynthesisException("STG is not consistent", stg);
 					break;
 				case HIGH:
 					if (change == SignalValue.PLUS)
-						throw new SynthesisException("STG is not consistent");
+						throw new SynthesisException("STG is not consistent", stg);
 					break;
 				}
 			}

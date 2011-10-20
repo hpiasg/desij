@@ -19,12 +19,15 @@
 
 package net.strongdesign.desij.decomposition.tree;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,9 +61,9 @@ import net.strongdesign.util.Pair;
 import net.strongdesign.util.PresetTree;
 import net.strongdesign.util.StreamGobbler;
 
-public class CscAwareDecomposition extends AbstractTreeDecomposition {
+public class IrrCscAwareDecomposition extends AbstractTreeDecomposition {
 
-	public CscAwareDecomposition(String filePrefix) {
+	public IrrCscAwareDecomposition(String filePrefix) {
 		super(filePrefix);
 	}
 
@@ -191,7 +194,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 			nodeTasks.remove(currentNode);
 			tasks: for (SolveCSC solve : tasks) {
 				
-			//the current task was moved up enough -> ignore missing csc and produce the component
+			//the current task was moved up enough -> because of irreducible CSC no synthesis so far -> wait for internal communication
 				if (solve.level > CLW.instance.CSC_BACKTRACKING_LEVEL.getIntValue()) {
 					logging(stg, DecompositionEvent.CSC_LEVEL_EXCEEDED, solve.level);
 					logging(stg, DecompositionEvent.FINISHED, null);
@@ -216,7 +219,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				if (newSolve.violationTraces.isEmpty()) {
 					logging(stg, DecompositionEvent.CSC_SOLVED, null);
 					//csc was solved, but maybe we have new conflicts -> check for csc again   		
-					List<Pair<List<SignalEdge>, List<SignalEdge>>> violationTraces = getCSCViolationTraces(stg);
+					List<Pair<List<SignalEdge>, List<SignalEdge>>> violationTraces = getIrrCSCViolationTraces(stg);
 
 					if ( violationTraces.isEmpty()) {
 						//CSC was solved
@@ -289,7 +292,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 						//XXX solve csc externally
 						STG component = stg.clone();						
 						updateSignature(solve.outputs, component);						
-						components.add(component);
+						components.add(component); // never synthesisable -> deal with it later						
 						continue tasks;							
 					}
 					else {
@@ -330,10 +333,10 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 			//resulting component
 			STG component = null;
 
-			//check for CSC    		
-			List<Pair<List<SignalEdge>, List<SignalEdge>>> violationTraces = getCSCViolationTraces(stg);
+			//check for IRREDUCIBLE CSC    		
+			List<Pair<List<SignalEdge>, List<SignalEdge>>> violationTraces = getIrrCSCViolationTraces(stg);
 			
-			if (violationTraces.isEmpty() || CLW.instance.CSC_BACKTRACKING_LEVEL.getIntValue()<1) {
+			if ( violationTraces.isEmpty() ) {
 				logging(stg, DecompositionEvent.TREE_FINISHED_LEAF, stg.getSignals(Signature.OUTPUT));
 
 				//preserve the result
@@ -341,10 +344,21 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				updateSignature(currentNode.getAdditionalValue(), component);						
 				components.add(component);
 			}
+			else if ( CLW.instance.CSC_BACKTRACKING_LEVEL.getIntValue()<1 ) { // there are (or might be) irreducible CSC conflicts --> synthesis impossible
+				logging(stg, DecompositionEvent.TREE_FINISHED_LEAF, stg.getSignals(Signature.OUTPUT));
+
+				//preserve the result
+				component = stg.clone();						
+				updateSignature(currentNode.getAdditionalValue(), component);						
+				components.add(component);
+				
+				// throw new SynthesisException("irreducible CSC conflict", component);
+				// leave the irreducible conflict inside --> later it can be dealt with by using internal communication
+			}
 			
 			else {
-				//no CSC -> add task for handling below
-				logging(stg, DecompositionEvent.CSC_CONFLICT, violationTraces);
+				//irreducible CSC conflicts -> add task for handling below
+				logging(stg, DecompositionEvent.CSC_IREDUCIBLE, violationTraces);
 
 				
 				PresetTree<Integer, Collection<Integer>> tParent = currentNode.getParent();
@@ -407,82 +421,10 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 
 	
 
-	@SuppressWarnings("unused")
-	private List<Pair<List<SignalEdge>, List<SignalEdge>>> synthesiseComponent(STG stg) throws IOException {
-
-		//base directory
-//		String dir = File.createTempFile("", "").getParent();
-
-		
-		stg.getSignals(Signature.OUTPUT);
-		
-		//where the STG is saved
-//		File STG = new File(dir);
-
-		//where the unfolding is saved
-		File tmpUNF = File.createTempFile("desij", ".unf");
-
-		//where the CSC violating traces are saved
-		File tmpCONF = File.createTempFile("desij", ".conf");
-
-
-		//save the STG, generate the unfolding and extract CSC violating traces
-//		FileSupport.saveToDisk(STGFile.convertToG(stg), tmpSTG.getCanonicalPath());
-		try {
-//			Runtime.getRuntime().exec(HelperApplications.getPunfPath() + " -m="+tmpUNF.getCanonicalPath() + " " + tmpSTG.getCanonicalPath()).waitFor();
-			HelperApplications.startExternalTool(HelperApplications.MPSAT, 
-					" -A -C " +
-					HelperApplications.SECTION_START+tmpUNF.getCanonicalPath()+HelperApplications.SECTION_END + 
-					" " + 
-					HelperApplications.SECTION_START+tmpCONF.getCanonicalPath()+HelperApplications.SECTION_END).waitFor();
-		}
-		catch (InterruptedException e) {
-			throw new DesiJException("Error involving punf/mpsat.");
-		}
-
-		//parse the conflict traces
-		String conflicts = FileSupport.loadFileFromDisk(tmpCONF.getCanonicalPath());
-
-		//no CSC conflict
-		if (conflicts.startsWith("NO"))
-			return Collections.emptyList();    	
-
-		//the final result with all traces
-		List<Pair<List<SignalEdge>, List<SignalEdge>>> result = new LinkedList<Pair<List<SignalEdge>, List<SignalEdge>>>();
-
-		//help variables containing the current traces
-		List<SignalEdge> trace0 = new LinkedList<SignalEdge>();
-		List<SignalEdge> trace1 = new LinkedList<SignalEdge>();
-
-
-		//split the line and convert the entries
-		int i=0;
-		for (String line : conflicts.split("\n")) {
-			if (line.startsWith("YES") || line.startsWith("_SEQ"))
-				continue;
-
-			if (i==0) {
-				i=1;
-				trace0 = getTrace(stg, line);
-			} 
-			else {
-				i=0;
-				trace1 = getTrace(stg, line);
-				result.add(new Pair<List<SignalEdge>, List<SignalEdge>> (trace0, trace1));
-			}
-		}
-		return result;
-	}
-
-
-
-
-
-
 	/**
 	 * Computes the inverse projection for one {@link SolveCSC}-task.
 	 * @param currentComponent The component in which the inv. projection is computed
-	 * @param solve Contains the neccessary parameters.
+	 * @param solve Contains the necessary parameters.
 	 * @param decoPara
 	 * @return
 	 * @throws STGException
@@ -491,7 +433,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				SolveCSC solve,		
 				STG stg) throws STGException {
 
-		//the inverse projection of all vioalation traces
+		//the inverse projection of all violation traces
 		//they are stored if CSC cannot be solved in this iteration
 		List<Pair<List<SignalEdge>, List<SignalEdge>>> newTraces = new LinkedList<Pair<List<SignalEdge>, List<SignalEdge>>>();
 
@@ -698,12 +640,12 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 
 
 	/**
-	 * Extract the CSC violation traces from an STG. Uses punf and mpsat, see above.
+	 * Extract the irreducible CSC violation traces from an STG. Uses punf and mpsat, see above.
 	 * @param stg
 	 * @return
 	 * @throws IOException
 	 */
-	private List<Pair<List<SignalEdge>, List<SignalEdge>>> getCSCViolationTraces(STG stg) throws IOException {
+	private List<Pair<List<SignalEdge>, List<SignalEdge>>> getIrrCSCViolationTraces(STG stg) throws IOException {
 		//where the STG is saved
 		File tmpSTG = File.createTempFile("desij", ".g");
 
@@ -769,9 +711,10 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 
 
 		//split the line and convert the entries
+		BufferedReader reader = new BufferedReader(new StringReader(conflicts));
+		String line;
 		int i=0;
-		for (String line : conflicts.split("\n")) {
-			if (line.endsWith("\r")) line = line.substring(0, line.length()-1); // cut "\r" for Windows machines
+		while ( (line = reader.readLine()) != null ) {
 			if (line.startsWith("YES") || line.startsWith("_SEQ"))
 				continue;
 
@@ -782,11 +725,61 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 			else {
 				i=0;
 				trace1 = getTrace(stg, line);
-				result.add(new Pair<List<SignalEdge>, List<SignalEdge>> (trace0, trace1));
+				if ( isIrreducibleConflict(trace0, trace1, stg) )
+					result.add(new Pair<List<SignalEdge>, List<SignalEdge>> (trace0, trace1));
 			}
 		}
+		
 		return result;
 	}
+
+	private boolean isIrreducibleConflict(List<SignalEdge> trace0,
+			List<SignalEdge> trace1, STG stg) {
+		
+		boolean diffTrace0HasAllInputs = true;
+		boolean diffTrace1HasAllInputs = true;
+		
+		Iterator<SignalEdge> trace0Iter = trace0.iterator();
+		Iterator<SignalEdge> trace1Iter = trace1.iterator();
+		SignalEdge element0;
+		SignalEdge element1;
+		
+		while (trace0Iter.hasNext() || trace1Iter.hasNext()) {
+			element0 = null;
+			element1 = null;
+			if (trace0Iter.hasNext())
+				element0 = trace0Iter.next();
+			if (trace1Iter.hasNext())
+				element1 = trace1Iter.next();
+			
+			if (element0 != null) {
+				if ( !element0.equals(element1) ) {
+					if (stg.getSignature(element0.getSignal()) != Signature.INPUT) {
+							diffTrace0HasAllInputs = false;
+							break; // for better performance
+					}
+					if (element1 != null) {
+						if (stg.getSignature(element1.getSignal()) != Signature.INPUT) {
+							diffTrace1HasAllInputs = false;
+							break; // for better performance
+						}
+					}
+				}
+			} else { // element0 == null is definitely different from element1 != null
+				if (stg.getSignature(element1.getSignal()) != Signature.INPUT) {
+					diffTrace1HasAllInputs = false;
+					break; // for better performance
+				}
+			}
+		}
+		
+		if (diffTrace0HasAllInputs && diffTrace1HasAllInputs)
+			return true;
+		else
+			return false;
+	}
+
+
 
 	/**
 	 * Converts a single trace given as String delivered by mpsat into an appropriate representation. 

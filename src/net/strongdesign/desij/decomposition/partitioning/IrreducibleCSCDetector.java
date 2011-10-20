@@ -32,6 +32,7 @@ import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
 import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
+import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
@@ -71,6 +72,9 @@ public class IrreducibleCSCDetector extends ComponentAnalyser {
 
 		else if (CLW.instance.VERSION.getValue().equals("csc-aware"))
 			this.components = new CscAwareDecomposition(filePrefix).decompose(stg, partition);
+		
+		else if (CLW.instance.VERSION.getValue().equals("irr-csc-aware"))
+			components = new IrrCscAwareDecomposition(filePrefix).decompose(stg, partition);
 
 		// irr. CSC conflict detection
 		if (CLW.instance.CONFLICT_TYPE.getValue().endsWith("st"))

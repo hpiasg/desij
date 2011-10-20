@@ -49,6 +49,7 @@ import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
 import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
+import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
 import net.strongdesign.desij.gui.STGEditorFile;
 import net.strongdesign.desij.gui.STGEditorFrame;
@@ -778,6 +779,9 @@ public class DesiJ {
 
 			else if (CLW.instance.VERSION.getValue().equals("csc-aware"))
 				components = new CscAwareDecomposition(filePrefix).decompose(stg, partition);
+			
+			else if (CLW.instance.VERSION.getValue().equals("irr-csc-aware"))
+				components = new IrrCscAwareDecomposition(filePrefix).decompose(stg, partition);
 
 			Date endDeco = new Date();
 
