@@ -68,7 +68,7 @@ public final class STG implements Cloneable {
 	/**The signatures of signals.*/
 	private Map<Integer, Signature> signatures;
 
-	/**Number occirences of a given signal.*/
+	/**Number occurrences of a given signal.*/
 	private Map<Integer, Integer> signalOccurences;
 
 	/**The real names of the signals.*/
@@ -448,7 +448,7 @@ public final class STG implements Cloneable {
 	}
 
 	/**
-	 * Retuns all nodes.
+	 * Returns all nodes.
 	 * @return
 	 */
 	public Set<Node> getNodes() {
@@ -638,7 +638,7 @@ public final class STG implements Cloneable {
 	}
 
 	/**
-	 * Retuns the signature of the given signal.
+	 * Returns the signature of the given signal.
 	 * @param signal
 	 * @return
 	 */
@@ -984,6 +984,7 @@ public final class STG implements Cloneable {
 			this.message = message;
 		}
 
+		@SuppressWarnings("unused")
 		public CombinedUndo(List<UndoOperation> operations) {
 			undoStack.addAll(operations);
 		}
@@ -1089,6 +1090,7 @@ public final class STG implements Cloneable {
 		private Collection<Integer> signals;
 		private Signature oldSignature;
 
+		@SuppressWarnings("unused")
 		public UndoSetSignature(Collection<Integer> signals, Signature oldSignature) {
 			this.signals = signals;
 			this.oldSignature = oldSignature;

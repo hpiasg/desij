@@ -84,7 +84,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 		 * General outline of the implementation
 		 * -------------------------------------
 		 * 
-		 * We start at the root of the preset tree tree, the current node is stored in (guess what)
+		 * We start at the root of the preset tree, the current node is stored in (guess what)
 		 * currentNode. This tree is traversed not with recursion but in an infinite loop (traversal).
 		 * In order to traverse each node exactly once (only incoming from the parent counts) we keep 
 		 * track of the actual child of each node which has to be entered next in a stack of iterators
@@ -100,7 +100,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 // ******************************************************************************
 
 		
-		//current position in the decompositon tree
+		//current position in the decomposition tree
 		PresetTree<Integer, Collection<Integer>> currentNode = tree;
 
 		//stores the task concerning csc solving which have to be performed in the respective nodes
@@ -110,7 +110,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 
 		//the stack which stores the iterators for the next child to be entered
 		//instead of using a stack of iterators a queue is used to avoid a
-		//ConcurrentModificationException when deleting subtress during component aggregation
+		//ConcurrentModificationException when deleting subtrees during component aggregation
 		//The additional effort is linear in the size of the tree,
 		Stack<Queue<PresetTree<Integer, Collection<Integer>>>> nextNodeStack = 
 			new Stack<Queue<PresetTree<Integer, Collection<Integer>>>>(); 
@@ -144,7 +144,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				leaf = buildComponent(stg, components, currentNode, nodeTasks);
 			}
 			else {			
-				//perform the csc solving, i.e. take care of the still unfinished inverse projections 
+				//perform the CSC solving, i.e. take care of the still unfinished inverse projections 
 				handleTasks(stg, components, currentNode, nodeTasks);
 			}
 
@@ -215,16 +215,16 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				
 				if (newSolve.violationTraces.isEmpty()) {
 					logging(stg, DecompositionEvent.CSC_SOLVED, null);
-					//csc was solved, but maybe we have new conflicts -> check for csc again   		
+					//CSC was solved, but maybe we have new conflicts -> check for CSC again   		
 					List<Pair<List<SignalEdge>, List<SignalEdge>>> violationTraces = getCSCViolationTraces(stg);
 
 					if ( violationTraces.isEmpty()) {
 						//CSC was solved
 						logging(stg, DecompositionEvent.FINISHED, null);
 
-						//try to conract non destroying signals again
+						//try to contract non destroying signals again
 						
-						//only signals which were delambdarised but did not solve csc are
+						//only signals which were delambdarised but did not solve CSC are
 						//candidates for repeated contraction
 						solve.delambdarisedSignals.removeAll(solve.coreDestroyingSignals);
 						
@@ -355,9 +355,13 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 						tasks = new LinkedHashSet<SolveCSC>();
 						nodeTasks.put(tParent, tasks);
 					}
+					Set<Integer> componentSignals = new HashSet<Integer>(stg.getSignals());
+					if (CLW.instance.OD.isEnabled()) { // remove all dummies from componentSignals, because they are not in violationTraces
+						componentSignals.removeAll(stg.getSignals(Signature.DUMMY));
+					}
 					tasks.add(new SolveCSC(
 							violationTraces, 
-							new HashSet<Integer>(stg.getSignals()), 
+							componentSignals, 
 							new HashSet<Integer>(currentNode.getAdditionalValue()), 
 							0, 
 							new HashSet<Integer>(currentNode.getValue()) ));
@@ -482,7 +486,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 	/**
 	 * Computes the inverse projection for one {@link SolveCSC}-task.
 	 * @param currentComponent The component in which the inv. projection is computed
-	 * @param solve Contains the neccessary parameters.
+	 * @param solve Contains the necessary parameters.
 	 * @param decoPara
 	 * @return
 	 * @throws STGException
@@ -491,7 +495,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				SolveCSC solve,		
 				STG stg) throws STGException {
 
-		//the inverse projection of all vioalation traces
+		//the inverse projection of all violation traces
 		//they are stored if CSC cannot be solved in this iteration
 		List<Pair<List<SignalEdge>, List<SignalEdge>>> newTraces = new LinkedList<Pair<List<SignalEdge>, List<SignalEdge>>>();
 
@@ -519,6 +523,10 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				StateSystem<Marking, SignalEdge> stateSystemAdapter = STGAdapterFactory.getStateSystemAdapter(stg);
 				inverseProjectionA = StateSystems.inverseProjection(stateSystemAdapter, vt.a, ec);
 				inverseProjectionB = StateSystems.inverseProjection(stateSystemAdapter, vt.b, ec);
+				if (CLW.instance.OD.isEnabled()) {
+					removeDummiesFromTrace(stg, inverseProjectionA);
+					removeDummiesFromTrace(stg, inverseProjectionB);
+				}
 			} catch (StateSystemException e) {
 				throw new STGException("Error during inverse Projection: "+e.getMessage());					
 			}
@@ -539,9 +547,14 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 		}
 
 		//CHECK if reusing old task possible
+		
+		Set<Integer> componentSignals = new HashSet<Integer>(stg.getSignals());
+		if (CLW.instance.OD.isEnabled()) { // remove all dummies from componentSignals, because they are not in violationTraces
+			componentSignals.removeAll(stg.getSignals(Signature.DUMMY));
+		}
 		return new SolveCSC( 
 				newTraces, 
-				new HashSet<Integer>(stg.getSignals()), 
+				componentSignals,
 				solve.outputs, 
 				solve.level+1, 
 				solve.delambdarisedSignals, 
@@ -549,6 +562,19 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 	}
 
 	
+
+	private void removeDummiesFromTrace(STG stg, List<SignalEdge> trace) {
+		List<SignalEdge> subjectToDelete = new LinkedList<SignalEdge>();
+		for (SignalEdge e : trace) {
+			if (stg.getSignature(e.getSignal()) == Signature.DUMMY)
+				subjectToDelete.add(e);
+		}
+		
+		if (!subjectToDelete.isEmpty())
+			trace.removeAll(subjectToDelete);
+	}
+
+
 
 	/**
 	 * Returns all signals which have a different codechange
@@ -795,6 +821,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 	 */
 	private List<SignalEdge> getTrace(STG stg, String line) {
 		List<SignalEdge> result = new LinkedList<SignalEdge>();
+		boolean dummySignal = false; // might be a specification dummy without signal direction
 
 		for (String edge : line.split(",")) {
 			if (edge.startsWith("i") || edge.startsWith("I")) {
@@ -802,6 +829,7 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 			else if (edge.startsWith("o") || edge.startsWith("O") ) {
 			}
 			else if (edge.startsWith("d") || edge.startsWith("D") ) {
+				dummySignal = true;
 			}
 			else if (edge.matches("[ \t]*"))
 				continue;
@@ -815,8 +843,10 @@ public class CscAwareDecomposition extends AbstractTreeDecomposition {
 				direction = EdgeDirection.UP;
 			else if (sig.endsWith("-"))
 				direction = EdgeDirection.DOWN;
-			else
+			else if (!dummySignal)
 				throw new DesiJException("Unknown direction in "+line);
+			else
+				direction = EdgeDirection.UNKNOWN;
 
 			String signalName = sig.replaceAll("\\+|-|_" ,  "");
 			Integer signal = Integer.parseInt(signalName);
