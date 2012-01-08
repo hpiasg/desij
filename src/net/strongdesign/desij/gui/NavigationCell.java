@@ -22,10 +22,15 @@ package net.strongdesign.desij.gui;
 import java.awt.Color;
 import java.awt.geom.Rectangle2D;
 
-import org.jgraph.graph.DefaultGraphCell;
-import org.jgraph.graph.GraphConstants;
+//import org.jgraph.graph.DefaultGraphCell;
+//import org.jgraph.graph.GraphConstants;
 
-public class NavigationCell extends DefaultGraphCell {
+import com.mxgraph.layout.hierarchical.model.mxGraphAbstractHierarchyCell;
+import com.mxgraph.layout.hierarchical.model.mxGraphHierarchyNode;
+import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.util.mxConstants;
+
+public class NavigationCell extends mxGraphHierarchyNode {
 	/**
 	 * 
 	 */
@@ -34,16 +39,20 @@ public class NavigationCell extends DefaultGraphCell {
 	public NavigationCell(STGEditorTreeNode node, String label) {
 		super(label);
 		this.node = node;
-		GraphConstants.setAutoSize(getAttributes(), true);
-		GraphConstants.setBounds(getAttributes(), new Rectangle2D.Double(Math.random()*50,Math.random()*50,20,20));
-		GraphConstants.setOpaque(getAttributes(), true);
+		
+//		mxConstants.setAutoSize(getAttributes(), true);
+//		mxConstants.setBounds(getAttributes(), new Rectangle2D.Double(Math.random()*50,Math.random()*50,20,20));
+//		mxConstants.setOpaque(getAttributes(), true);
+//		
+//		mxConstants.setBorderColor(getAttributes(), Color.BLACK);
+//		mxConstants.setInset(getAttributes(), 1);
+//		mxConstants.setGradientColor(getAttributes(), STGEditorFrame.NAV_COLOR);
+		
+		
+//GraphConstants.setFont(getAttributes(), STGEditorFrame.SMALL_FONT);
 //		GraphConstants.setMoveable(getAttributes(), false);
 //		GraphConstants.setEditable(getAttributes(), false);
 		
-		//GraphConstants.setFont(getAttributes(), STGEditorFrame.SMALL_FONT);
-		GraphConstants.setBorderColor(getAttributes(), Color.BLACK);
-		GraphConstants.setInset(getAttributes(), 1);
-		GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.NAV_COLOR);
 	}
 	
 	public STGEditorTreeNode getTreeNode() {

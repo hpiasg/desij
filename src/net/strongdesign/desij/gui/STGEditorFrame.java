@@ -30,25 +30,45 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.zip.ZipOutputStream;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
+import com.mxgraph.layout.mxCircleLayout;
+import com.mxgraph.layout.mxGraphLayout;
+import com.mxgraph.layout.mxOrganicLayout;
+import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGraphModel;
+import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.view.mxGraph;
+import com.mxgraph.view.mxLayoutManager;
+
+import net.strongdesign.desij.DesiJ;
+import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.traversal.CollectorFactory;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.util.FileSupport;
+import net.strongdesign.util.ParsingException;
+import net.strongdesign.stg.Place;
+import net.strongdesign.stg.Transition;
 
-import org.jgraph.JGraph;
-import org.jgraph.graph.DefaultGraphModel;
-import org.jgraph.graph.GraphModel;
+
+//import org.jgraph.JGraph;
+//import org.jgraph.graph.DefaultGraphModel;
+//import org.jgraph.graph.GraphModel;
 
 
 /**
@@ -88,13 +108,15 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 	
 	
 	/**The current layout cache.*/
-	private STGLayoutCache cache;
+//	private STGLayoutCache cache;
 
 	/**The current graph model.*/
-	private GraphModel model;
+	private mxGraphModel model;
 	
 	/**The current graph, representing the current STG.*/
-	private final JGraph graph;
+	private final mxGraph graph;
+	private final mxGraphComponent graphComponent;
+	
 	
 	/**The navigation view.*/
 	private STGEditorNavigation navigationView;
@@ -106,13 +128,89 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 	private JSplitPane splitPane;
 	
 	
-	
-	
 	private String label;
 	
 	
+	public void initSTG(STG stg, mxGraph graph) {
+		
+		Object parent = graph.getDefaultParent();
+		graph.getModel().beginUpdate();
+		
+		Random rnd = new Random(2);
+		try
+		{
+//			Object v1 = graph.insertVertex(parent, null, "Hello", 20, 20, 80,
+//					30);
+//			Object v2 = graph.insertVertex(parent, null, "World!", 240, 150,
+//					80, 30);
+//			graph.insertEdge(parent, null, "Edge", v1, v2);
+			
+			
+			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
+			
+			
+			for (Node node : stg.getNodes()) {
+				mxCell cell=null;
+				
+				if (node instanceof Place ) {
+					//cell = new PlaceCell((Place)node);
+					cell = (mxCell) graph.insertVertex(parent, null, ((Place)node).getMarking(), 50, 50, 25, 25, "shape=ellipse;perimeter=ellipsePerimeter");
+				}
+					
+				else if (node instanceof Transition) {
+//					cell = new TransitionCell((Transition)node, stg);
+					cell = (mxCell) graph.insertVertex(parent, null, ((Transition)node).toString(), 50, 50, 40, 20);
+				}
+				
+				nc.put(node, cell);
+				graph.addCell(cell);
+				
+			}
+			
+			for (Node node : stg.getNodes()) {
+				mxCell source=nc.get(node);
+				
+				
+				for (Node child : node.getChildren()) {
+					mxCell target=nc.get(child);
+					
+					graph.insertEdge(parent, null, null, source, target);
+					
+//					source.add(new DefaultPort());
+//					target.add(new DefaultPort());
+//					DefaultEdge edge = new DefaultEdge();
+//					
+//					edge.setSource(source.getChildAt(0));
+//					edge.setTarget(target.getChildAt(0));
+					
+//					GraphConstants.setFont(edge.getAttributes(), STGEditorFrame.STANDARD_FONT);
+//					GraphConstants.setLabelPosition(edge.getAttributes(), new Point2D.Double(GraphConstants.PERMILLE/2, 10));
+					
+//					int v = node.getChildValue(child);
+//					if (v>1)
+//						edge.setUserObject(v);
+					
+//					int arrow = GraphConstants.ARROW_TECHNICAL;
+//					GraphConstants.setLineEnd(edge.getAttributes(), arrow);
+//					GraphConstants.setEndFill(edge.getAttributes(), true);
+					
+//					insert(edge);
+				}
+			}
+			
+			mxOrganicLayout cl = new mxOrganicLayout(graph);
+			cl.execute(parent);
+			
+		}
+		finally
+		{
+			graph.getModel().endUpdate();
+		}
+		
+	}
+	
 	/**
-	 * Constructs and instance.
+	 * Constructs an instance.
 	 * @param windowLabel The label of the window.
 	 * @param stg The initial STG.
 	 */
@@ -126,35 +224,53 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		
 			
 		//Initialise navigation view
-		navigationView = new STGEditorNavigation(stg, this);
+//		navigationView = new STGEditorNavigation(stg, this);
 				
 		//The initial model and layout cache
-		model = new DefaultGraphModel();
-		cache = new STGLayoutCache(stg, model);
-
-		//The graph. There is only this one, only the layout cache will be changed when switching between STGS.
-		graph = new JGraph(model, cache);
-		graph.setAntiAliased(true);
+		
+		
+		
+//		cache = new STGLayoutCache(stg, model);
+		model = new mxGraphModel();
+		graph = new mxGraph(model);
+		initSTG(stg, graph);
+		
+		graph.setAutoSizeCells(false);
+		graph.setCellsEditable(false);
+		graph.setCellsDisconnectable(false);
+		graph.setCellsCloneable(false);
+		graph.setCellsResizable(false);
+		graph.setCellsDeletable(false);
+		graph.setCellsBendable(false);
+		graph.setCellsDeletable(false);
+		graph.setAllowDanglingEdges(false);
+		graph.setCellsSelectable(true);
+		
+		//graph = new mxGraph(model, cache);
+		
+		graphComponent = new mxGraphComponent(graph);
+		graphComponent.setSwimlaneSelectionEnabled(true);
+		
+//		graphComponent.setAntiAlias(true);
+		
 		
 		//Build up the graph corresponding to the STG
-		cache.init();
-
+//		cache.init();
 		
 		//Put it all together
-		splitPane = new JSplitPane(
-				JSplitPane.HORIZONTAL_SPLIT,  
-				new JScrollPane(navigationView), 
-				new JScrollPane(graph));
-		splitPane.setDividerLocation(250);
-		getContentPane().add(splitPane, BorderLayout.CENTER);
+//		splitPane = new JSplitPane(
+//				JSplitPane.HORIZONTAL_SPLIT,  
+//				new JScrollPane(navigationView), 
+//				new JScrollPane(graphComponent));
+//		
+//		splitPane.setDividerLocation(250);
 		
+		getContentPane().add(graphComponent, BorderLayout.CENTER);
 		
 		//Create menu bar
-		menuBar = new STGEditorMenuBar(this, cache);
-		setJMenuBar(menuBar);
+//		menuBar = new STGEditorMenuBar(this, cache);
+//		setJMenuBar(menuBar);
 	}
-	
-	
 	
 	
 	
@@ -163,15 +279,7 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		ZipOutputStream out = new ZipOutputStream(new FileOutputStream(fileName));
 		out.setComment("Generated by DesiJ");
 		
-		
-		
 	}
-	
-	
-	
-	
-	
-	
 	
 //	public STGEditorFrame(String fileName) {
 //		FileSupport.loadFileFromDisk(fileName);
@@ -221,10 +329,11 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		
 		
 
-		model=new DefaultGraphModel();
-		cache = new STGLayoutCache(node.getSTG(), model);
-		graph.setGraphLayoutCache(cache);
-		cache.init();
+//		model=new DefaultGraphModel();
+//		cache = new STGLayoutCache(node.getSTG(), model);
+//		graph.setGraphLayoutCache(cache);
+		
+//		cache.init();
 
 		splitPane.validate();
 	}
@@ -420,40 +529,65 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 //	}
 //	
 //	
-//	public void exit() {	
-//		dispose();
-//	}
-//
-//	
-//	public void open()   {
-//		JFileChooser fileChooser = new JFileChooser();
-//		fileChooser.setMultiSelectionEnabled(false);
-//		fileChooser.setFileFilter(STGFileFilter.STANDARD);
-//		
-//		fileChooser.showOpenDialog(this);
-//		label = fileChooser.getSelectedFile().getAbsolutePath();
-//		
-////		try {
-////			String file = FileSupport.loadFileFromDisk(fileName);
-////			STG stg = STGFile.convertToSTG(file);
-////			STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
-////			new STGEditorFrame(fileName, stg, coordinates).setVisible(true);
-////		}
-////		catch (IOException e) {
-////			JOptionPane.showMessageDialog(this, "Could not load file: "+fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
-////		}
-////		//	catch (STGException e) {
-////		//			JOptionPane.showMessageDialog(this, "Could not parse file: "+fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
-////		//	}
-////		catch (ParsingException e) {
-////			JOptionPane.showMessageDialog(this, "Could not parse file: "+fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
-////		}
-////		
-//		
-//		
-//	
-//	}
-//	
+	public void exit() {	
+		dispose();
+	}
+
+	
+	public void open()   {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setMultiSelectionEnabled(false);
+		fileChooser.setFileFilter(STGFileFilter.STANDARD);
+		
+		fileChooser.showOpenDialog(this);
+		label = fileChooser.getSelectedFile().getAbsolutePath();
+		String fileName = label;
+		
+		try {
+			
+			
+			
+			File f= new File(fileName);
+			if (! f.exists() ) {
+				f = new File(fileName+".g");
+				if (! f.exists())
+					throw new FileNotFoundException(fileName);          
+			}       
+
+			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+			STG stg = STGEditorFile.convertToSTG(file, true);
+//			STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
+
+
+//			navigationView = new STGEditorNavigation(stg, this);
+			//The initial model and layout cache
+			
+			model = new mxGraphModel();
+//			cache = new STGLayoutCache(stg, model);
+			
+			//Build up the graph corresponding to the STG
+//			cache.init();
+			
+			
+			
+//			String file = FileSupport.loadFileFromDisk(fileName);
+//			STG stg = STGFile.convertToSTG(file);
+//			STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
+//			new STGEditorFrame(fileName, stg, coordinates).setVisible(true);
+		} 
+		catch (ParseException e) {
+			JOptionPane.showMessageDialog(this, "Could not parse file: "+fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
+		}
+		catch (IOException e) {
+			JOptionPane.showMessageDialog(this, "Could not load file: "+fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
+		}
+		catch (STGException e) {
+				JOptionPane.showMessageDialog(this, "Could not parse file: "+fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
+		}
+		
+	
+	}
+	
 	private void save() throws IOException {
 		String name = getFileName();
 		if (name == null) {
@@ -499,12 +633,12 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		Object source = e.getSource();
 		try {
 //			if (source == SPRING_LAYOUT) springLayout();
-//			else if (source == OPEN) open();
-			if (source == SAVE) save();
+			if (source == OPEN) open();
+			else if (source == SAVE) save();
 			else if (source == SAVE_AS) saveAs();
-//			else if (source == EXIT) exit();
+			else if (source == EXIT) exit();
 //			else if (source == RG) rg();
-//			else if (source == COPY_STG) copySTG();
+			else if (source == COPY_STG) copySTG();
 			else if (source == INITIAL_PARTITION) initialPartition();
 //			else if (source == SIGNAL_TYPE) changeSignalType();
 //			else if (source == SPRING_LAYOUT_EXCLUDE);
@@ -520,14 +654,14 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 	}
 //	
 //	
-//	private void copySTG() {
+	private void copySTG() {
 //		STG stg = currentNode.getSTG().clone();
 //		STGEditorCoordinates coordinates = currentNode.getCoordinates().clone(stg);
 //		
 //		setSTG(addChild(currentNode, currentNode.getSTG().clone(), coordinates, "Copy of "+currentNode, false));
-//		
-//	}
-//
+		
+	}
+
 //	private void changeSignalType() {
 //		signalChooser = new STGEditorSignalChooser("JDesi - Signals of "+ currentNode, currentNode.getSTG(), this);
 //		signalChooser.setAlwaysOnTop(true);

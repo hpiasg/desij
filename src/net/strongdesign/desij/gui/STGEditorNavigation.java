@@ -24,69 +24,79 @@ import java.util.Map;
 
 import net.strongdesign.stg.STG;
 
-import org.jgraph.JGraph;
-import org.jgraph.event.GraphSelectionEvent;
-import org.jgraph.event.GraphSelectionListener;
-import org.jgraph.graph.DefaultCellViewFactory;
-import org.jgraph.graph.DefaultEdge;
-import org.jgraph.graph.DefaultGraphCell;
-import org.jgraph.graph.DefaultGraphModel;
-import org.jgraph.graph.DefaultPort;
-import org.jgraph.graph.GraphConstants;
-import org.jgraph.graph.GraphLayoutCache;
-import org.jgraph.graph.GraphModel;
-import org.jgraph.graph.GraphSelectionModel;
+//import org.jgraph.JGraph;
+//import org.jgraph.event.GraphSelectionEvent;
+//import org.jgraph.event.GraphSelectionListener;
+//import org.jgraph.graph.DefaultCellViewFactory;
+//import org.jgraph.graph.DefaultEdge;
+//import org.jgraph.graph.DefaultGraphCell;
+//import org.jgraph.graph.DefaultGraphModel;
+//import org.jgraph.graph.DefaultPort;
+//import org.jgraph.graph.GraphConstants;
+//import org.jgraph.graph.GraphLayoutCache;
+//import org.jgraph.graph.GraphModel;
+//import org.jgraph.graph.GraphSelectionModel;
+//
+//import com.jgraph.layout.JGraphFacade;
+//import com.jgraph.layout.tree.JGraphTreeLayout;
 
-import com.jgraph.layout.JGraphFacade;
-import com.jgraph.layout.tree.JGraphTreeLayout;
+import com.mxgraph.model.mxGraphModel;
+import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.view.mxGraph;
 
 
-public class STGEditorNavigation extends JGraph implements GraphSelectionListener {
+public class STGEditorNavigation extends mxGraphComponent {//implements GraphSelectionListener {
+
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1790108133777960660L;
-	private GraphModel model;
-    private GraphLayoutCache cache;
+	
+	private mxGraphModel model;
+	private mxGraph graph;
+	
+//  private GraphLayoutCache cache;
+//	private JGraphFacade facade;
     
 	private STGEditorFrame frame;
 	private STGEditorTreeNode root;
 	private STGEditorTreeNode currentNode;
 	
-	private JGraphFacade facade;
+    
+//    private Map<STGEditorTreeNode, DefaultGraphCell> cells;
     
     
-    
-    private Map<STGEditorTreeNode, DefaultGraphCell> cells;
-    
-    public STGEditorNavigation(STG rootSTG, STGEditorFrame frame) {
-        super ();
-        this.frame = frame;
+	public STGEditorNavigation(mxGraph graph) {
+		super(graph);
+	}
+	
+//	public STGEditorNavigation(STG rootSTG, STGEditorFrame frame) {
+    	
+
+//        this.frame = frame;
+//        
+//        cells = new HashMap<STGEditorTreeNode, DefaultGraphCell>();
+//        root = new STGEditorTreeNode("Start", rootSTG, true, null);
+//        currentNode = root;
+//     
+//        model = new mxGraphModel();
+//        cache = new GraphLayoutCache(model, new DefaultCellViewFactory());
+//                
+//        setModel(model);
+//        setGraphLayoutCache(cache);
+//    
+//        facade = new JGraphFacade(this, getRoots());
+//        
+//        frame.setNav(this);
+//        
+//        
+//        addNode(root, "Start");
+//        
+//        
+//        addGraphSelectionListener(this);
+//        getSelectionModel().setSelectionMode(GraphSelectionModel.SINGLE_GRAPH_SELECTION);
         
-        cells = new HashMap<STGEditorTreeNode, DefaultGraphCell>();
-        root = new STGEditorTreeNode("Start", rootSTG, true, null);
-        currentNode = root;
-     
-        model = new DefaultGraphModel();
-        cache = new GraphLayoutCache(model, new DefaultCellViewFactory());
-                
-        setModel(model);
-        setGraphLayoutCache(cache);
-    
-        facade = new JGraphFacade(this, getRoots());
-        
-        frame.setNav(this);
-        
-        
-        addNode(root, "Start");
-        
-        
-        addGraphSelectionListener(this);
-        getSelectionModel().setSelectionMode(GraphSelectionModel.SINGLE_GRAPH_SELECTION);
-        
-    }
-    
-    
+//   }
     
     
     public STGEditorTreeNode getCurrentNode() {
@@ -98,68 +108,64 @@ public class STGEditorNavigation extends JGraph implements GraphSelectionListene
 		this.currentNode = currentNode;		
 	}
 
-
-
-
 	public void addNode(STGEditorTreeNode node, String label) {
-    	DefaultGraphCell cell = new NavigationCell(node, label);
-    	cells.put(node, cell);
+
+//    	DefaultGraphCell cell = new NavigationCell(node, label);
+//    	cells.put(node, cell);
+//    	
+//    	
+//    	DefaultGraphCell parent = cells.get(node.getParent());
+//    	
+//    	if (parent!=null) {    		
+//    		DefaultPort parentPort =new DefaultPort();
+//    		parent.add(parentPort);
+//    		
+//    		DefaultPort cellPort =new DefaultPort();
+//    		cell.add(cellPort);
+//    		
+//    		DefaultEdge edge = new DefaultEdge();
+//    		edge.setSource(parentPort);
+//    		edge.setTarget(cellPort);
+//    		
+//    		int arrow = GraphConstants.ARROW_CLASSIC;
+//    		GraphConstants.setLineEnd(edge.getAttributes(), arrow);
+//    		GraphConstants.setEndFill(edge.getAttributes(), true);
+//    		GraphConstants.setSelectable(edge.getAttributes(), false);
+//    		
+//    		cache.insert(edge);
+//    		
+//    	}
+//    	cache.insert(cell);
+//    	
+//    	
+//    	
+//    	new JGraphTreeLayout().run(facade);
+//    	cache.edit(facade.createNestedMap(true, false));
     	
-    	
-    	DefaultGraphCell parent = cells.get(node.getParent());
-    	
-    	if (parent!=null) {    		
-    		DefaultPort parentPort =new DefaultPort();
-    		parent.add(parentPort);
-    		
-    		DefaultPort cellPort =new DefaultPort();
-    		cell.add(cellPort);
-    		
-    		DefaultEdge edge = new DefaultEdge();
-    		edge.setSource(parentPort);
-    		edge.setTarget(cellPort);
-    		
-    		int arrow = GraphConstants.ARROW_CLASSIC;
-    		GraphConstants.setLineEnd(edge.getAttributes(), arrow);
-    		GraphConstants.setEndFill(edge.getAttributes(), true);
-    		GraphConstants.setSelectable(edge.getAttributes(), false);
-    		
-    		cache.insert(edge);
-    		
-    	}
-    	cache.insert(cell);
-    	
-    	
-    	
-    	new JGraphTreeLayout().run(facade);
-    	cache.edit(facade.createNestedMap(true, false));
-    	
-    	setSelectionCell(null);
+//    	setSelectionCell(null);
     	
     }
 
 
-
-
-	public void valueChanged(GraphSelectionEvent event) {
-		Object cell =  event.getCell();
-		
-		if ( !(cell instanceof NavigationCell))
-			return;
-		
-		STGEditorTreeNode node = ((NavigationCell)cell).getTreeNode();
-		if (node==currentNode)
-			return;
-		
-		setCurrentNode(node);
-		
-		if (event.isAddedCell()) {
-			frame.setSTG( ((NavigationCell)cell).getTreeNode());
-		}
-	
-
-		
-	}
+//	public void valueChanged(GraphSelectionEvent event) {
+//		Object cell =  event.getCell();
+//		
+//		if ( !(cell instanceof NavigationCell))
+//			return;
+//		
+//		STGEditorTreeNode node = ((NavigationCell)cell).getTreeNode();
+//		if (node==currentNode)
+//			return;
+//		
+//		setCurrentNode(node);
+//		
+//		if (event.isAddedCell()) {
+//			frame.setSTG( ((NavigationCell)cell).getTreeNode());
+//		}
+//	
+//
+//		
+//	}
     
     
 }
