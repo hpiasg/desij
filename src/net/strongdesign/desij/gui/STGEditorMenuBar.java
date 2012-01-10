@@ -27,6 +27,9 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 	private static final long serialVersionUID = -9095831294193194005L;
 	
 	private final STGEditorAction FILE = new STGEditorAction("File", KeyEvent.VK_F, null, 0, this);
+	
+	private final STGEditorAction LAYOUT_TYPES = new STGEditorAction("Layouts", KeyEvent.VK_L, null, 0, this);
+	
 	private final STGEditorAction EDIT = new STGEditorAction("Edit", KeyEvent.VK_E, null, 0, this);
 	private final STGEditorAction VIEW = new STGEditorAction("View", KeyEvent.VK_V, null, 0, this);
 	private final STGEditorAction PETRINET = new STGEditorAction("Petri net", KeyEvent.VK_P, null, 0, this);
@@ -36,11 +39,15 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 
 
 	
-	public STGEditorMenuBar(STGEditorFrame frame, STGLayoutCache cache) {
+	public STGEditorMenuBar(STGEditorFrame frame) {//, STGLayoutCache cache) {
 		super();
 
 		JMenu file = new JMenu(FILE);
 		add(file);
+		
+		JMenu layouts = new JMenu(LAYOUT_TYPES);
+		add(layouts);
+		
 		JMenu edit = new JMenu(EDIT);
 		add(edit);
 		JMenu view = new JMenu(VIEW);
@@ -54,9 +61,6 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		JMenu help = new JMenu(HELP);
 		add(help);
 		
-
-		
-		
 		file.add(frame.NEW);
 		file.add(frame.OPEN);
 		file.add(frame.SAVE);
@@ -66,6 +70,12 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 	//	file.add(editor.PRINT_VISIBLE);
 		file.add(frame.EXIT);
 		
+		layouts.add(frame.LAYOUT1);
+		layouts.add(frame.LAYOUT2);
+		layouts.add(frame.LAYOUT3);
+		layouts.add(frame.LAYOUT4);
+		layouts.add(frame.LAYOUT5);
+		layouts.add(frame.LAYOUT6);
 
 	//	edit.add(editor.SELECT_ALL);
 	//	edit.add(editor.SHRINK);
@@ -73,7 +83,6 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		edit.add(frame.COPY_STG);
 		file.add(new JSeparator());
 		edit.add(frame.LAYOUT);
-		
 		
 		
 //		view.add(editor.ZOOM_IN);
@@ -141,9 +150,6 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
         newItem(layout, "Enlarge", KeyEvent.VK_V);
         
 		
-		
-		
-		
 //		**************************************
 		JMenu help = new JMenu("Help");
 		
@@ -153,10 +159,7 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		
 		*/
 	}
-
-
-
-
+	
 	public void actionPerformed(ActionEvent e) {
 	}
 	

@@ -30,7 +30,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.zip.ZipOutputStream;
@@ -42,11 +44,21 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 
 import com.mxgraph.layout.mxCircleLayout;
+import com.mxgraph.layout.mxCompactTreeLayout;
 import com.mxgraph.layout.mxGraphLayout;
 import com.mxgraph.layout.mxOrganicLayout;
+import com.mxgraph.layout.mxParallelEdgeLayout;
+import com.mxgraph.layout.mxPartitionLayout;
+import com.mxgraph.layout.mxStackLayout;
 import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGeometry;
 import com.mxgraph.model.mxGraphModel;
+import com.mxgraph.model.mxIGraphModel;
 import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.swing.mxGraphOutline;
+import com.mxgraph.swing.handler.mxRubberband;
+import com.mxgraph.util.mxRectangle;
+import com.mxgraph.view.mxCellState;
 import com.mxgraph.view.mxGraph;
 import com.mxgraph.view.mxLayoutManager;
 
@@ -93,6 +105,14 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 	public final STGEditorAction COPY_STG 			= new STGEditorAction("Copy STG", KeyEvent.VK_Y , 'C', 0, this);
 
 	public final STGEditorAction ABOUT 				= new STGEditorAction("About JDesi", KeyEvent.VK_A , null, 0, this);
+	
+	
+	public final STGEditorAction LAYOUT1 			= new STGEditorAction("Organic", KeyEvent.VK_1 , '1', 0, this);
+	public final STGEditorAction LAYOUT2 			= new STGEditorAction("Circle", KeyEvent.VK_2 , '2', 0, this);
+	public final STGEditorAction LAYOUT3 			= new STGEditorAction("Compact Tree", KeyEvent.VK_3 , '3', 0, this);
+	public final STGEditorAction LAYOUT4 			= new STGEditorAction("Parallel Edge", KeyEvent.VK_4 , '4', 0, this);
+	public final STGEditorAction LAYOUT5 			= new STGEditorAction("Partition", KeyEvent.VK_5 , '5', 0, this);
+	public final STGEditorAction LAYOUT6 			= new STGEditorAction("Stack", KeyEvent.VK_6 , '6', 0, this);
 
 		
 	public final static Font 	STANDARD_FONT 	= new Font("Arial",Font.PLAIN, 16);
@@ -116,7 +136,8 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 	/**The current graph, representing the current STG.*/
 	private final mxGraph graph;
 	private final mxGraphComponent graphComponent;
-	
+	private final mxGraphOutline graphOutline;
+	protected mxRubberband rubberband;	
 	
 	/**The navigation view.*/
 	private STGEditorNavigation navigationView;
@@ -130,22 +151,48 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 	
 	private String label;
 	
+	public boolean isVertexIgnored(Object vertex)
+	{
+		return !graph.getModel().isVertex(vertex)
+				|| !graph.isCellVisible(vertex);
+	}
+	
+	public mxRectangle getVertexBounds(Object vertex)
+	{
+		mxRectangle geo = graph.getModel().getGeometry(vertex);
+		return new mxRectangle(geo);
+	}
+	
+	public mxRectangle setVertexLocation(Object vertex, double x, double y)
+	{
+		mxIGraphModel model = graph.getModel();
+		mxGeometry geometry = model.getGeometry(vertex);
+		mxRectangle result = null;
+
+		if (geometry != null)
+		{
+			result = new mxRectangle(x, y, geometry.getWidth(), geometry
+					.getHeight());
+
+			if (geometry.getX() != x || geometry.getY() != y)
+			{
+				geometry = (mxGeometry) geometry.clone();
+				geometry.setX(x);
+				geometry.setY(y);
+				model.setGeometry(vertex, geometry);
+			}
+		}
+
+		return result;
+	
+	}
 	
 	public void initSTG(STG stg, mxGraph graph) {
 		
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
-		
-		Random rnd = new Random(2);
 		try
 		{
-//			Object v1 = graph.insertVertex(parent, null, "Hello", 20, 20, 80,
-//					30);
-//			Object v2 = graph.insertVertex(parent, null, "World!", 240, 150,
-//					80, 30);
-//			graph.insertEdge(parent, null, "Edge", v1, v2);
-			
-			
 			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
 			
 			
@@ -156,10 +203,17 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 					//cell = new PlaceCell((Place)node);
 					cell = (mxCell) graph.insertVertex(parent, null, ((Place)node).getMarking(), 50, 50, 25, 25, "shape=ellipse;perimeter=ellipsePerimeter");
 				}
-					
+				
 				else if (node instanceof Transition) {
 //					cell = new TransitionCell((Transition)node, stg);
-					cell = (mxCell) graph.insertVertex(parent, null, ((Transition)node).toString(), 50, 50, 40, 20);
+					int signalID = ((Transition)node).getLabel().getSignal();
+					String style = "fontColor=black";
+					if (stg.getSignature(signalID)==Signature.INPUT) style = "fontColor=blue";
+					if (stg.getSignature(signalID)==Signature.OUTPUT) style = "fontColor=blue";
+					if (stg.getSignature(signalID)==Signature.INTERNAL) style = "fontColor=green";
+					if (stg.getSignature(signalID)==Signature.ANY) style = "fontColor=black;fillColor=yellow";
+					
+					cell = (mxCell) graph.insertVertex(parent, null, ((Transition)node).getString(Transition.UNIQUE), 50, 50, 40, 20, style);
 				}
 				
 				nc.put(node, cell);
@@ -198,8 +252,55 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 				}
 			}
 			
-			mxOrganicLayout cl = new mxOrganicLayout(graph);
+			mxGraphLayout cl = new mxOrganicLayout(graph);
+//			mxCircleLayout cl = new mxCircleLayout(graph);
+			
 			cl.execute(parent);
+			// 
+			
+			///// shift nodes to the top left corner
+			double max = 0;
+			Double top = null;
+			Double left = null;
+			
+			
+			List<Object> vertices = new ArrayList<Object>();
+			int childCount = model.getChildCount(parent);
+
+			for (int i = 0; i < childCount; i++)
+			{
+				Object cell = model.getChildAt(parent, i);
+
+				if (!isVertexIgnored(cell))
+				{
+					vertices.add(cell);
+					mxRectangle bounds = getVertexBounds(cell);
+
+					if (top == null) top = bounds.getY();
+					else
+						top = Math.min(top, bounds.getY());
+
+					
+					if (left == null)
+						left = bounds.getX();
+					else
+						left = Math.min(left, bounds.getX());
+
+					max = Math.max(max, Math.max(bounds.getWidth(), bounds.getHeight()));
+				}
+			}
+			
+			for (Object obj :vertices)
+			{
+				if (!graph.isCellMovable(obj)) continue;
+				
+				double x, y;
+				mxRectangle bounds = getVertexBounds(obj);
+				x = bounds.getX()-left+50;
+				y = bounds.getY()-top+50;
+				
+				setVertexLocation(obj, x, y);
+			}
 			
 		}
 		finally
@@ -222,15 +323,13 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);  
 		this.label = windowLabel;
 		
-			
 		//Initialise navigation view
 //		navigationView = new STGEditorNavigation(stg, this);
 				
 		//The initial model and layout cache
 		
 		
-		
-//		cache = new STGLayoutCache(stg, model);
+		//cache = new STGLayoutCache(stg, model);
 		model = new mxGraphModel();
 		graph = new mxGraph(model);
 		initSTG(stg, graph);
@@ -250,6 +349,9 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		
 		graphComponent = new mxGraphComponent(graph);
 		graphComponent.setSwimlaneSelectionEnabled(true);
+		graphComponent.setConnectable(false);
+		
+		graphOutline = new mxGraphOutline(graphComponent);
 		
 //		graphComponent.setAntiAlias(true);
 		
@@ -258,18 +360,29 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 //		cache.init();
 		
 		//Put it all together
-//		splitPane = new JSplitPane(
-//				JSplitPane.HORIZONTAL_SPLIT,  
-//				new JScrollPane(navigationView), 
-//				new JScrollPane(graphComponent));
-//		
-//		splitPane.setDividerLocation(250);
+		JSplitPane vert = 
+			new JSplitPane(
+					JSplitPane.VERTICAL_SPLIT,
+					new JScrollPane(navigationView), 
+					graphOutline
+			);
+		vert.setDividerLocation(450);
+
+		splitPane = new JSplitPane(
+				JSplitPane.HORIZONTAL_SPLIT,
+				vert,
+				graphComponent);
 		
-		getContentPane().add(graphComponent, BorderLayout.CENTER);
+		splitPane.setDividerLocation(250);
+		
+		getContentPane().add(splitPane, BorderLayout.CENTER);
+		rubberband = new mxRubberband(graphComponent);
 		
 		//Create menu bar
-//		menuBar = new STGEditorMenuBar(this, cache);
-//		setJMenuBar(menuBar);
+		
+		menuBar = new STGEditorMenuBar(this);//, cache);
+		
+		setJMenuBar(menuBar);
 	}
 	
 	
@@ -325,9 +438,7 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 
 	public void setSTG(STGEditorTreeNode node){
 		
-		if (! node.isSTG()) return;
-		
-		
+		if (!node.isSTG()) return;
 
 //		model=new DefaultGraphModel();
 //		cache = new STGLayoutCache(node.getSTG(), model);
@@ -545,8 +656,6 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		
 		try {
 			
-			
-			
 			File f= new File(fileName);
 			if (! f.exists() ) {
 				f = new File(fileName+".g");
@@ -567,7 +676,6 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 			
 			//Build up the graph corresponding to the STG
 //			cache.init();
-			
 			
 			
 //			String file = FileSupport.loadFileFromDisk(fileName);
@@ -629,6 +737,28 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 		FileSupport.saveToDisk(STGFile.convertToG(navigationView.getCurrentNode().getSTG()), label);
 	}
 	
+	public void setLayout(int type) {
+		
+		Object parent = graph.getDefaultParent();
+		graph.getModel().beginUpdate();
+		try
+		{
+			mxGraphLayout gl;
+			if (type==1) gl = new mxOrganicLayout(graph);
+			else if (type==2) gl = new mxCircleLayout(graph);
+			else if (type==3) gl = new mxCompactTreeLayout(graph, false, false);
+			else if (type==4) gl = new mxParallelEdgeLayout(graph, 30);
+			else if (type==5) gl = new mxPartitionLayout(graph, false, 30);
+			else if (type==6) gl = new mxStackLayout(graph, false, 30);
+			else
+				gl = new mxOrganicLayout(graph);
+			
+			gl.execute(parent);
+		} finally {
+			graph.getModel().endUpdate();
+		}
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		try {
@@ -646,7 +776,13 @@ public class STGEditorFrame extends JFrame implements  Runnable, ActionListener 
 //			else if (source == REDUCE) {backgroundMethod = "reduce"; new Thread(this).start(); }
 //			//else if (source == REDUCE) {new DecompositionOptions("Decomposition", currentNode.getSTG(), new DesijCommandLineWrapper(new String[]{""})).setVisible(true);}
 //			else if (source == ABOUT) {new STGEditorAbout(this).setVisible(true);}
-			
+			else if (source == LAYOUT1) setLayout(1);
+			else if (source == LAYOUT2) setLayout(2);
+			else if (source == LAYOUT3) setLayout(3);
+			else if (source == LAYOUT4) setLayout(4);
+			else if (source == LAYOUT5) setLayout(5);
+			else if (source == LAYOUT6) setLayout(6);
+
 		}
 		catch (Exception ee) {
 			ee.printStackTrace();
