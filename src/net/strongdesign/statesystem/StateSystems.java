@@ -29,10 +29,8 @@ import java.util.ListIterator;
 import java.util.Queue;
 import java.util.Set;
 
-import net.strongdesign.stg.Marking;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGFile;
-import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.STGAdapterFactory.StateSystemAdapter;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.Pair;
@@ -86,6 +84,7 @@ public abstract class StateSystems {
 	 * @return
 	 * @throws StateSystemException
 	 */
+	@SuppressWarnings("rawtypes")
 	public static <State,Event> List<Event> inverseProjection (
 			StateSystem<State, Event> system, 
 			List<Event> trace,
@@ -99,24 +98,24 @@ public abstract class StateSystems {
 		
 		
 		//for every event of trace
-		for (Event event : trace) {
+		for (Event event : trace) { // no dummy event possible from an mpsat trace
 			
 			//if this event is possible add it to the trace update current state, i.e. perform it in system and proceed
 			if (system.getEvents(currentState).contains(event)) {
 				invProjection.add(event);
-				currentState = system.getNextStates(currentState, event).iterator().next();
+				currentState = system.getNextStates(currentState, event).iterator().next(); // it can be just one state for any deterministic system
 			}
 			
 			//otherwise, find shortest sequence of events fulfilling condition which enables event
 			else {
-				//using bfs for finding shortest path
+				//using BFS for finding shortest path
 				//queue elements are states and the events by which they were reached 
 				//enhanced with backward pointers for restoring the path
 				Queue<Pointer<Pair<State,Event>>> bfsQueue = new LinkedList<Pointer<Pair<State,Event>>>();
 				bfsQueue.add(Pointer.getPointer(Pair.getPair(currentState, (Event) null), null));
 				Set<State> seen = new HashSet<State>();
 				//if we reach a state by event it is stored within finalState
-				//finalState equaling null after the bfs loop indicates an error
+				//finalState equaling null after the BFS loop indicates an error
 				Pointer<Pair<State,Event>> finalState = null;
 				//IMPLEMENT more efficiently
 				bfs: while (! bfsQueue.isEmpty()) {
@@ -137,7 +136,7 @@ public abstract class StateSystems {
 					
 					//have we finished?
 					
-					//jupp, leave bfs
+					//jupp, leave BFS
 					if (events.contains(event)) {
 						finalState = Pointer.getPointer(
 										Pair.getPair(
@@ -147,7 +146,7 @@ public abstract class StateSystems {
 						break bfs;						
 					}
 					
-					//nope, procees with bfs
+					//nope, proceed with BFS
 					for (Event e : events) {
 						if (condition.fulfilled(e)) {
 							bfsQueue.add(	Pointer.getPointer(
@@ -161,7 +160,9 @@ public abstract class StateSystems {
 				
 				//no path found
 				if (finalState == null) {
-					STG stg = ((StateSystemAdapter<Marking, SignalEdge>)system).getSTG();
+					STG stg = null;
+					if (system instanceof StateSystemAdapter)
+						stg = ((StateSystemAdapter)system).getSTG();
 					System.out.println(condition);
 					
 					try {
@@ -196,7 +197,7 @@ public abstract class StateSystems {
 	}
 
 	/**
-	 * <b>Not implemendted yet</b>. Calculates all minimal inverse projections of the given trace and returns them as @link StateSystem.
+	 * <b>Not implemented yet</b>. Calculates all minimal inverse projections of the given trace and returns them as @link StateSystem.
 	 * For more details @see #inverseProjection(StateSystem, List, EventCondition). 
 	 * @param <State>
 	 * @param <Event>
