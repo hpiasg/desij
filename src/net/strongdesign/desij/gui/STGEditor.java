@@ -97,10 +97,6 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	
 	
 	
-	
-	
-	
-	
 	public final STGEditorAction ADD_ARC_PLACE_TRANSITION = new STGEditorAction("Add arc place -> transition", 0 , ',', 0, this);
 	public final STGEditorAction ADD_ARC_TRANSITION_PLACE = new STGEditorAction("Add arc transition -> place", 0 , '.', 0, this);
 	public final STGEditorAction ADD_PLACE = new STGEditorAction("Add place", KeyEvent.VK_P , null, 0, this);

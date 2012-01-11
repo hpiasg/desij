@@ -55,14 +55,6 @@ public class TransitionCell extends mxCell implements ApplyAttributes{
 //		else
 //			mxConstants.setBounds(getAttributes(), new Rectangle2D.Double(co.x,co.y,22,22));
 //		
-//		mxConstants.setAutoSize(getAttributes(), true);
-//		mxConstants.setOpaque(getAttributes(), true);
-//		mxConstants.setFont(getAttributes(), STGEditorFrame.STANDARD_FONT);
-//		mxConstants.setBorderColor(getAttributes(), Color.BLACK);
-//		mxConstants.setInset(getAttributes(), 2);
-//		
-//		
-//		
 //		switch (stg.getSignature(transition.getLabel().getSignal())) {
 //		case INPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INPUT); break;
 //		case OUTPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.OUTPUT); break;
