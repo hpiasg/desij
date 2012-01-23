@@ -23,14 +23,18 @@ import java.awt.Color;
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 
+import com.mxgraph.model.mxCell;
+import com.mxgraph.util.mxConstants;
+
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Transition;
 
-import org.jgraph.graph.DefaultGraphCell;
-import org.jgraph.graph.GraphConstants;
+//import org.jgraph.graph.DefaultGraphCell;
 
-public class TransitionCell extends DefaultGraphCell implements ApplyAttributes{
+//import org.jgraph.graph.GraphConstants;
+
+public class TransitionCell extends mxCell implements ApplyAttributes{
 	
 	/**
 	 * 
@@ -44,34 +48,31 @@ public class TransitionCell extends DefaultGraphCell implements ApplyAttributes{
 		this.transition = transition; 
 		
 		Point co = transition.getSTG().getCoordinates(transition);
-		if (co==null)
-			GraphConstants.setBounds(getAttributes(), new Rectangle2D.Double(Math.random()*50,Math.random()*50,22,22));
-		else
-			GraphConstants.setBounds(getAttributes(), new Rectangle2D.Double(co.x,co.y,22,22));
 		
-		GraphConstants.setAutoSize(getAttributes(), true);
-		GraphConstants.setOpaque(getAttributes(), true);
-		GraphConstants.setFont(getAttributes(), STGEditorFrame.STANDARD_FONT);
-		GraphConstants.setBorderColor(getAttributes(), Color.BLACK);
-		GraphConstants.setInset(getAttributes(), 2);
+//		SG:
+//		if (co==null)
+//			mxConstants.setBounds(getAttributes(), new Rectangle2D.Double(Math.random()*50,Math.random()*50,22,22));
+//		else
+//			mxConstants.setBounds(getAttributes(), new Rectangle2D.Double(co.x,co.y,22,22));
+//		
+//		switch (stg.getSignature(transition.getLabel().getSignal())) {
+//		case INPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INPUT); break;
+//		case OUTPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.OUTPUT); break;
+//		case DUMMY: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.DUMMY); break;
+//		case INTERNAL: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INTERNAL); break;		
+//		}
 		
-		
-		
-		switch (stg.getSignature(transition.getLabel().getSignal())) {
-		case INPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INPUT); break;
-		case OUTPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.OUTPUT); break;
-		case DUMMY: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.DUMMY); break;
-		case INTERNAL: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INTERNAL); break;		
-		}
 	}
 
-	public void applyAttributes() {		
-		Rectangle2D pos = GraphConstants.getBounds(getAttributes());
-		try {
-			transition.getSTG().setCoordinates(transition, new Point((int)pos.getX(), (int)pos.getY()));
-		} catch (STGException e) {
-			e.printStackTrace();
-		}
+	public void applyAttributes() {
+		
+//		SG:
+//		Rectangle2D pos = GraphConstants.getBounds(getAttributes());
+//		try {
+//			transition.getSTG().setCoordinates(transition, new Point((int)pos.getX(), (int)pos.getY()));
+//		} catch (STGException e) {
+//			e.printStackTrace();
+//		}
 		
 	}
 	

@@ -97,10 +97,6 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	
 	
 	
-	
-	
-	
-	
 	public final STGEditorAction ADD_ARC_PLACE_TRANSITION = new STGEditorAction("Add arc place -> transition", 0 , ',', 0, this);
 	public final STGEditorAction ADD_ARC_TRANSITION_PLACE = new STGEditorAction("Add arc transition -> place", 0 , '.', 0, this);
 	public final STGEditorAction ADD_PLACE = new STGEditorAction("Add place", KeyEvent.VK_P , null, 0, this);
@@ -127,14 +123,9 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	public final STGEditorSwitchingAction DUMMY_NAMES;
 
 	
-	
-	
-	
-	/**The currently selected noded for moving*/
+	/**The currently selected node for moving*/
 	protected Node activatedNode;
 	
-	
-    
 	/**The height of the drawing area*/
 	protected final int baseHeight = 5000;
 	
@@ -208,7 +199,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	/**
 	 * Creates a new editor with predefined coordinates
 	 * @param stg The stg to show
-	 * @param coordinates The coordinstes of the nodes, if null random coordinates are generated
+	 * @param coordinates The coordinates of the nodes, if null random coordinates are generated
 	 * @param frame The overall frame for all components
 	 */
 	public STGEditor(STG stg, STGEditorCoordinates coordinates, STGEditorFrame frame, STGEditorOptions options) {
@@ -1128,8 +1119,8 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 
   
     /**
-	 * Sets the zoom level, the actual zoom level will be the smalles predefined one
-	 * which is graeter than zoom
+	 * Sets the zoom level, the actual zoom level will be the smallest predefined one
+	 * which is greater than zoom
 	 * @param zoom The desired zoom level
 	 */
 	public void setZoom(double zoom) {
@@ -1230,10 +1221,4 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 		setZoom(--options.actZoom);
 	}
 
-    
-    
-    
-	
-    
-    
 }
