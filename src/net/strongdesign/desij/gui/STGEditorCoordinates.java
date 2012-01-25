@@ -20,6 +20,7 @@
 package net.strongdesign.desij.gui;
 
 import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 
@@ -38,6 +39,14 @@ public class STGEditorCoordinates extends HashMap<Node, Point> {
 				result.put(  (Node) node.clone(),   (Point)np.clone());
 		}
 		return result;
+	}
+	
+	public STGEditorCoordinates() {
+		super();
+	}
+	
+	public STGEditorCoordinates(STGGraphComponent component) {
+		
 	}
 	
 }

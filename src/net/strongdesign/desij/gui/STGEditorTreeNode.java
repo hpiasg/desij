@@ -19,39 +19,40 @@
 
 package net.strongdesign.desij.gui;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+
 import net.strongdesign.stg.STG;
 
+public class STGEditorTreeNode extends DefaultMutableTreeNode{
 
+	private static final long serialVersionUID = 971545642212448511L;
 
-public class STGEditorTreeNode {
-
-	
-    private STG stg;
-    private String label;	
+	private STG stg;
+	private STGEditorCoordinates coordinates;
+    private String label;
 	private boolean procreative;
 	private boolean isSTG;
-	
-	private STGEditorTreeNode parent;
-	
     
-	public STGEditorTreeNode(String label, STG stg, boolean procreative, STGEditorTreeNode parent) {
+	public STGEditorTreeNode(String label, STG stg, boolean procreative) {
+		super(label);
         this.stg = stg;
         this.procreative = procreative;
 		this.label = label;
-		this.parent = parent;
 		isSTG = true;
+		coordinates = new STGEditorCoordinates();
 	}
 	
-	public STGEditorTreeNode(String label, STGEditorTreeNode parent) {
+	public STGEditorTreeNode(String label) {
+		super(label);
 		this.stg = null;
-		this.procreative = true;		
+		this.procreative = true;
 		this.label = label;
-		this.parent = parent;
-		isSTG = false;		
+		isSTG = false;
+		coordinates = new STGEditorCoordinates();
 	}
 	
 	public STGEditorTreeNode getParent() {
-		return parent;
+		return (STGEditorTreeNode)parent;
 	}
 	
 	public boolean isSTG() {
@@ -86,6 +87,13 @@ public class STGEditorTreeNode {
 	public String toString() {
 		return label;
 	}
-    
+
+	public void setCoordinates(STGEditorCoordinates coordinates) {
+		this.coordinates = coordinates;
+	}
+
+	public STGEditorCoordinates getCoordinates() {
+		return coordinates;
+	}
     
 }

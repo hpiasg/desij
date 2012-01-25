@@ -46,7 +46,7 @@ public class STGEditorLayout {
 	 */
 	public static STGEditorCoordinates applySpringLayout(STGEditorCoordinates coordinates, int count) {
 		//Attraction of neighboured nodes
-		double naturalLength = 100;
+/*		double naturalLength = 100;
 		double springConstantAttraction = 0.05;
 		double springConstantRepulsion = 0.5;
 		
@@ -146,7 +146,8 @@ public class STGEditorLayout {
 			}
 		}
 		
-		return coordinates;
+		return coordinates;*/
+		return null;
 	}
 		
 	

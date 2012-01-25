@@ -25,11 +25,13 @@ import java.awt.geom.Rectangle2D;
 
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.Signature;
 
 //import org.jgraph.graph.DefaultGraphCell;
 //import org.jgraph.graph.GraphConstants;
 
 import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGeometry;
 
 public class PlaceCell extends mxCell implements ApplyAttributes {
 
@@ -37,12 +39,27 @@ public class PlaceCell extends mxCell implements ApplyAttributes {
 	 * 
 	 */
 	private static final long serialVersionUID = 5858658330662109563L;
-	private Place place;
+	
+	private int identifier;
+	
 	public PlaceCell(Place place) {		
 		super(place.getMarking()>0?place.getMarking():"");
-		this.place = place;
+		
+		setIdentifier(place.getIdentifier());
 		
 		Point co = place.getSTG().getCoordinates(place);
+		if (co==null) {
+			co = new Point(50,50);
+		}
+		
+		mxGeometry geometry = new mxGeometry(co.x, co.y, 25, 25);
+		
+		setId(null);
+		setConnectable(true);
+		setVertex(true);
+		setGeometry(geometry);
+		
+		setStyle("shape=ellipse;perimeter=ellipsePerimeter");
 		
 //		if (co==null)
 //			GraphConstants.setBounds(getAttributes(), new Rectangle2D.Double(Math.random()*50,Math.random()*50,22,22));
@@ -64,5 +81,14 @@ public class PlaceCell extends mxCell implements ApplyAttributes {
 //			e.printStackTrace();
 //		}
 	}
+
+	public void setIdentifier(int nodeId) {
+		this.identifier = nodeId;
+	}
+
+	public int getIdentifier() {
+		return identifier;
+	}
+
 
 }

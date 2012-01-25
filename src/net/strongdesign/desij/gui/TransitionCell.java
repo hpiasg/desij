@@ -19,15 +19,13 @@
 
 package net.strongdesign.desij.gui;
 
-import java.awt.Color;
 import java.awt.Point;
-import java.awt.geom.Rectangle2D;
 
 import com.mxgraph.model.mxCell;
-import com.mxgraph.util.mxConstants;
+import com.mxgraph.model.mxGeometry;
 
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 
 //import org.jgraph.graph.DefaultGraphCell;
@@ -36,31 +34,40 @@ import net.strongdesign.stg.Transition;
 
 public class TransitionCell extends mxCell implements ApplyAttributes{
 	
+	
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 3924546389856822747L;
-	private Transition transition;
+	private static final long serialVersionUID = 6514074588507586122L;
+
+	private int identifier;
 	
 	public TransitionCell(Transition transition, STG stg) {
-		super(transition.getLabel());
+		super(transition.getString(Transition.UNIQUE));
 		
-		this.transition = transition; 
+		setIdentifier(transition.getIdentifier()); 
 		
 		Point co = transition.getSTG().getCoordinates(transition);
+		if (co==null) {
+			co = new Point(50,50);
+		}
 		
-//		SG:
-//		if (co==null)
-//			mxConstants.setBounds(getAttributes(), new Rectangle2D.Double(Math.random()*50,Math.random()*50,22,22));
-//		else
-//			mxConstants.setBounds(getAttributes(), new Rectangle2D.Double(co.x,co.y,22,22));
-//		
-//		switch (stg.getSignature(transition.getLabel().getSignal())) {
-//		case INPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INPUT); break;
-//		case OUTPUT: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.OUTPUT); break;
-//		case DUMMY: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.DUMMY); break;
-//		case INTERNAL: GraphConstants.setGradientColor(getAttributes(), STGEditorFrame.INTERNAL); break;		
-//		}
+		mxGeometry geometry = new mxGeometry(co.x, co.y, 40, 20);
+		setId(null);
+		setConnectable(true);
+		setVertex(true);
+		setGeometry(geometry);
+		
+		int signalID=transition.getLabel().getSignal();
+		
+		if (stg.getSignature(signalID) == Signature.INPUT)
+			setStyle("fontColor=red");
+		if (stg.getSignature(signalID) == Signature.OUTPUT)
+			setStyle("fontColor=blue");
+		if (stg.getSignature(signalID) == Signature.INTERNAL)
+			setStyle("fontColor=green");
+		if (stg.getSignature(signalID) == Signature.ANY)
+			setStyle("fontColor=black;fillColor=yellow");
 		
 	}
 
@@ -75,7 +82,13 @@ public class TransitionCell extends mxCell implements ApplyAttributes{
 //		}
 		
 	}
-	
-	
+
+	public void setIdentifier(int nodeId) {
+		identifier = nodeId;
+	}
+
+	public int getIdentifier() {
+		return identifier;
+	}
 	
 }

@@ -41,7 +41,6 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
-import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
@@ -51,19 +50,13 @@ import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.traversal.CollectorFactory;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.util.FileSupport;
-import net.strongdesign.stg.Place;
-import net.strongdesign.stg.Transition;
-
-//import org.jgraph.JGraph;
-//import org.jgraph.graph.DefaultGraphModel;
-//import org.jgraph.graph.GraphModel;
 
 /**
  * This is the main class of the DesiJ GUI. It contains a graphical
  * representation of STGs and a navigation view for navigating between different
  * STGs.
  */
-public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
+public class STGEditorFrame extends JFrame implements ActionListener {
 	private static final long serialVersionUID = 7606945539229848668L;
 
 	public final STGEditorAction OPEN = new STGEditorAction("Open",
@@ -161,17 +154,12 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 		// graph = new mxGraph(model, cache);
 
 		graphComponent = new STGGraphComponent();
-		graphComponent.initSTG(stg);
 		
 		graphOutline = new mxGraphOutline(graphComponent);
 
-		// graphComponent.setAntiAlias(true);
 
-		// Build up the graph corresponding to the STG
-		// cache.init();
 
-		navigationView = new STGEditorNavigation(this);
-		navigationView.setModel(navigationView.createTestTree());
+		navigationView = new STGEditorNavigation(this, graphComponent);
 
 		// Put it all together
 		JSplitPane vert = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -191,6 +179,10 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 		menuBar = new STGEditorMenuBar(this);// , cache);
 
 		setJMenuBar(menuBar);
+		
+		STGEditorTreeNode node = navigationView.addSTGNode(stg, null, label, true);
+		navigationView.showNode(node);
+		
 	}
 
 	public void saveProject(String fileName) throws FileNotFoundException {
@@ -237,27 +229,34 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	}
 
 	public void updateSTG(STG stg) {
-		// editor.setSTG(stg, null);
+		//editor.setSTG(stg, null);
 	}
 
-	public void run() {
+/*	public void run() {
 
-	}
+	}*/
 
+	/*
 	public void setSTG(STGEditorTreeNode node) {
 
-		if (!node.isSTG())
-			return;
+		if (!node.isSTG()) return;
 
 		// model=new DefaultGraphModel();
 		// cache = new STGLayoutCache(node.getSTG(), model);
 		// graph.setGraphLayoutCache(cache);
 
 		// cache.init();
+		STGEditorCoordinates coordinates = node.getCoordinates();
+		if (coordinates==null) return;
+		
+		for (Node n: node.getSTG().getNodes()) {
+			
+		}
 
 		splitPane.validate();
 	}
-
+*/
+	
 	// /* //Former STG will be saved in STGEditorTreeNode
 	// if (editor != null)
 	// if (currentNode.isSTG())
@@ -377,15 +376,21 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	// }
 	//
 	public void initialPartition() throws STGException {
-		STGEditorTreeNode curNode = navigationView.getCurrentNode();
-		if (!curNode.isSTG())
-			return;
-		STG curSTG = curNode.getSTG();
-
-		STGEditorTreeNode newNode = new STGEditorTreeNode("Initial components",
-				navigationView.getCurrentNode());
-		navigationView.addNode(newNode, "Partition");
-
+		STGEditorTreeNode projectNode = navigationView.getProjectNode();
+		
+		if (!projectNode.isSTG()) return;
+		
+		STG curSTG = projectNode.getSTG();
+		projectNode.removeAllChildren();
+		
+		STGEditorTreeNode initComponents = new STGEditorTreeNode("Initial components");
+		
+		projectNode.add(initComponents);
+		
+		//navigationView.addNode(initComponents, "Partition");
+		
+		
+		
 		for (STG s : Partition.splitByPartition(curSTG,
 				Partition.getFinestPartition(curSTG, null))) {
 
@@ -393,14 +398,15 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 			for (Integer sig : s.collectUniqueCollectionFromTransitions(
 					ConditionFactory.getSignatureOfCondition(Signature.OUTPUT),
 					CollectorFactory.getSignalCollector()))
-				signalNames.append(sig.toString());
+				signalNames.append(" "+curSTG.getSignalName(sig));
 
 			STGEditorTreeNode nn = new STGEditorTreeNode(
-					signalNames.toString(), s, true, newNode);
-			navigationView.addNode(nn, signalNames.toString());
+					signalNames.toString(), s, true);
+			initComponents.add(nn);
+			//navigationView.addNode(nn, signalNames.toString());
 		}
 
-		navigationView.setCurrentNode(newNode);
+		navigationView.showNode(initComponents);
 	}
 
 	//
@@ -468,8 +474,8 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	// "Deleted: "+node.getString(Node.UNIQUE), false));
 	// repaint();
 	// }
-	//
-	//
+
+
 	public void exit() {
 		dispose();
 	}
@@ -478,8 +484,9 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setMultiSelectionEnabled(false);
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
-
-		fileChooser.showOpenDialog(this);
+		
+		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return; 
+		
 		label = fileChooser.getSelectedFile().getAbsolutePath();
 		String fileName = label;
 
@@ -493,7 +500,13 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 			}
 
 			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+			
 			STG stg = STGEditorFile.convertToSTG(file, true);
+			
+			// add new tree element
+			
+			STGEditorTreeNode node = navigationView.addSTGNode(stg, null, fileName, true);
+			navigationView.showNode(node);
 			
 			// STGEditorCoordinates coordinates =
 			// STGEditorFile.convertToCoordinates(file);
@@ -548,9 +561,8 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 			label = name;
 		}
 
-		FileSupport.saveToDisk(
-				STGFile.convertToG(navigationView.getCurrentNode().getSTG()),
-				label);
+		FileSupport.saveToDisk(STGFile.convertToG(navigationView.getCurrentNode().getSTG()), label);
+		
 	}
 
 	private void saveAs() throws IOException {

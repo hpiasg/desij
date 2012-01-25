@@ -19,6 +19,7 @@
 
 package net.strongdesign.desij.gui;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -28,7 +29,6 @@ import java.util.Map;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 
 import com.mxgraph.layout.mxCircleLayout;
@@ -56,6 +56,8 @@ public class STGGraphComponent extends mxGraphComponent {
 	private mxIGraphModel model;
 	private final mxGraph graph;
 	protected mxRubberband rubberband;
+	HashMap<mxCell, Node> cell2Node;
+	
 	
 	public boolean isVertexIgnored(Object vertex) {
 		return !graph.getModel().isVertex(vertex)
@@ -132,88 +134,116 @@ public class STGGraphComponent extends mxGraphComponent {
 			setVertexLocation(obj, x, y);
 		}
 	}
+	
+	
+	public void storeCoordinates(STGEditorCoordinates coordinates) {
+		
+		coordinates.clear();
+		for (Map.Entry<mxCell, Node> en: cell2Node.entrySet()) {
+			mxGeometry g = en.getKey().getGeometry();
+			coordinates.put(en.getValue(), new Point((int)g.getX(), (int)g.getY()));
+		}
+	}
+	
+	
+/**
+ * Initialises Graph component with given STG and coordinates  
+ * @param stg
+ * @param coordinates 
+ */
+	public STGEditorCoordinates initSTG(STG stg, STGEditorCoordinates coordinates) {
 
-	public void initSTG(STG stg) {
-
+		((mxGraphModel)graph.getModel()).clear();
+		
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
+		
 		try {
+			
+			
+			
 			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
-
+			cell2Node.clear();
+			
+			if (stg==null) return coordinates;
+			
 			for (Node node : stg.getNodes()) {
+				
 				mxCell cell = null;
 
 				if (node instanceof Place) {
-					cell = (mxCell) graph.insertVertex(parent, null,
-							((Place) node).getMarking(), 50, 50, 25, 25,
-							"shape=ellipse;perimeter=ellipsePerimeter");
+					
+					cell = new PlaceCell((Place)node);
+//					cell = (mxCell) graph.insertVertex(parent, null,
+//							((Place) node).getMarking(), 50, 50, 25, 25,
+//							"shape=ellipse;perimeter=ellipsePerimeter");
+					
+				} else if (node instanceof Transition) {
+					cell = new TransitionCell((Transition)node, stg);
+					
+//					int signalID = ((Transition) node).getLabel().getSignal();
+//					String style = "fontColor=black";
+//					if (stg.getSignature(signalID) == Signature.INPUT)
+//						style = "fontColor=red";
+//					if (stg.getSignature(signalID) == Signature.OUTPUT)
+//						style = "fontColor=blue";
+//					if (stg.getSignature(signalID) == Signature.INTERNAL)
+//						style = "fontColor=green";
+//					if (stg.getSignature(signalID) == Signature.ANY)
+//						style = "fontColor=black;fillColor=yellow";
+//
+//					cell = (mxCell) graph.insertVertex(parent, null,
+//							((Transition) node).getString(Transition.UNIQUE),
+//							50, 50, 40, 20, style);
+					
 				}
-
-				else if (node instanceof Transition) {
-					// cell = new TransitionCell((Transition)node, stg);
-					int signalID = ((Transition) node).getLabel().getSignal();
-					String style = "fontColor=black";
-					if (stg.getSignature(signalID) == Signature.INPUT)
-						style = "fontColor=red";
-					if (stg.getSignature(signalID) == Signature.OUTPUT)
-						style = "fontColor=blue";
-					if (stg.getSignature(signalID) == Signature.INTERNAL)
-						style = "fontColor=green";
-					if (stg.getSignature(signalID) == Signature.ANY)
-						style = "fontColor=black;fillColor=yellow";
-
-					cell = (mxCell) graph.insertVertex(parent, null,
-							((Transition) node).getString(Transition.UNIQUE),
-							50, 50, 40, 20, style);
-				}
-
+				
+				cell2Node.put(cell, node);
 				nc.put(node, cell);
-				graph.addCell(cell);
+				graph.addCell(cell, parent);
 
 			}
 
 			for (Node node : stg.getNodes()) {
 				mxCell source = nc.get(node);
-
+				if (coordinates!=null) {
+					Point p = coordinates.get(node);
+					if (p!=null) {
+						source.getGeometry().setX(p.x);
+						source.getGeometry().setY(p.y);
+					}
+				}
 				for (Node child : node.getChildren()) {
 					mxCell target = nc.get(child);
-
 					graph.insertEdge(parent, null, null, source, target);
-
-					// source.add(new DefaultPort());
-					// target.add(new DefaultPort());
-					// DefaultEdge edge = new DefaultEdge();
-					//
-					// edge.setSource(source.getChildAt(0));
-					// edge.setTarget(target.getChildAt(0));
-
-					// GraphConstants.setFont(edge.getAttributes(),
-					// STGEditorFrame.STANDARD_FONT);
-					// GraphConstants.setLabelPosition(edge.getAttributes(), new
-					// Point2D.Double(GraphConstants.PERMILLE/2, 10));
-
-					// int v = node.getChildValue(child);
-					// if (v>1)
-					// edge.setUserObject(v);
-
-					// int arrow = GraphConstants.ARROW_TECHNICAL;
-					// GraphConstants.setLineEnd(edge.getAttributes(), arrow);
-					// GraphConstants.setEndFill(edge.getAttributes(), true);
-
-					// insert(edge);
 				}
 			}
-
-			mxGraphLayout cl = new mxOrganicLayout(graph);
-			cl.execute(parent);
-
-			//
-			shiftModel();
-
+			
+			// do default layout, if coordinates are not given
+			if (coordinates==null||coordinates.size()==0) {
+				mxGraphLayout cl = new mxOrganicLayout(graph);
+				cl.execute(parent);
+				shiftModel();
+				
+				coordinates = new STGEditorCoordinates();
+				// store new coordinates for the STG
+				for (Object ob: graph.getChildCells(parent, true, false)) {
+					if (ob instanceof mxCell) {
+						if (ob instanceof TransitionCell || ob instanceof PlaceCell) {
+							double dx = ((mxCell)ob).getGeometry().getX();
+							double dy = ((mxCell)ob).getGeometry().getY();
+							Node nd = cell2Node.get(ob);
+							coordinates.put(nd, new Point((int)dx, (int)dy));
+						}
+					}
+				}
+				
+			}
 		} finally {
 			graph.getModel().endUpdate();
 		}
-
+		
+		return coordinates;
 	}
 
 	protected Map<String, Object> setupStyles(mxGraph graph) {
@@ -299,7 +329,7 @@ public class STGGraphComponent extends mxGraphComponent {
 		this.setSwimlaneSelectionEnabled(true);
 		this.setConnectable(false);
 		rubberband = new mxRubberband(this);
-		
+		cell2Node = new HashMap <mxCell, Node>();
 		
 	}
 	

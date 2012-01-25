@@ -19,15 +19,17 @@
 
 package net.strongdesign.desij.gui;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
 
+import javax.swing.JPopupMenu;
 import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreePath;
 
 import net.strongdesign.stg.STG;
 
@@ -47,11 +49,9 @@ import net.strongdesign.stg.STG;
 //import com.jgraph.layout.JGraphFacade;
 //import com.jgraph.layout.tree.JGraphTreeLayout;
 
-import com.mxgraph.model.mxGraphModel;
-import com.mxgraph.swing.mxGraphComponent;
-import com.mxgraph.view.mxGraph;
 
-public class STGEditorNavigation extends JTree implements TreeSelectionListener {
+public class STGEditorNavigation extends JTree implements
+		TreeSelectionListener, ActionListener {
 
 	/**
 	 * 
@@ -62,83 +62,130 @@ public class STGEditorNavigation extends JTree implements TreeSelectionListener 
 	// private JGraphFacade facade;
 
 	private STGEditorFrame frame;
+	private STGGraphComponent graphComponent;
 	private STGEditorTreeNode root;
-	private STGEditorTreeNode currentNode;
 	
-	public DefaultTreeModel createTestTree() {
+	STGEditorTreeNode currentNode;//?
+	STGEditorTreeNode oldNode; // node remembered as the last node active, to store coordinates
 
-		// add tree nodes test
-		DefaultMutableTreeNode top = new DefaultMutableTreeNode();
-		DefaultMutableTreeNode category = null;
-		DefaultMutableTreeNode book = null;
 
-		category = new DefaultMutableTreeNode("Books for Java Programmers");
-		top.add(category);
-
-		// original Tutorial
-		book = new DefaultMutableTreeNode(
-				"The Java Tutorial: A Short Course on the Basics");
-		category.add(book);
-
-		// Tutorial Continued
-		book = new DefaultMutableTreeNode(
-				"The Java Tutorial Continued: The Rest of the JDK");
-		category.add(book);
-
-		// Swing Tutorial
-		book = new DefaultMutableTreeNode(
-				"The Swing Tutorial: A Guide to Constructing GUIs");
-		category.add(book);
-
-		// ...add more books for programmers...
-
-		category = new DefaultMutableTreeNode("Books for Java Implementers");
-		top.add(category);
-
-		// VM
-		book = new DefaultMutableTreeNode(
-				"The Java Virtual Machine Specification");
-		category.add(book);
-		// Language Spec
-		book = new DefaultMutableTreeNode("The Java Language Specification");
-		category.add(book);
-
-		DefaultTreeModel dtm = new DefaultTreeModel(top);
-		return dtm;
+	public STGEditorTreeNode getOldNode() {
+		return oldNode;
 	}
-	
-	// private Map<STGEditorTreeNode, DefaultGraphCell> cells;
 
-	public STGEditorNavigation(STGEditorFrame frame) {
 
-		this.frame = frame;
-
-		// cells = new HashMap<STGEditorTreeNode, DefaultGraphCell>();
-//		root = new STGEditorTreeNode("Start", rootSTG, true, null);
-//		currentNode = root;
-
-		// model = new mxGraphModel();
-		// cache = new GraphLayoutCache(model, new DefaultCellViewFactory());
-		//
-		// setModel(model);
-		// setGraphLayoutCache(cache);
-		// facade = new JGraphFacade(this, getRoots());
-		//
-//		frame.setNav(this);
-//		addNode(root, "Start");
-//		addTreeSelectionListener(this);
-
-		// addGraphSelectionListener(this);
-		// getSelectionModel().setSelectionMode(GraphSelectionModel.SINGLE_GRAPH_SELECTION);
-
+	public void setOldNode(STGEditorTreeNode oldNode) {
+		this.oldNode = oldNode;
 	}
+
 
 	public STGEditorTreeNode getCurrentNode() {
 		return currentNode;
 	}
 
+
 	public void setCurrentNode(STGEditorTreeNode currentNode) {
 		this.currentNode = currentNode;
+	}
+
+/*
+	public DefaultTreeModel createTestTree() {
+
+		// add tree nodes test
+		root = new STGEditorTreeNode("root node");
+		
+		DefaultMutableTreeNode category = null;
+		DefaultMutableTreeNode book = null;
+
+		DefaultTreeModel dtm = new DefaultTreeModel(root);
+		
+		category = new STGEditorTreeNode("Books for Java Programmers");
+		root.add(category);
+
+		// original Tutorial
+		book = new STGEditorTreeNode(
+				"The Java Tutorial: A Short Course on the Basics");
+		category.add(book);
+
+		// Tutorial Continued
+		book = new STGEditorTreeNode(
+				"The Java Tutorial Continued: The Rest of the JDK");
+		category.add(book);
+
+		// Swing Tutorial
+		book = new STGEditorTreeNode(
+				"The Swing Tutorial: A Guide to Constructing GUIs");
+		category.add(book);
+
+		// ...add more books for programmers...
+
+		category = new STGEditorTreeNode("Books for Java Implementers");
+		root.add(category);
+
+		// VM
+		book = new STGEditorTreeNode(
+				"The Java Virtual Machine Specification");
+		category.add(book);
+		
+		// Language Spec
+		book = new STGEditorTreeNode("The Java Language Specification");
+		category.add(book);
+		
+		return dtm;
+	}*/
+
+
+	public STGEditorNavigation(STGEditorFrame frame, STGGraphComponent graphComponent) {
+		this.graphComponent = graphComponent;
+		this.frame = frame;
+		this.setRootVisible(false);
+		this.setShowsRootHandles(true);
+		
+		root = new STGEditorTreeNode("root node");
+		setModel(new DefaultTreeModel(root));
+		
+		addTreeSelectionListener(this);
+	}
+	
+	public STGEditorTreeNode getRootNode() {
+		return root;
+	}
+
+	public STGEditorTreeNode getSelectedNode() {
+		return (STGEditorTreeNode)getLastSelectedPathComponent();
+	}
+	
+	/**
+	 * returns STGEditorNode of a selected project
+	 * @return
+	 */
+	public STGEditorTreeNode getProjectNode() {
+		STGEditorTreeNode sel = getSelectedNode();
+		STGEditorTreeNode par = sel.getParent();
+		// every node should lead to root, then it is a project node (?)
+		while (par!=root) {
+			sel=par;
+			par = sel.getParent();
+		}
+		return sel;
+	}
+
+	public STGEditorTreeNode addSTGNode(STG stg, STGEditorCoordinates coordinates,
+			String label, boolean isRoot) {
+		STGEditorTreeNode parent = root;
+		
+		if (!isRoot) parent = getSelectedNode();
+		
+		STGEditorTreeNode node = new STGEditorTreeNode(label, stg, false);
+		parent.add(node);
+		
+		
+	//	coordinates = graphComponent.initSTG(stg, coordinates);
+		
+		updateUI();
+		
+		
+		return node;
 	}
 
 	public void addNode(STGEditorTreeNode node, String label) {
@@ -200,52 +247,56 @@ public class STGEditorNavigation extends JTree implements TreeSelectionListener 
 	@Override
 	public void valueChanged(TreeSelectionEvent e) {
 		try {
-			STGEditorTreeNode node = (STGEditorTreeNode) e.getPath()
-					.getLastPathComponent();
-			frame.setSTG(node);
+			if (e.getPath().getLastPathComponent() instanceof STGEditorTreeNode) {
+				STGEditorTreeNode node = (STGEditorTreeNode) e.getPath().getLastPathComponent();
+				if (node==oldNode) return;
+//				frame.setSTG(node);
+				frame.setTitle(node.getLabel());
+				
+				if (oldNode!=null) {
+					graphComponent.storeCoordinates(oldNode.getCoordinates());
+				}
+				
+				graphComponent.initSTG(node.getSTG(), node.getCoordinates());
+				oldNode = node;
+			}
 		} catch (Exception ee) {
 			ee.printStackTrace();
 		}
 
 	}
 
+	public void selectNode(STGEditorTreeNode node) {
+		setSelectionPath(new TreePath(node.getPath()));
+	}
+
+	public void showNode(STGEditorTreeNode node) {
+		setSelectionPath(new TreePath(node.getPath()));
+		expandPath(new TreePath(node.getPath()));
+		frame.setTitle(node.getLabel());
+	}
+
+	public void mousePressed(MouseEvent e) {
+		if (e.getButton() == MouseEvent.BUTTON3) {
+			JPopupMenu pop = new STGEditorNavigationPopUp(this);
+			pop.show(e.getComponent(), e.getX(), e.getY());
+			// selectedNode = (DefaultMutableTreeNode)
+			getClosestPathForLocation(e.getX(), e.getY())
+					.getLastPathComponent();
+		}
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		String cmd = e.getActionCommand();
+
+		if (cmd.equals("Delete selected nodes"))
+			deleteSelectedNodes();
+	}
+
+	public void deleteSelectedNodes() {
+		for (TreePath path : getSelectionPaths()) {
+			((DefaultTreeModel)getModel()).removeNodeFromParent(
+					(DefaultMutableTreeNode) path.getLastPathComponent());
+		}
+	}
 }
-
-// public void selectNode (STGEditorTreeNode node) {
-// tree.setSelectionPath(new TreePath(node.getPath()));
-// }
-//
-//
-// public DefaultTreeModel getModel() {
-// return model;
-// }
-//
-// public void showNode(STGEditorTreeNode node) {
-// tree.setSelectionPath(new TreePath( node.getPath()));
-// tree.expandPath(new TreePath( node.getPath()));
-// }
-//
-// public void mousePressed(MouseEvent e) {
-// if (e.getButton() == MouseEvent.BUTTON3) {
-// JPopupMenu pop = new STGEditorNavigationPopUp(this);
-// pop.show(e.getComponent(), e.getX(), e.getY());
-// //selectedNode = (DefaultMutableTreeNode)
-// tree.getClosestPathForLocation(e.getX(), e.getY()).getLastPathComponent();
-// }
-// }
-
-//
-// public void actionPerformed(ActionEvent e) {
-// String cmd = e.getActionCommand();
-//
-// if (cmd.equals("Delete selected nodes"))
-// deleteSelectedNodes();
-// }
-//
-// public void deleteSelectedNodes() {
-// for (TreePath path : tree.getSelectionPaths()) {
-// model.removeNodeFromParent((DefaultMutableTreeNode)
-// path.getLastPathComponent());
-// }
-// }
-// }
