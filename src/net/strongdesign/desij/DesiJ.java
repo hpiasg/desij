@@ -180,7 +180,7 @@ public class DesiJ {
 				System.out.println(
 						"DesiJ - An STG Decomposer dedicated to the Synthesis of SI Circuits\n" + 
 						"(c) 2004-2007 by Mark Schaefer, University of Augsburg, mark.schaefer@informatik.uni-augsburg.de\n"+
-						"(c) 2008-2010 by Dominic Wist, Hasso-Plattner-Institut, dominic.wist@hpi.uni-potsdam.de\n"+
+						"(c) 2008-2012 by Dominic Wist, Hasso-Plattner-Institut, dominic.wist@hpi.uni-potsdam.de\n"+
 				"DesiJ comes as is with no warranty. Use at your own risk.");
 
 			Date start = new Date();
@@ -203,6 +203,8 @@ public class DesiJ {
 				show();
 			else if (CLW.instance.OPERATION.getValue().equals("killdummies")) 
 				killdummies();
+			else if (CLW.instance.OPERATION.getValue().equals("reduceint"))
+				reduceinternals();
 			else if (CLW.instance.OPERATION.getValue().equals("info")) 
 				info(0);
 			else if (CLW.instance.OPERATION.getValue().equals("info1"))  
@@ -344,6 +346,22 @@ public class DesiJ {
 			FileSupport.saveToDisk(STGFile.convertToG(stg), name);
 
 
+		}
+	}
+	
+	private static void reduceinternals() throws ParseException, IOException, STGException {
+		for (String fileName : CLW.instance.getOtherParameters()) {
+			STG stg = loadSTG(fileName, true);
+			
+			int n = STGUtil.removeInternalSignals(stg);
+			
+			if (n == -1) {
+				throw new DesiJException("There was an error during the LP removal procedure.");
+			}
+			
+			System.out.println(fileName + ": " + n + " internal signals removed");
+			String name = CLW.instance.OUTFILE.getValue().equals("") ? 	fileName : CLW.instance.OUTFILE.getValue();
+			FileSupport.saveToDisk(STGFile.convertToG(stg), name);
 		}
 	}
 

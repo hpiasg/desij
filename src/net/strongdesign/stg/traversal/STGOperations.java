@@ -66,7 +66,7 @@ import net.strongdesign.stg.Transition;
  *  
  * 
  * 
- * @author Mark Sch�fer
+ * @author Mark Schaefer
  *
 */
 public abstract class STGOperations {
@@ -76,23 +76,23 @@ public abstract class STGOperations {
         for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES))
             for (Node child :place.getChildren())
                 if (place.getChildValue(child) != child.getParentValue(place)   )
-                    throw new STGException("MÖÖP!");
+                    throw new STGException("MEEEEP!");
 
         for (Transition place : stg.getTransitions(ConditionFactory.ALL_TRANSITIONS))
             for (Node child :place.getChildren())
                 if (place.getChildValue(child) != child.getParentValue(place)   )
-                    throw new STGException("M��P!");
+                    throw new STGException("MEEEEP!");
             
                 
         for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES))
             for (Node child :place.getParents())
                 if (place.getParentValue(child) != child.getChildValue(place)   )
-                    throw new STGException("M��P!");
+                    throw new STGException("MEEEEP!");
 
         for (Transition place : stg.getTransitions(ConditionFactory.ALL_TRANSITIONS))
             for (Node child :place.getParents())
                 if (place.getParentValue(child) != child.getChildValue(place)   )
-                    throw new STGException("M��P!");
+                    throw new STGException("MEEEEP!");
             
             
     }
@@ -144,6 +144,7 @@ public abstract class STGOperations {
 	}
 		
 
+	@SuppressWarnings("unchecked")
 	public static <T, R> Set<R> collectUniqueCollectionFromCollection(
 			Collection<T> collection, 
 			Condition<? super T> condition, 
@@ -154,7 +155,7 @@ public abstract class STGOperations {
 		
 		for (T actElement : subList) {
 		    R o = collector.operation(actElement);
-		    if (o instanceof Collection ) 
+		    if (o instanceof Collection<?> ) 
 		        result.addAll((Collection<? extends R>)o);
 		    else
 		        result.add(o);

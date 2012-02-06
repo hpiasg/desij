@@ -90,6 +90,7 @@ public class CLW extends CommandLineWrapper {
 				"If an STG contains dummies, they are automatically contracted." +
 			"\n\t- check <specification> <component>+: same as for bisim, but only check if a STG-bisimulation exists. " +
 			"\n\t- killdummies: Contracts all dummy transitions." +
+			"\n\t- reduceint: Removes overencoding, ie. if an STG satisfies CSC, then internal signals will be removed which are unnecessary to preserve CSC." +
 			"\n\t- info:" +
 			"\n\t- info1:" +
 			"\n\t- info2:" +
@@ -101,7 +102,7 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- create: Create a predefined STG model. When using this the model parameter is mandantory." +	
 			"\n\t- show: Converts the STG to a ps File and automatically displays it.")
 	public  CommandLineParameter OPERATION = 
-		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show", "decompose", false);
+		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show", "decompose", false);
 	
 	// *******************************************************************
 	
@@ -113,7 +114,7 @@ public class CLW extends CommandLineWrapper {
 	
 	@Help("Opens a command line for stg editing")
 	public  CommandLineOption CL = 
-		new CommandLineOption('C', "commandline", false );
+		new CommandLineOption('e', "commandline", false );
 
 	// *******************************************************************
 
@@ -462,16 +463,24 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineParameter MODEL = 
 		new CommandLineParameter("model", "", "", false);
 	
-	@Help("When creating models out of handshake components, the internal handshakes are hidden, i.e. labelled with lambda.")
+	@Help("When creating models out of handshake components, the internal handshakes are hidden, i.e. signature changed to internal.")
 	public CommandLineOption HIDE_INTERNALHANDSHAKES = 
 		new CommandLineOption('H', "hide-internal-handshakes", true);
+	
+	@Help("When creating models out of handshake components, the internal handshakes are dummified, i.e. labelled with lambda.")
+	public CommandLineOption DUMMIFY_INTERNALHANDSHAKES = 
+		new CommandLineOption('D', "dummify-internal-handshakes", false);
 	
 	@Help("When creating models out of handshake components, the components are generated with CSC.")
 	public CommandLineOption HANDSHAKE_COMPONENT_CSC = 
 		new CommandLineOption('c', "handshake-component-csc", false);
 	
+	@Help("When reducing a component satisfying CSC, the CSC property should be preserved (after contraction of all dummies).")
+	public CommandLineOption CSC_PRESERVE = 
+		new CommandLineOption('C', "preserve-csc", false);
+	
 	@Help("When using partitioning strategies, the solutions for linear programming problems (LP)" + 
-			" are not restricted to integers(ILP).")
+			" are not restricted to integers (ILP).")
 	public CommandLineOption NOILP = 
 		new CommandLineOption('Q', "noilp", true);
 	
