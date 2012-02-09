@@ -502,8 +502,10 @@ public abstract class STGUtil {
 		
 		int returnValue = unnecessaryInternals.size();
 		
-		// initialize CSCChecking
-		CSCCheckerLP lpCSCCheck = CSCCheckerLP.getCSCCheckerLP(stg);
+		// initialize CSCChecking --> pick the right strategy here
+//		ICSCCheckLPStrategy lpCSCCheck = CSCCheckerLPSolvePreCaching.
+//				getCSCCheckerLPSolvePreCaching(stg); // singleton: uses the lpsolve java wrapper directly
+		ICSCCheckLPStrategy lpCSCCheck = new CSCCheckerLPSimple(stg); // inefficient, but more transparent implementation
 		
 		try {
 			while (!lpCSCCheck.execute(necessarySignals)) { // while CSC is not satisfied

@@ -37,9 +37,9 @@ import lpsolve.LpSolveException;
  * @author Dominic Wist
  *
  */
-public class CSCCheckerLP {
+public class CSCCheckerLPSolvePreCaching implements ICSCCheckLPStrategy {
 	
-	private static CSCCheckerLP instance; // singleton implementation
+	private static CSCCheckerLPSolvePreCaching instance; // singleton implementation
 	private static STG stg;
 		
 	private LpSolve lp;
@@ -65,8 +65,8 @@ public class CSCCheckerLP {
 	// last result from LP solving
 	private double[] lastResult;
 		
-	private CSCCheckerLP(STG stg) {
-		CSCCheckerLP.stg = stg;
+	private CSCCheckerLPSolvePreCaching(STG stg) {
+		CSCCheckerLPSolvePreCaching.stg = stg;
 		
 		int j = 0; // a variable identifier
 		// characterization of one row
@@ -116,7 +116,7 @@ public class CSCCheckerLP {
 		
 		// 2. construct the rows for the cache:
 		
-		cachedRowsForReachability = new LinkedList<CSCCheckerLP.CachedRow>();
+		cachedRowsForReachability = new LinkedList<CSCCheckerLPSolvePreCaching.CachedRow>();
 		Stack<Integer> rowUndoStack = new Stack<Integer>(); // saves indices of the changed values in row
 		
 		// M1 = MN + I v1 --> -MN = -M1 + I v1 
@@ -165,7 +165,7 @@ public class CSCCheckerLP {
 		// so nothing to do here for me
 				
 		// pre-calculate all potentially necessary constraints for checking encoding equality:
-		cachedRowsForEncodingEquality = new Hashtable<Integer, CSCCheckerLP.CachedRow>(stg.getSignals().size());
+		cachedRowsForEncodingEquality = new Hashtable<Integer, CSCCheckerLPSolvePreCaching.CachedRow>(stg.getSignals().size());
 		for (int s : stg.getSignals()) {
 			if (stg.getSignature(s) != Signature.DUMMY) {
 				// build C_s v1 - C_s v2 = 0
@@ -199,7 +199,7 @@ public class CSCCheckerLP {
 		// 1. testing t for activation under the reachable marking M1, i.e. M1[t>
 		cachedRowsForNonInputActivation = new Hashtable<Transition, Set<CachedRow>>();
 		for (Transition t : stg.getTransitions(ConditionFactory.LOCAL_TRANSITIONS)) {
-			Set<CachedRow> enoughTokens = new HashSet<CSCCheckerLP.CachedRow>();
+			Set<CachedRow> enoughTokens = new HashSet<CSCCheckerLPSolvePreCaching.CachedRow>();
 			for (Node place : t.getParents()) {
 				int changedRowIndex = variable2Int.get("M1" + place.getIdentifier()) - 1; // for undoing
 				row[changedRowIndex] = 1;
@@ -218,7 +218,7 @@ public class CSCCheckerLP {
 		// --> we only check the sufficient condition whether the sum of tokens on *t
 		// is smaller than the sum of edge weights from *t to t
 		// --> this condition is also necessary for safe nets
-		cachedRowsForNonInputDeActivation = new Hashtable<Transition, CSCCheckerLP.CachedRow>();
+		cachedRowsForNonInputDeActivation = new Hashtable<Transition, CSCCheckerLPSolvePreCaching.CachedRow>();
 		for (Transition t : stg.getTransitions(ConditionFactory.LOCAL_TRANSITIONS)) {
 			int sumOfEdgeWeights = 0;
 			for (Node place : t.getParents()) {
@@ -261,12 +261,16 @@ public class CSCCheckerLP {
 		 
 	}
 	
-	public static CSCCheckerLP getCSCCheckerLP(STG stg) {
+	/** Singleton implementation
+	 * @param stg - the STG subject for CSC check
+	 * @return
+	 */
+	public static CSCCheckerLPSolvePreCaching getCSCCheckerLPSolvePreCaching(STG stg) {
 		
-		if (CSCCheckerLP.instance == null || CSCCheckerLP.stg != stg)
-			CSCCheckerLP.instance = new CSCCheckerLP(stg);
+		if (CSCCheckerLPSolvePreCaching.instance == null || CSCCheckerLPSolvePreCaching.stg != stg)
+			CSCCheckerLPSolvePreCaching.instance = new CSCCheckerLPSolvePreCaching(stg);
 		
-		return CSCCheckerLP.instance;
+		return CSCCheckerLPSolvePreCaching.instance;
 	}
 	
 	public boolean execute(Set<Integer> neededSignals) throws LpSolveException {
@@ -278,10 +282,10 @@ public class CSCCheckerLP {
 		// check CSC for each local signal
 		for (int sig : locals) {
 			List<Transition> sigTransitions = stg.getTransitions(ConditionFactory.getSignalOfCondition(sig));
-			for (Transition t1 : sigTransitions)
-				for (Transition t2 : sigTransitions) 
-					if (solveLP(t1,t2,neededSignals))
-						return false; // CSC may not be satisfied
+			for (Transition t1 : sigTransitions) {
+				if (solveLP(t1,sigTransitions,neededSignals))
+					return false; // CSC may not be satisfied
+			}
 		}
 		
 		return true; // CSC is satisfied, since all LP problems were not solvable
@@ -322,7 +326,7 @@ public class CSCCheckerLP {
 		return result;
 	}
 
-	private boolean solveLP(Transition t1, Transition t2,
+	private boolean solveLP(Transition t1, List<Transition> transHavingSignalOft1,
 			Set<Integer> projectedSignals) throws LpSolveException {
 		int ret = 0; // for error tracking during lp solving
 			
@@ -354,10 +358,12 @@ public class CSCCheckerLP {
 						constraint.comparison, constraint.constantValue);
 			}
 			
-			// not(M2[t2>)
-			CachedRow constraint = cachedRowsForNonInputDeActivation.get(t2);
-			lp.addConstraintex(Ncol, constraint.row, constraint.colNo, 
-					constraint.comparison, constraint.constantValue);
+			// not(M2[t2>), for all transition t2 where l(t2) = l(t1)
+			for (Transition t2 : transHavingSignalOft1) {
+				CachedRow constraint = cachedRowsForNonInputDeActivation.get(t2);
+				lp.addConstraintex(Ncol, constraint.row, constraint.colNo, 
+						constraint.comparison, constraint.constantValue);
+			}
 			
 			lp.setAddRowmode(false); // finished: adding the constraints
 			
