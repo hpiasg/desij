@@ -21,10 +21,12 @@ package net.strongdesign.desij.gui;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
@@ -52,6 +54,11 @@ import com.mxgraph.view.mxStylesheet;
 
 public class STGGraphComponent extends mxGraphComponent {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7755698755334362626L;
+	
 	/** The current graph, representing the current STG. */
 	private mxIGraphModel model;
 	private final mxGraph graph;
@@ -145,13 +152,30 @@ public class STGGraphComponent extends mxGraphComponent {
 		}
 	}
 	
+	boolean isShorthandedPlace(Place node, Node []frto) {
+				
+		if (!(node instanceof Place)) return false;
+		if (((Place)node).getMarking()!=0) return false;
+		Collection<Node> ch= node.getChildren();
+		Collection<Node> pa= node.getParents();
+		if (ch.size()!=1||pa.size()!=1) return false;
+		Node a=(Node)pa.toArray()[0];
+		Node b=(Node)ch.toArray()[0];
+		if (a==b) return false;
+		if (frto!=null) {
+			frto[0]=a;
+			frto[1]=b;
+		}
+		return true;
+	}
+	
 	
 /**
  * Initialises Graph component with given STG and coordinates  
  * @param stg
  * @param coordinates 
  */
-	public STGEditorCoordinates initSTG(STG stg, STGEditorCoordinates coordinates) {
+	public STGEditorCoordinates initSTG(STG stg, STGEditorCoordinates coordinates, boolean isShorthand) {
 
 		((mxGraphModel)graph.getModel()).clear();
 		
@@ -159,9 +183,6 @@ public class STGGraphComponent extends mxGraphComponent {
 		graph.getModel().beginUpdate();
 		
 		try {
-			
-			
-			
 			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
 			cell2Node.clear();
 			
@@ -173,12 +194,15 @@ public class STGGraphComponent extends mxGraphComponent {
 
 				if (node instanceof Place) {
 					
+					if (isShorthand&&isShorthandedPlace((Place)node, null)) continue;
+					
 					cell = new PlaceCell((Place)node);
 //					cell = (mxCell) graph.insertVertex(parent, null,
 //							((Place) node).getMarking(), 50, 50, 25, 25,
 //							"shape=ellipse;perimeter=ellipsePerimeter");
 					
 				} else if (node instanceof Transition) {
+					// decide whether to add this cell
 					cell = new TransitionCell((Transition)node, stg);
 					
 //					int signalID = ((Transition) node).getLabel().getSignal();
@@ -206,16 +230,58 @@ public class STGGraphComponent extends mxGraphComponent {
 
 			for (Node node : stg.getNodes()) {
 				mxCell source = nc.get(node);
+				if (source==null) continue;
+				
 				if (coordinates!=null) {
 					Point p = coordinates.get(node);
 					if (p!=null) {
 						source.getGeometry().setX(p.x);
 						source.getGeometry().setY(p.y);
+					} else {
+						// if no coordinate is given, find the average from its neighbours
+						int cnt=0;
+						int px=0;
+						int py=0;
+						for (Node n : node.getChildren()) {
+							Point p2 = coordinates.get(n);
+							if (p2!=null) {
+								cnt++;
+								px+=p2.x;
+								py+=p2.y;
+							}
+						}
+						
+						for (Node n : node.getParents()) {
+							Point p2 = coordinates.get(n);
+							if (p2!=null) {
+								cnt++;
+								px+=p2.x;
+								py+=p2.y;
+							}
+						}
+						
+						if (cnt>1) {
+							source.getGeometry().setX((double)px/cnt);
+							source.getGeometry().setY((double)py/cnt);
+						}
 					}
 				}
+				
 				for (Node child : node.getChildren()) {
+					if (child instanceof Place) {
+						Node []frto=new Node[2];
+						
+						if (isShorthand) {
+							if (isShorthandedPlace((Place)child, frto)) {
+								mxCell target = nc.get(frto[1]);
+								graph.insertEdge(parent, null, null, source, target);
+							}
+						}
+					}
+					
 					mxCell target = nc.get(child);
-					graph.insertEdge(parent, null, null, source, target);
+					if (source!=null&&target!=null)
+						graph.insertEdge(parent, null, null, source, target);
 				}
 			}
 			
@@ -239,6 +305,9 @@ public class STGGraphComponent extends mxGraphComponent {
 				}
 				
 			}
+			
+			
+			
 		} finally {
 			graph.getModel().endUpdate();
 		}
@@ -274,10 +343,6 @@ public class STGGraphComponent extends mxGraphComponent {
 
 		return style;
 	}
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7755698755334362626L;
 
 	public void setLayout(int type) {
 
@@ -301,6 +366,7 @@ public class STGGraphComponent extends mxGraphComponent {
 				gl = new mxOrganicLayout(graph);
 
 			gl.execute(parent);
+			shiftModel();
 		} finally {
 			graph.getModel().endUpdate();
 		}

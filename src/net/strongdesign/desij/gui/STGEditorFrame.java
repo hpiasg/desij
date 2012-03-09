@@ -25,6 +25,8 @@ import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,6 +35,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.zip.ZipOutputStream;
 
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -58,7 +61,7 @@ import net.strongdesign.util.FileSupport;
  * representation of STGs and a navigation view for navigating between different
  * STGs.
  */
-public class STGEditorFrame extends JFrame implements ActionListener {
+public class STGEditorFrame extends JFrame implements ActionListener, ItemListener {
 	private static final long serialVersionUID = 7606945539229848668L;
 
 	public final STGEditorAction OPEN = new STGEditorAction("Open",
@@ -67,7 +70,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 			KeyEvent.VK_N, 'n', 0, this);
 
 	public final STGEditorAction LAYOUT = new STGEditorAction("Spring layout",
-			KeyEvent.VK_S, 'l', 0, this);
+			KeyEvent.VK_L, 'l', 0, this);
 
 	public final STGEditorAction SAVE = new STGEditorAction("Save",
 			KeyEvent.VK_S, 'S', 0, this);
@@ -104,6 +107,9 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 	public final STGEditorAction ABOUT = new STGEditorAction("About JDesi",
 			KeyEvent.VK_A, null, 0, this);
 
+	
+	public JCheckBoxMenuItem IS_SHORTHAND = new JCheckBoxMenuItem("Shorthand notation");
+	
 	public final STGEditorAction LAYOUT1 = new STGEditorAction("Organic",
 			KeyEvent.VK_1, '1', 0, this);
 	public final STGEditorAction LAYOUT2 = new STGEditorAction("Circle",
@@ -144,8 +150,9 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 
 	private String label;
 
-
-
+	private boolean useShorthand;
+	
+	
 	/**
 	 * Constructs an instance.
 	 * 
@@ -197,6 +204,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 		menuBar = new STGEditorMenuBar(this);// , cache);
 
 		setJMenuBar(menuBar);
+		IS_SHORTHAND.addItemListener(this);
 		
 		STGEditorTreeNode node = navigationView.addSTGNode(stg, null, label, true);
 		navigationView.showNode(node);
@@ -626,6 +634,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
+		
 		try {
 			// if (source == SPRING_LAYOUT) springLayout();
 			if (source == OPEN)
@@ -827,12 +836,30 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 			STGEditorTreeNode nn = new STGEditorTreeNode("Reduced(Simple)", stg, true);
 			nn.setCoordinates((STGEditorCoordinates)currentNode.getCoordinates().clone());
 			currentNode.add(nn);
+			navigationView.showNode(nn);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	 }
-	 
-	 
+
+	public void setShorthand(boolean useShorthand) {
+		
+		this.useShorthand = useShorthand;
+	}
+
+	public boolean isShorthand() {
+		return useShorthand;
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+		if (isShorthand()!=IS_SHORTHAND.isSelected()) {
+			setShorthand(IS_SHORTHAND.isSelected());
+			//update visual
+			navigationView.refreshSelection();
+		}
+	}
+
 	 
 //	 private void rg() {
 //	

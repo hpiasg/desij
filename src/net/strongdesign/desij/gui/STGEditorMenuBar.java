@@ -40,7 +40,7 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 	private final STGEditorAction DECOMPOSITION = new STGEditorAction("Decomposition", KeyEvent.VK_D, null, 0, this);
 	private final STGEditorAction HELP = new STGEditorAction("Help", KeyEvent.VK_H, null, 0, this);
 
-
+	
 	
 	public STGEditorMenuBar(STGEditorFrame frame) {//, STGLayoutCache cache) {
 		super();
@@ -88,6 +88,7 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		edit.add(frame.LAYOUT);
 		
 		
+		view.add(frame.IS_SHORTHAND);
 //		view.add(editor.ZOOM_IN);
 //		view.add(editor.ZOOM_OUT);
 //		view.add(editor.ROTATE_CW);
