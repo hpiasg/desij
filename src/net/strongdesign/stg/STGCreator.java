@@ -854,6 +854,8 @@ public abstract class STGCreator {
 
 
 		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
+		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
 
 		return parallelComposition;
@@ -905,6 +907,8 @@ public abstract class STGCreator {
 		STG parallelComposition = STG.parallelComposition(stgs);
 		
 		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
+		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
 
 		
@@ -954,6 +958,8 @@ public abstract class STGCreator {
 		STG parallelComposition = STG.parallelComposition(stgs);
 		
 		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
+		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
 
 		return parallelComposition;
@@ -1039,6 +1045,8 @@ public abstract class STGCreator {
 		
 
 		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
+		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
 
 		return parallelComposition;
@@ -1047,6 +1055,7 @@ public abstract class STGCreator {
 
 
 
+	@SuppressWarnings("unused")
 	private static void getParSeqTreePartition(int height, boolean startWithSeq) throws STGException, IOException {
 		LinkedList<STG> stgs = new LinkedList<STG>();
 		if (startWithSeq)

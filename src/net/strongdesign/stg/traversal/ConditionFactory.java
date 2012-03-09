@@ -665,6 +665,21 @@ public abstract class ConditionFactory {
 		}
 	}
 	
+	protected static class LocalTransitions<T extends Transition> extends AbstractCondition<T> {
+		protected Condition<T> localTransCondition;
+		
+		public LocalTransitions() {
+			List<Signature> localSigns = new LinkedList<Signature>();
+			localSigns.add(Signature.INTERNAL);
+			localSigns.add(Signature.OUTPUT);
+			localTransCondition = new SignatureOf<T>(localSigns);
+		}
+		
+		public boolean fulfilled(T o) {
+			return localTransCondition.fulfilled(o);
+		}
+	}
+	
 	protected static class SignalOf<T extends Transition> extends AbstractCondition<T> {
 		protected Collection<Integer> signals;
 		
@@ -1781,6 +1796,8 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 	public static final Condition<Node> 		ALL_NODES 				= new All<Node>();
 	public static final Condition<Place> 		ALL_PLACES 				= new All<Place>();
 	public static final Condition<Transition> 	ALL_TRANSITIONS 		= new All<Transition>();
+	
+	public static final Condition<Transition>	LOCAL_TRANSITIONS		= new LocalTransitions<Transition>();
 	
 	public static final Condition<Node> 		LOOP_NODE 				= new LoopNode<Node>();
 	public static final Condition<Transition> 	LOOP_ONLY_TRANSITION	= new LoopOnlyTransition<Transition>();

@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import lpsolve.LpSolveException;
+
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJ;
 import net.strongdesign.desij.DesiJException;
@@ -350,6 +352,7 @@ public abstract class STGUtil {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static Collection<? extends Transition> removeLoopOnlyTransitions(STG stg, NodeRemover remover) {
 		Set<Transition> result = new HashSet<Transition>();
 		for(Transition t : stg.getTransitions(ConditionFactory.LOOP_ONLY_TRANSITION))
@@ -476,5 +479,62 @@ public abstract class STGUtil {
 
 	public static Collection<Transition> removeRedundantTransitions(STG stg) {
 		return removeRedundantTransitions(stg, new DefaultNodeRemover(stg));
+	}
+
+
+	/**
+	 * Removes - if possible - internal signals (encoding signals) 
+	 * by preserving the CSC property.
+	 * 
+	 * @param stg --> must satisfy CSC
+	 * @return number of removed internal signals
+	 * return -1 --> impossible: either CSC wasn't satisfied initially or LP approximates not good enough
+	 * @throws STGException 
+	 */
+	public static int removeInternalSignals(STG stg) throws STGException {
+		// Implement Josep's algorithm for calculation of CSC support:
+		
+		// First, consider all internal signals to be unnecessary 
+		// --> merely the external signals matter
+		Set<Integer> unnecessaryInternals = new HashSet<Integer>(stg.getSignals(Signature.INTERNAL));
+		Set<Integer> necessarySignals = new HashSet<Integer>(stg.getSignals());
+		necessarySignals.removeAll(unnecessaryInternals);
+		
+		int returnValue = unnecessaryInternals.size();
+		
+		// initialize CSCChecking --> pick the right strategy here
+//		ICSCCheckLPStrategy lpCSCCheck = CSCCheckerLPSolvePreCaching.
+//				getCSCCheckerLPSolvePreCaching(stg); // singleton: uses the lpsolve java wrapper directly
+		ICSCCheckLPStrategy lpCSCCheck = new CSCCheckerLPSimple(stg); // inefficient, but more transparent implementation
+		
+		try {
+			while (!lpCSCCheck.execute(necessarySignals)) { // while CSC is not satisfied
+				Set<Integer> newEncodingSignals = 
+						lpCSCCheck.getUnbalancedSignals(necessarySignals);
+				if (newEncodingSignals.isEmpty())
+					return -1;
+				else {
+					necessarySignals.add(newEncodingSignals.iterator().next());
+					--returnValue; // decrement the count of removable signals
+				}
+			}
+		} catch (LpSolveException e) {
+			e.printStackTrace();
+		}
+		
+		unnecessaryInternals.removeAll(necessarySignals);
+		
+		stg.setSignature(unnecessaryInternals, Signature.DUMMY);
+		removeDummies(stg);
+		
+		// are there un-removable signals (i.e. structurally un-removable)
+		Set<Integer> dummiesLeft = stg.getSignals(Signature.DUMMY);
+		dummiesLeft.retainAll(unnecessaryInternals);
+		if (!dummiesLeft.isEmpty()) {
+			returnValue -= dummiesLeft.size();
+			stg.setSignature(dummiesLeft, Signature.INTERNAL);
+		}
+						
+		return returnValue;
 	}
 }
