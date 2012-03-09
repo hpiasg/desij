@@ -34,6 +34,9 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 	private final STGEditorAction VIEW = new STGEditorAction("View", KeyEvent.VK_V, null, 0, this);
 	private final STGEditorAction PETRINET = new STGEditorAction("Petri net", KeyEvent.VK_P, null, 0, this);
 	private final STGEditorAction STG = new STGEditorAction("STG", KeyEvent.VK_S, null, 0, this);
+	
+	private final STGEditorAction PARTITION = new STGEditorAction("Partition", 0, null, 0, this);
+	
 	private final STGEditorAction DECOMPOSITION = new STGEditorAction("Decomposition", KeyEvent.VK_D, null, 0, this);
 	private final STGEditorAction HELP = new STGEditorAction("Help", KeyEvent.VK_H, null, 0, this);
 
@@ -105,11 +108,20 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		
 		stg.add(frame.SIGNAL_TYPE);
 		
-		decomposition.add(frame.INITIAL_PARTITION);
+		JMenu partition = new JMenu(PARTITION);
+		decomposition.add(partition);
+		
+		partition.add(frame.FINEST_PARTITION);
+		partition.add(frame.ROUGHEST_PARTITION);
+		partition.add(frame.AVOIDCSC_PARTITION);
+		partition.add(frame.REDUCECONC_PARTITION);
+		partition.add(frame.LOCKED_PARTITION);
+		partition.add(frame.BEST_PARTITION);
+		
 		decomposition.add(frame.REDUCE);
-
+		
 		help.add(frame.ABOUT);
-			
+		
 		
 		/*
 		JMenu edit = new JMenu("Edit");

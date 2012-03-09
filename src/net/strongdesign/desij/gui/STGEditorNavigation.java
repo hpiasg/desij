@@ -179,16 +179,24 @@ public class STGEditorNavigation extends JTree implements
 		STGEditorTreeNode node = new STGEditorTreeNode(label, stg, false);
 		parent.add(node);
 		
-		
 	//	coordinates = graphComponent.initSTG(stg, coordinates);
 		
 		updateUI();
 		
-		
 		return node;
 	}
 
-	public void addNode(STGEditorTreeNode node, String label) {
+	public void addNode(STGEditorTreeNode node) {
+		STGEditorTreeNode parent = root;
+		
+		parent = getSelectedNode();
+		
+		//STGEditorTreeNode node = new STGEditorTreeNode(label);
+		parent.add(node);
+		
+	//	coordinates = graphComponent.initSTG(stg, coordinates);
+		
+		updateUI();
 
 		// DefaultGraphCell cell = new NavigationCell(node, label);
 		// cells.put(node, cell);
@@ -216,7 +224,6 @@ public class STGEditorNavigation extends JTree implements
 		//
 		// }
 		// cache.insert(cell);
-		//
 		//
 		//
 		// new JGraphTreeLayout().run(facade);

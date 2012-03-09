@@ -41,6 +41,8 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
+import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
@@ -73,8 +75,23 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 			KeyEvent.VK_A, null, 0, this);
 	public final STGEditorAction EXIT = new STGEditorAction("Exit",
 			KeyEvent.VK_X, null, 0, this);
+
 	public final STGEditorAction INITIAL_PARTITION = new STGEditorAction(
-			"Initial partition", KeyEvent.VK_I, null, 0, this);
+			"Initial partition", 0, null, 0, this);
+	
+	public final STGEditorAction FINEST_PARTITION = new STGEditorAction(
+			"Finest partition", 0, null, 0, this);
+	public final STGEditorAction ROUGHEST_PARTITION = new STGEditorAction(
+			"Roughest partition", 0, null, 0, this);
+	public final STGEditorAction AVOIDCSC_PARTITION = new STGEditorAction(
+			"Avoid CSC", 0, null, 0, this);
+	public final STGEditorAction REDUCECONC_PARTITION = new STGEditorAction(
+			"Reduce concurrency", 0, null, 0, this);
+	public final STGEditorAction LOCKED_PARTITION = new STGEditorAction(
+			"Locked signals partition", 0, null, 0, this);
+	public final STGEditorAction BEST_PARTITION = new STGEditorAction(
+			"Best partition", 0, null, 0, this);
+	
 	public final STGEditorAction RG = new STGEditorAction(
 			"Create reachability graph", KeyEvent.VK_R, null, 0, this);
 	public final STGEditorAction REDUCE = new STGEditorAction(
@@ -114,6 +131,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 
 	Map<String, Object> transitionStyle;
 	Map<String, Object> placeStyle;
+	JFileChooser fileChooser = new JFileChooser();
 
 	/** The navigation view. */
 	private STGEditorNavigation navigationView;
@@ -232,9 +250,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 		//editor.setSTG(stg, null);
 	}
 
-/*	public void run() {
 
-	}*/
 
 	/*
 	public void setSTG(STGEditorTreeNode node) {
@@ -375,24 +391,44 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 	// }
 	// }
 	//
-	public void initialPartition() throws STGException {
+	public void initialPartition(String partitionString) throws STGException {
 		STGEditorTreeNode projectNode = navigationView.getProjectNode();
+		if (navigationView.getSelectedNode()==projectNode) {
+			graphComponent.storeCoordinates(projectNode.getCoordinates());
+		}
 		
 		if (!projectNode.isSTG()) return;
 		
 		STG curSTG = projectNode.getSTG();
 		projectNode.removeAllChildren();
 		
-		STGEditorTreeNode initComponents = new STGEditorTreeNode("Initial components");
+		STGEditorTreeNode initComponents = new STGEditorTreeNode(partitionString);
 		
 		projectNode.add(initComponents);
 		
 		//navigationView.addNode(initComponents, "Partition");
+		Partition partition;
 		
 		
+		if (partitionString.equals("finest"))
+			partition = Partition.getFinestPartition(curSTG,null);
+		else if (partitionString.equals("roughest"))
+			partition = Partition.getRoughestPartition(curSTG, null);
+		else if (partitionString.equals("multisignaluse"))
+			partition = Partition.getMultipleSignalUsagePartition(curSTG);
+		else if (partitionString.equals("avoidcsc"))
+			partition = Partition.getCSCAvoidancePartition(curSTG);
+		else if (partitionString.equals("reduceconc"))
+			partition = Partition.getPartitionConcurrencyReduction(curSTG);
+		else if (partitionString.equals("lockedsignals"))
+			partition = Partition.getLockedSignalsPartition(curSTG);
+		else if (partitionString.equals("best"))
+			partition = Partition.getBestPartition(curSTG);
+		else
+			partition = Partition.fromString(curSTG, partitionString);
 		
-		for (STG s : Partition.splitByPartition(curSTG,
-				Partition.getFinestPartition(curSTG, null))) {
+		
+		for (STG s : Partition.splitByPartition(curSTG, partition)) {
 
 			StringBuilder signalNames = new StringBuilder();
 			for (Integer sig : s.collectUniqueCollectionFromTransitions(
@@ -402,10 +438,13 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 
 			STGEditorTreeNode nn = new STGEditorTreeNode(
 					signalNames.toString(), s, true);
+			
+			nn.setCoordinates((STGEditorCoordinates)(projectNode.getCoordinates().clone()));
+			
 			initComponents.add(nn);
 			//navigationView.addNode(nn, signalNames.toString());
 		}
-
+		
 		navigationView.showNode(initComponents);
 	}
 
@@ -481,7 +520,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 	}
 
 	public void open() {
-		JFileChooser fileChooser = new JFileChooser();
+		
 		fileChooser.setMultiSelectionEnabled(false);
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
 		
@@ -498,7 +537,7 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 				if (!f.exists())
 					throw new FileNotFoundException(fileName);
 			}
-
+			
 			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
 			
 			STG stg = STGEditorFile.convertToSTG(file, true);
@@ -600,18 +639,34 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 			// else if (source == RG) rg();
 			else if (source == COPY_STG)
 				copySTG();
-			else if (source == INITIAL_PARTITION)
-				initialPartition();
+			else if (source == FINEST_PARTITION)
+				initialPartition("finest");
+			else if (source == ROUGHEST_PARTITION)
+				initialPartition("roughest");
+			else if (source == AVOIDCSC_PARTITION)
+				initialPartition("avoidcsc");
+			else if (source == REDUCECONC_PARTITION)
+				initialPartition("reduceconc");
+			else if (source == LOCKED_PARTITION)
+				initialPartition("lockedsignals");
+			else if (source == BEST_PARTITION)
+				initialPartition("best");
+			
 			// else if (source == SIGNAL_TYPE) changeSignalType();
 			// else if (source == SPRING_LAYOUT_EXCLUDE);
 			// else if (source == SPRING_LAYOUT_INCLUDE);
-			// else if (source == REDUCE) {backgroundMethod = "reduce"; new
-			// Thread(this).start(); }
-			// //else if (source == REDUCE) {new
-			// DecompositionOptions("Decomposition", currentNode.getSTG(), new
-			// DesijCommandLineWrapper(new String[]{""})).setVisible(true);}
-			// else if (source == ABOUT) {new
-			// STGEditorAbout(this).setVisible(true);}
+//			else if (source == REDUCE) {backgroundMethod = "reduce"; new
+//				Thread(this).start(); 
+//			}
+			 else if (source == REDUCE) {
+				 //new DecompositionOptions("Decomposition", currentNode.getSTG(), new
+//						 DesijCommandLineWrapper(new String[]{""})).setVisible(true);
+				 reduce();
+			}
+			
+			else if (source == ABOUT) {
+				new STGEditorAbout(this).setVisible(true);
+			}
 			else if (source == LAYOUT1)
 				graphComponent.setLayout(1);
 			else if (source == LAYOUT2)
@@ -713,88 +768,93 @@ public class STGEditorFrame extends JFrame implements ActionListener {
 	// // return result;
 	// // }
 	//
-	// private void reduce() {
-	// if (!currentNode.isSTG()) {
-	// JOptionPane.showMessageDialog(this, "No STG selected", "JDesi - Reduce",
-	// JOptionPane.ERROR_MESSAGE);
-	// return;
-	// }
-	//
-	// class Deco extends BasicDecomposition {
-	//
-	// private STGEditorTreeNode parent;
-	//
-	//
-	//
-	// public Deco(STGEditorTreeNode parent) {
-	// super();
-	// this.parent = parent;
-	//
-	//
-	// // navigation.getModel().insertNodeInto(new STGEditorTreeNode("1. Try"),
-	// parent, parent.getChildCount());
-	//
-	//
-	//
-	// }
-	//
-	// public void logging(DecompositionParameter decoPara, DecompositionEvent
-	// event, Object affectedNodes) {
-	// if (affectedNodes != null && affectedNodes instanceof Collection &&
-	// ((Collection)affectedNodes).size()==0)
-	// return;
-	//
-	//
-	// //
-	//
-	//
-	// if (event == DecompositionEvent.BACKTRACKING) {
-	// // navigation.getModel().insertNodeInto(new
-	// STGEditorTreeNode("Added signal: "+affectedNodes), parent,
-	// parent.getChildCount());
-	//
-	// }
-	// }
-	// }
-	//
-	// //setSTG(currentNode);
-	//
-	// currentNode.setProcreative();
-	//
-	// DecompositionParameter decoPara = new DecompositionParameter();
-	// decoPara.stg = currentNode.getSTG().clone();
-	// DesiJ.risky = false;
-	//
-	//
-	// Deco deco = new Deco(currentNode);
-	// try {
-	// deco.reduce(decoPara);
-	// }
-	// catch (Exception e) {
-	// e.printStackTrace();
-	// }
-	// }
-	// private void rg() {
-	//
-	//
-	// STG rg = STGUtil.generateReachabilityGraph(currentNode.getSTG());
-	//
-	// currentNode.setProcreative();
-	// addChild(rg, null, "Reachability graph", false);
-	//
-	//
-	//
-	// }
-	//
-	// private void save(String file, String fileName) {
-	// try {
-	// FileSupport.saveToDisk(file, fileName);
-	// }
-	// catch (IOException e) {
-	// JOptionPane.showMessageDialog(this, "Could not save file: "+fileName,
-	// "JDesi Error", JOptionPane.ERROR_MESSAGE);
-	// }
-	// }
-	//
-	// }
+	
+	 private void reduce() {
+		 STGEditorTreeNode currentNode = navigationView.getSelectedNode(); 
+		 if (!currentNode.isSTG()) {
+			 JOptionPane.showMessageDialog(this, "No STG selected", "JDesi - Reduce",
+			 JOptionPane.ERROR_MESSAGE);
+			 return;
+		 }
+		
+		 
+		class Deco extends BasicDecomposition {
+			private STGEditorTreeNode parent;
+			public Deco(STGEditorTreeNode parent) {
+				super("Deco calls");
+				this.parent = parent;
+			}
+			
+/*			 public void logging(DecompositionParameter decoPara, DecompositionEvent
+			 event, Object affectedNodes) {
+				 
+				 if (affectedNodes != null && affectedNodes instanceof Collection &&
+						 ((Collection)affectedNodes).size()==0)
+					 return;
+				 //
+				
+				 if (event == DecompositionEvent.BACKTRACKING) {
+					 // navigation.getModel().insertNodeInto(new
+					 STGEditorTreeNode("Added signal: "+affectedNodes), parent,
+					 parent.getChildCount());
+				
+				 }
+			 }*/
+			 
+		 }
+		 
+		
+		 //setSTG(currentNode);
+//		
+//		 currentNode.setProcreative();
+//		
+//		 DecompositionParameter decoPara = new DecompositionParameter();
+//		 decoPara.stg = currentNode.getSTG().clone();
+//		 DesiJ.risky = false;
+//		
+		
+		// 1. make a copy of current node, write it to the parameter
+		
+		STG stg = currentNode.getSTG().clone();
+		STGInOutParameter componentParameter = new STGInOutParameter(stg);
+		
+		
+		// 2. run reduce on it, add it to the tree
+
+		Deco deco = new Deco(currentNode);
+		try {
+			deco.reduce(componentParameter);
+			STGEditorTreeNode nn = new STGEditorTreeNode("Reduced(Simple)", stg, true);
+			nn.setCoordinates((STGEditorCoordinates)currentNode.getCoordinates().clone());
+			currentNode.add(nn);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	 }
+	 
+	 
+	 
+//	 private void rg() {
+//	
+//	
+//	 STG rg = STGUtil.generateReachabilityGraph(currentNode.getSTG());
+//	
+//	 currentNode.setProcreative();
+//	 addChild(rg, null, "Reachability graph", false);
+//	
+//	
+//	
+//	 }
+//	
+//	 private void save(String file, String fileName) {
+//	 try {
+//	 FileSupport.saveToDisk(file, fileName);
+//	 }
+//	 catch (IOException e) {
+//	 JOptionPane.showMessageDialog(this, "Could not save file: "+fileName,
+//	 "JDesi Error", JOptionPane.ERROR_MESSAGE);
+//	 }
+//	 }
+//	
+//	 }
 }
