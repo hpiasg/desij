@@ -137,7 +137,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	Map<String, Object> transitionStyle;
 	Map<String, Object> placeStyle;
-	JFileChooser fileChooser = new JFileChooser();
+	
+	private JFileChooser fileChooser = new JFileChooser();
 
 	/** The navigation view. */
 	private STGEditorNavigation navigationView;
@@ -152,6 +153,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	private boolean useShorthand;
 	
+	
+	public JFileChooser getFileChooser() {
+		return fileChooser;
+	}
 	
 	/**
 	 * Constructs an instance.

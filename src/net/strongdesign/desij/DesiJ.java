@@ -608,9 +608,8 @@ public class DesiJ {
 
 
 			STGEditorFrame frame = new STGEditorFrame(fileName, stg);
+			frame.getFileChooser().setCurrentDirectory(f);
 			frame.setVisible(true);
-
-
 
 			frame.addWindowListener(new WindowAdapter() { // callback for closing the GUI
 				public void windowClosed(WindowEvent e) {

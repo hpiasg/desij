@@ -21,6 +21,7 @@ package net.strongdesign.desij.gui;
 
 import java.awt.Point;
 
+import com.mxgraph.examples.swing.editor.EditorActions.SetLabelPositionAction;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGeometry;
 
@@ -45,18 +46,22 @@ public class TransitionCell extends mxCell implements ApplyAttributes{
 	public TransitionCell(Transition transition, STG stg) {
 		super(transition.getString(Transition.UNIQUE));
 		
-		setIdentifier(transition.getIdentifier()); 
-		
+		/*
 		Point co = transition.getSTG().getCoordinates(transition);
 		if (co==null) {
 			co = new Point(50,50);
 		}
 		
-		mxGeometry geometry = new mxGeometry(co.x, co.y, 40, 20);
+		mxGeometry geometry = new mxGeometry(co.x, co.y, 70, 20);
 		setId(null);
 		setConnectable(true);
 		setVertex(true);
 		setGeometry(geometry);
+		
+		
+		setIdentifier(transition.getIdentifier());
+		String label=transition.getString(Transition.UNIQUE);
+		setValue(label);
 		
 		int signalID=transition.getLabel().getSignal();
 		
@@ -68,7 +73,7 @@ public class TransitionCell extends mxCell implements ApplyAttributes{
 			setStyle("fontColor=green");
 		if (stg.getSignature(signalID) == Signature.ANY)
 			setStyle("fontColor=black;fillColor=yellow");
-		
+*/		
 	}
 
 	public void applyAttributes() {

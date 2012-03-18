@@ -153,7 +153,7 @@ public class STGGraphComponent extends mxGraphComponent {
 	}
 	
 	boolean isShorthandedPlace(Place node, Node []frto) {
-				
+		
 		if (!(node instanceof Place)) return false;
 		if (((Place)node).getMarking()!=0) return false;
 		Collection<Node> ch= node.getChildren();
@@ -219,13 +219,10 @@ public class STGGraphComponent extends mxGraphComponent {
 //					cell = (mxCell) graph.insertVertex(parent, null,
 //							((Transition) node).getString(Transition.UNIQUE),
 //							50, 50, 40, 20, style);
-					
 				}
-				
 				cell2Node.put(cell, node);
 				nc.put(node, cell);
 				graph.addCell(cell, parent);
-
 			}
 
 			for (Node node : stg.getNodes()) {
@@ -303,11 +300,7 @@ public class STGGraphComponent extends mxGraphComponent {
 						}
 					}
 				}
-				
 			}
-			
-			
-			
 		} finally {
 			graph.getModel().endUpdate();
 		}
@@ -391,6 +384,7 @@ public class STGGraphComponent extends mxGraphComponent {
 		graph.setCellsDeletable(false);
 		graph.setAllowDanglingEdges(false);
 		graph.setCellsSelectable(true);
+		graph.setAutoSizeCells(true);
 		
 		this.setSwimlaneSelectionEnabled(true);
 		this.setConnectable(false);
