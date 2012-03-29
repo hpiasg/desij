@@ -255,10 +255,10 @@ public class STGEditorNavigation extends JTree implements
 			STGEditorTreeNode node = getSelectedNode();
 			
 			frame.setTitle(node.getLabel());
-			if (oldNode!=null) {
+			if (oldNode!=null&&oldNode.getSTG()!=null) {
 				graphComponent.storeCoordinates(oldNode.getSTG().getCoordinates());
 			}
-			graphComponent.initSTG(node.getSTG(), node.getSTG().getCoordinates(), frame.isShorthand());
+			graphComponent.initSTG(node.getSTG(), frame.isShorthand());
 			oldNode = node;
 		} catch (Exception ee) {
 			ee.printStackTrace();
@@ -276,11 +276,11 @@ public class STGEditorNavigation extends JTree implements
 //				frame.setSTG(node);
 				frame.setTitle(node.getLabel());
 				
-				if (oldNode!=null) {
+				if (oldNode!=null&&oldNode.getSTG()!=null) {
 					graphComponent.storeCoordinates(oldNode.getSTG().getCoordinates());
 				}
 				
-				graphComponent.initSTG(node.getSTG(), node.getSTG().getCoordinates(), frame.isShorthand());
+				graphComponent.initSTG(node.getSTG(), frame.isShorthand());
 				oldNode = node;
 			}
 		} catch (Exception ee) {

@@ -176,18 +176,22 @@ public class STGGraphComponent extends mxGraphComponent {
  * @param stg
  * @param coordinates 
  */
-	public STGCoordinates initSTG(STG stg, STGCoordinates coordinates, boolean isShorthand) {
+	public void initSTG(STG stg, boolean isShorthand) {
 
 		((mxGraphModel)graph.getModel()).clear();
 		
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
 		
+		
+		
 		try {
 			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
 			cell2Node.clear();
 			
-			if (stg==null) return coordinates;
+			if (stg==null) return;
+			
+			STGCoordinates coordinates=stg.getCoordinates();
 			
 			for (Node node : stg.getNodes()) {
 				
@@ -310,7 +314,6 @@ public class STGGraphComponent extends mxGraphComponent {
 			graph.getModel().endUpdate();
 		}
 		
-		return coordinates;
 	}
 
 	protected Map<String, Object> setupStyles(mxGraph graph) {
