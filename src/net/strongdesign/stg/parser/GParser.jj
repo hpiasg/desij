@@ -111,9 +111,9 @@ TOKEN : {
 }
 
 
-STG STG(boolean withCoordinates) throws STGException :
+STG STG() throws STGException :
 {
-	result = new STG(withCoordinates);
+	result = new STG();
 	ids = new HashMap<Node,Integer>();
 }
 {
@@ -169,8 +169,8 @@ void COORDINATES() :
 	(
 	((
 		<LEFTBRACKET> 
-			(token1=<TRANSITION>|token1=<DUMMYTRAN>) <COMMA> 
-			(token2=<TRANSITION>|token2=<DUMMYTRAN>) 
+			(token1=<TRANSITION>|token1=<DUMMYTRAN>|token1=<ID>) <COMMA> 
+			(token2=<TRANSITION>|token2=<DUMMYTRAN>|token2=<ID>) 
 		<RIGHTBRACKET> {implicit=true;}
 		|
 		((token1=<ID> | token1=<TRANSITION> | token1=<DUMMYTRAN>) {implicit=false;})
@@ -337,7 +337,7 @@ void NODE(boolean first) :
 	  		signals.remove(str);
   		}
   		else
-  			throwParseException("Signaltransition without edge '"+str+"'");
+  			throwParseException("Signal transition without edge '"+str+"'");
 
   		//add node to the list of known nodes
   		nodes.put(str, node);  

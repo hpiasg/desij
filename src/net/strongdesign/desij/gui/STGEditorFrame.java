@@ -48,6 +48,7 @@ import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.Signature;
@@ -149,7 +150,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	/** The split pane containing the navigation view and the current graph. */
 	private JSplitPane splitPane;
 
-	private String label;
+	//private String label;
 
 	private boolean useShorthand;
 	
@@ -166,13 +167,15 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	 * @param stg
 	 *            The initial STG.
 	 */
-	public STGEditorFrame(String windowLabel, STG stg) {
+	public STGEditorFrame(/*String windowLabel, STG stg*/) {
 
 		// Initialise window
-		super(windowLabel);
+		//super(windowLabel);
+		super();
 		setBounds(new Rectangle(50, 50, 800, 600));
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		this.label = windowLabel;
+		
+//		this.label = windowLabel;
 
 		// Initialise navigation view
 		// navigationView = new STGEditorNavigation(stg, this);
@@ -211,8 +214,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		setJMenuBar(menuBar);
 		IS_SHORTHAND.addItemListener(this);
 		
-		STGEditorTreeNode node = navigationView.addSTGNode(stg, null, label, true);
-		navigationView.showNode(node);
+//		if (stg!=null) {
+//			STGEditorTreeNode node = navigationView.addSTGNode(stg, null, windowLabel, true);
+//			navigationView.showNode(node);
+//		}
 		
 	}
 
@@ -252,11 +257,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	}
 
 	public String getFileName() {
-		return navigationView.getCurrentNode().getLabel();
+		return navigationView.getSelectedNode().getFileName();
 	}
 
 	public void setFileName(String fileName) {
-		navigationView.getCurrentNode().setLabel(fileName);
+		navigationView.getSelectedNode().setFileName(fileName);
+		navigationView.getSelectedNode().setLabel(fileName);
 	}
 
 	public void updateSTG(STG stg) {
@@ -407,7 +413,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public void initialPartition(String partitionString) throws STGException {
 		STGEditorTreeNode projectNode = navigationView.getProjectNode();
 		if (navigationView.getSelectedNode()==projectNode) {
-			graphComponent.storeCoordinates(projectNode.getCoordinates());
+			graphComponent.storeCoordinates(projectNode.getSTG().getCoordinates());
 		}
 		
 		if (!projectNode.isSTG()) return;
@@ -452,7 +458,9 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			STGEditorTreeNode nn = new STGEditorTreeNode(
 					signalNames.toString(), s, true);
 			
-			nn.setCoordinates((STGEditorCoordinates)(projectNode.getCoordinates().clone()));
+			nn.getSTG().copyCoordinates(projectNode.getSTG().getCoordinates());
+			
+			
 			
 			initComponents.add(nn);
 			//navigationView.addNode(nn, signalNames.toString());
@@ -532,15 +540,16 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		dispose();
 	}
 
-	public void open() {
+	public void open(String fileName) {
 		
 		fileChooser.setMultiSelectionEnabled(false);
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
 		
-		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return; 
 		
-		label = fileChooser.getSelectedFile().getAbsolutePath();
-		String fileName = label;
+		if (fileName==null) {
+			if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return; 
+			fileName = fileChooser.getSelectedFile().getAbsolutePath();
+		}
 
 		try {
 
@@ -552,13 +561,14 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			}
 			
 			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
-			
+			//fileName = f.getAbsolutePath();
 			STG stg = STGEditorFile.convertToSTG(file, true);
 			
 			// add new tree element
 			
 			STGEditorTreeNode node = navigationView.addSTGNode(stg, null, fileName, true);
 			navigationView.showNode(node);
+			setFileName(fileName);
 			
 			// STGEditorCoordinates coordinates =
 			// STGEditorFile.convertToCoordinates(file);
@@ -591,50 +601,53 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	}
 
 	private void save() throws IOException {
+		
+		STGEditorTreeNode selectedNode = navigationView.getSelectedNode();
+		graphComponent.storeCoordinates(selectedNode.getSTG().getCoordinates());
+		
 		String name = getFileName();
 		if (name == null) {
-			JFileChooser fileChooser = null;
+			fileChooser.setMultiSelectionEnabled(false);
+			
+/*			JFileChooser fileChooser = null;
 			try {
 				fileChooser = new JFileChooser(new File(".").getCanonicalPath());
 			} catch (IOException e1) {
 				e1.printStackTrace();
-			}
-			fileChooser.setSelectedFile(new File(navigationView
-					.getCurrentNode().toString().replaceAll(" ", "_")
-					.replaceAll(":", "")
-					+ ".g"));
+			}*/
+			
+/*			fileChooser.setSelectedFile(new File(selectedNode.toString().replaceAll(" ", "_").replaceAll(":", "")
+					+ ".g"));*/
+			
 			fileChooser.setFileFilter(STGFileFilter.STANDARD);
 			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
 				return;
 			name = fileChooser.getSelectedFile().getAbsolutePath();
-			if (name == null)
-				return;
-			label = name;
+			if (name == null) return;
 		}
 
-		FileSupport.saveToDisk(STGFile.convertToG(navigationView.getCurrentNode().getSTG()), label);
+		FileSupport.saveToDisk(STGFile.convertToG(selectedNode.getSTG()), name);
 		
 	}
 
 	private void saveAs() throws IOException {
-		String name = label;
+		String name = null;
 
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
-		if (name != null)
-			fileChooser.setSelectedFile(new File(label));
+		
+//		if (name != null)
+//			fileChooser.setSelectedFile(new File(name));
+		
 		fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
 			return;
 		name = fileChooser.getSelectedFile().getAbsolutePath();
-		if (name == null)
-			return;
-		label = name;
+		if (name == null) return;
 
 		FileSupport.saveToDisk(
-				STGFile.convertToG(navigationView.getCurrentNode().getSTG()),
-				label);
+				STGFile.convertToG(navigationView.getCurrentNode().getSTG()), name);
 	}
 
 	public void actionPerformed(ActionEvent e) {
@@ -643,7 +656,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		try {
 			// if (source == SPRING_LAYOUT) springLayout();
 			if (source == OPEN)
-				open();
+				open(null);
 			else if (source == SAVE)
 				save();
 			else if (source == SAVE_AS)
@@ -839,7 +852,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		try {
 			deco.reduce(componentParameter);
 			STGEditorTreeNode nn = new STGEditorTreeNode("Reduced(Simple)", stg, true);
-			nn.setCoordinates((STGEditorCoordinates)currentNode.getCoordinates().clone());
+			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
 			currentNode.add(nn);
 			navigationView.showNode(nn);
 		} catch (Exception e) {

@@ -22,14 +22,17 @@ package net.strongdesign.desij.gui;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
 
 public class STGEditorTreeNode extends DefaultMutableTreeNode{
 
 	private static final long serialVersionUID = 971545642212448511L;
 
 	private STG stg;
-	private STGEditorCoordinates coordinates;
+//	private STGCoordinates coordinates;
+	
     private String label;
+    private String fileName; // related file name (if it exists)
 	private boolean procreative;
 	private boolean isSTG;
     
@@ -39,16 +42,22 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
         this.procreative = procreative;
 		this.label = label;
 		isSTG = true;
-		coordinates = new STGEditorCoordinates();
 	}
 	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
 	public STGEditorTreeNode(String label) {
 		super(label);
 		this.stg = null;
 		this.procreative = true;
 		this.label = label;
 		isSTG = false;
-		coordinates = new STGEditorCoordinates();
 	}
 	
 	public STGEditorTreeNode getParent() {
@@ -87,13 +96,14 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 	public String toString() {
 		return label;
 	}
-
-	public void setCoordinates(STGEditorCoordinates coordinates) {
+	
+/*
+	public void setCoordinates(STGCoordinates coordinates) {
 		this.coordinates = coordinates;
 	}
 
-	public STGEditorCoordinates getCoordinates() {
+	public STGCoordinates getCoordinates() {
 		return coordinates;
-	}
+	}*/
     
 }

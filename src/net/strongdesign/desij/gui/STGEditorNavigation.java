@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -32,6 +32,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
 
 //import org.jgraph.JGraph;
 //import org.jgraph.event.GraphSelectionEvent;
@@ -58,8 +59,6 @@ public class STGEditorNavigation extends JTree implements
 	 */
 	private static final long serialVersionUID = 1790108133777960660L;
 
-	// private GraphLayoutCache cache;
-	// private JGraphFacade facade;
 
 	private STGEditorFrame frame;
 	private STGGraphComponent graphComponent;
@@ -170,7 +169,7 @@ public class STGEditorNavigation extends JTree implements
 		return sel;
 	}
 
-	public STGEditorTreeNode addSTGNode(STG stg, STGEditorCoordinates coordinates,
+	public STGEditorTreeNode addSTGNode(STG stg, STGCoordinates coordinates,
 			String label, boolean isRoot) {
 		STGEditorTreeNode parent = root;
 		
@@ -257,9 +256,9 @@ public class STGEditorNavigation extends JTree implements
 			
 			frame.setTitle(node.getLabel());
 			if (oldNode!=null) {
-				graphComponent.storeCoordinates(oldNode.getCoordinates());
+				graphComponent.storeCoordinates(oldNode.getSTG().getCoordinates());
 			}
-			graphComponent.initSTG(node.getSTG(), node.getCoordinates(), frame.isShorthand());
+			graphComponent.initSTG(node.getSTG(), node.getSTG().getCoordinates(), frame.isShorthand());
 			oldNode = node;
 		} catch (Exception ee) {
 			ee.printStackTrace();
@@ -278,10 +277,10 @@ public class STGEditorNavigation extends JTree implements
 				frame.setTitle(node.getLabel());
 				
 				if (oldNode!=null) {
-					graphComponent.storeCoordinates(oldNode.getCoordinates());
+					graphComponent.storeCoordinates(oldNode.getSTG().getCoordinates());
 				}
 				
-				graphComponent.initSTG(node.getSTG(), node.getCoordinates(), frame.isShorthand());
+				graphComponent.initSTG(node.getSTG(), node.getSTG().getCoordinates(), frame.isShorthand());
 				oldNode = node;
 			}
 		} catch (Exception ee) {

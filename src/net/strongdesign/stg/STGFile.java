@@ -23,12 +23,15 @@
  */
 package net.strongdesign.stg;
 
+import java.awt.Point;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.strongdesign.desij.CLW;
@@ -158,7 +161,8 @@ public abstract class STGFile {
 	
 	public static STG convertToSTG(String file, boolean withCoordinates) throws  ParseException, STGException {
 		GParser parser = new GParser(new StringReader(file));
-		STG result = parser.STG(withCoordinates);
+		
+		STG result = parser.STG();//
 		result.clearUndoStack();
 		return result;
 	}
@@ -173,7 +177,7 @@ public abstract class STGFile {
 	}
 	
 	public static String convertToG(STG stg, boolean withSignalNames, boolean implicitPlaces) {
-			
+		
 		boolean implicit = implicitPlaces || CLW.instance.SAVE_ALL_PLACES.isEnabled();
 		
 		
@@ -181,32 +185,75 @@ public abstract class STGFile {
 			STGUtil.removeRedundantPlaces(stg, true);
 		}
 		
-		//collect all implicit places which have to made explicit
-		List<Place> explicit = new LinkedList<Place>();
-		Condition<Place> mgPlace = ConditionFactory.MARKED_GRAPH_PLACE;
-		for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES)) {
-			if (! mgPlace.fulfilled(place)) continue;
-			for (Node neighbour : place.getSibblings()) {
-				Place nPlace = (Place) neighbour;
-				// over cautious, some places might be added altough it is unneccessary
-				if ( place.getParents().equals(nPlace.getParents()) &&   
-						place.getChildren().equals(nPlace.getChildren())) {
-					explicit.add(place);
-					explicit.add(nPlace);
-				}
-			}
-		}
-		
-		//result contains the file to be written at the and of the method
+		//result contains the file to be written at the end of the method
 		StringBuilder result = new StringBuilder();
 		
 		
-		// ALL THE GLORY TO THE HYPNOTOAD
+		//collect all implicit places which have to be made explicit
+		// initial comments
 		result.append(Messages.getString("STGFile.stg_start_comment")+new Date() + "\n"); 
 		result.append("#Number of places: " + stg.getNumberOfPlaces() + "  Number of Transitions: " + stg.getNumberOfTransitions() +"\n\n");
 		
-		//now the *.g stuff
+		Map<Node, String> savedNames = new HashMap<Node, String>();
+		Set<String> used = new HashSet<String>();
+		
+		Condition<Place> mgPlace = ConditionFactory.MARKED_GRAPH_PLACE;
+		
+		// first, name all transitions
+		
+		for (Transition transition : stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)  ) {
+			Signature sig = stg.getSignature(transition.getIdentifier());
+			if (sig== Signature.ANY) continue; // this transition type is not supported at the moment
 			
+			if (sig== Signature.DUMMY) {
+				int id=2;
+				String name=transition.getString(0);
+				if (!withSignalNames) name  = signalPrefix;
+				if (used.contains(name)) {
+					while (used.contains(name+"_"+id)) {
+						id++;
+					}
+					name=name+"_"+id;
+				}
+				
+				savedNames.put(transition, name);
+				used.add(name);
+			} else {
+				int id=2;
+				String name=transition.getString(0);
+				if (!withSignalNames) name  = signalPrefix + transition.getLabel();
+				if (used.contains(name)) {
+					while (used.contains(name+"/"+id)) {
+						id++;
+					}
+					name=name+"/"+id;
+				}
+				savedNames.put(transition, name);
+				used.add(name);
+			}
+		}
+		
+
+		// now name all the explicit places
+		for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES)) {
+			if (implicit||!mgPlace.fulfilled(place)) {
+				// use explicit naming
+				int id=2;
+				String name=place.getString(0);
+				if (used.contains(name)) {
+					while (used.contains(name+"_"+id)) {
+						id++;
+					}
+					name=name+"_"+id;
+				}
+				savedNames.put(place, name);
+				used.add(name);
+			}
+		}
+		
+		
+		//now the *.g stuff
+		
 		//the different signals	
 		for (Signature signature : Signature.values()) {
 			if (signature == Signature.ANY) continue;
@@ -216,7 +263,8 @@ public abstract class STGFile {
 					CollectorFactory.getSignalCollector()));
 
 			if (! signals.isEmpty()) {
-				result.append(signature.getGFormatName() + " "); 
+				result.append(signature.getGFormatName() + " ");
+				
 				for (Integer signal : signals) {
 					if (withSignalNames) {
 						result.append(stg.getSignalName(signal));
@@ -227,61 +275,81 @@ public abstract class STGFile {
 					
 					result.append(" ");
 				}
-					 
+				
 				result.append("\n"); 
 			}
 		}
 		
+		// now the dummy signals (and ANY is also treated as dummy)
+//		{
+//			Set<Integer> dummies = new HashSet<Integer>(stg.collectFromTransitions(
+//					ConditionFactory.getSignatureOfCondition(Signature.DUMMY), 
+//					CollectorFactory.getSignalCollector()));
+//			Set<Integer> any = new HashSet<Integer>(stg.collectFromTransitions(
+//					ConditionFactory.getSignatureOfCondition(Signature.ANY), 
+//					CollectorFactory.getSignalCollector()));
+//			if (!dummies.isEmpty()||!any.isEmpty()) {
+//				result.append(".dummies");
+//				for (Integer signal : dummies) {
+//					result.append(" ");
+//					if (withSignalNames) {
+//						result.append(stg.getSignalName(signal));
+//					} else {
+//						result.append(signalPrefix + signal);
+//					}
+//				}
+//				for (Integer signal : any) {
+//					result.append(" ");
+//					if (withSignalNames) {
+//						result.append(stg.getSignalName(signal));
+//					} else {
+//						result.append(signalPrefix + signal);
+//					}
+//				}
+//				
+//			}
+//		}
 		
 		
-		result.append("\n.graph\n"); 
+		
+		result.append("\n.graph\n");
 		
 		for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES  )) { 
-			if (implicit || !mgPlace.fulfilled(place) || explicit.contains(place) )
-			{
-				result.append(place.getString(Node.UNIQUE) );
+			if (!place.hasChildren()) continue;
+			if (savedNames.containsKey(place) )
+			{	
+				result.append(savedNames.get(place));
+				
 				for (Node child : place.getChildren()) {
 					result.append(" ");
-					if (withSignalNames) {
-						result.append(child.getString(Node.UNIQUE));
+					if (savedNames.containsKey(child)) {
+						result.append(savedNames.get(child));
+						if (place.getChildValue(child)>1)
+							 result.append("("+place.getChildValue(child)+")");
 					}
-					else {						
-						result.append(signalPrefix + ((Transition) child).getLabel() + "/" + child.getIdentifier());
-					}						
 						
-					if (place.getChildValue(child)>1)
-						 result.append("("+place.getChildValue(child)+")");
 				}
 				
 				result.append("\n"); 
 			}
 		}
+		
+		for (Transition transition : stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)  ) {
+			if (!transition.hasChildren()) continue;
 			
-		for (Transition transition : stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)  ) {	
-			if (withSignalNames) {
-				result.append(transition.getString(Node.UNIQUE));
-			}
-			else {						
-				result.append(signalPrefix + transition.getLabel() + "/" + transition.getIdentifier());
-			}						
+			result.append(savedNames.get(transition));
+			
 
-			for (Node child : transition.getChildren())
-				if (!implicit && mgPlace.fulfilled((Place)child) && !explicit.contains(child)) {
-					Transition t = (Transition) child.getChildren().iterator().next();
-					result.append(" ");
-					if (withSignalNames) {
-						result.append(t.getString(Node.UNIQUE));
-					}
-					else {						
-						result.append(signalPrefix + t.getLabel() + "/" + t.getIdentifier());
-					}		
-					
-				}
-				else {
-					result.append(" " + child.getString(Node.UNIQUE));
+			for (Node child : transition.getChildren()) {
+				if (savedNames.containsKey(child)) {
+					result.append(" " + savedNames.get(child));
 					if (transition.getChildValue(child)>1)
 						result.append("("+transition.getChildValue(child)+")");
+				} else {
+					Transition t = (Transition) child.getChildren().iterator().next();
+					result.append(" "+savedNames.get(t));
 				}
+			}
 			
 			result.append("\n"); 
 		}
@@ -303,29 +371,65 @@ public abstract class STGFile {
 		for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES)  ) 
 			if (place.getMarking()>0) {
 				String marking = place.getMarking()==1?"":"="+place.getMarking();
-				if (implicit || !mgPlace.fulfilled(place) || explicit.contains(place))
-					result.append(" " + place.getString(Node.UNIQUE)  ); 
-				else {
+				
+				if (savedNames.containsKey(place)) {
+					result.append(" " + place.getString(0)  ); 
+				} else {
 					result.append(" <" );
-					if (withSignalNames) {
-						result.append( 	place.getParents().iterator().next().getString(Node.UNIQUE) + "," + 
-								place.getChildren().iterator().next().getString(Node.UNIQUE));
-					}
-					else {
-						Transition t1 = (Transition) place.getParents().iterator().next();
-						Transition t2 = (Transition) place.getChildren().iterator().next();
-						result.append(signalPrefix + t1.getLabel() + "/" + t1.getIdentifier());
-						result.append(",");
-						result.append(signalPrefix + t2.getLabel() + "/" + t2.getIdentifier());
-					}
+					result.append( 	
+							savedNames.get(place.getParents().iterator().next()) + "," +
+							savedNames.get(place.getChildren().iterator().next()));
 					result.append( ">");
 				}
 				result.append(marking);
 			}
 		
 		
-		result.append(" }\n.end\n"); 
+		result.append(" }\n.end\n");
 		
+		if (stg.isWithCoordinates()) {
+			// now save coordinates
+			
+			result.append(" \n.coordinates\n");
+			
+			// all transitions first
+			for (Map.Entry<Node, Point> en: stg.getCoordinates().entrySet()) {
+				if (!(en.getKey() instanceof Transition)) continue;
+				
+				Transition transition = (Transition)en.getKey();
+				
+				Point p = stg.getCoordinates(en.getKey());
+				
+				if (p!=null) {
+					result.append(savedNames.get(transition));
+					result.append(" "+p.x+" "+p.y+"\n");
+				}
+			}
+			
+			// all places
+			for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES)  ) {
+				
+				Point p = stg.getCoordinates(place);
+				
+				if (p!=null) {
+					
+					if (savedNames.containsKey(place))
+						result.append( savedNames.get(place)); 
+					else {
+						result.append("<" );
+						result.append( 	
+							savedNames.get(place.getParents().iterator().next()) + "," + 
+							savedNames.get(place.getChildren().iterator().next()));
+						
+						result.append( ">");
+					}
+					
+					result.append(" "+p.x+" "+p.y+"\n");
+				}
+				
+			}
+			result.append(" \n.coordinates_end\n");
+		}
 		return result.toString();
 		
 		

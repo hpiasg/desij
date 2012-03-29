@@ -51,6 +51,7 @@ import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
@@ -139,7 +140,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	/**All transitions, which are dummy and contractable*/
 	private Collection<Transition> conTrans;
 	/**The coordinates of the nodes*/
-    private STGEditorCoordinates coordinates;	
+    private STGCoordinates coordinates;	
 
 	
 	
@@ -202,7 +203,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	 * @param coordinates The coordinates of the nodes, if null random coordinates are generated
 	 * @param frame The overall frame for all components
 	 */
-	public STGEditor(STG stg, STGEditorCoordinates coordinates, STGEditorFrame frame, STGEditorOptions options) {
+	public STGEditor(STG stg, STGCoordinates coordinates, STGEditorFrame frame, STGEditorOptions options) {
 		super();
 		
 		this.stg = stg;
@@ -547,7 +548,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	/** 
      * @return The coordinate set of all nodes
      */
-    public STGEditorCoordinates getAllCoordinates() {
+    public STGCoordinates getAllCoordinates() {
         return coordinates;
     }
 	
@@ -1074,7 +1075,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	/** 
      * @return The coordinates of all nodes
      */
-    public  void setCoordinates(STGEditorCoordinates coordinates) {
+    public  void setCoordinates(STGCoordinates coordinates) {
         this.coordinates=coordinates;
     }
 
@@ -1082,7 +1083,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
     
 
 
-    public void setSTG(STG stg, STGEditorCoordinates coordinates) {
+    public void setSTG(STG stg, STGCoordinates coordinates) {
 		this.stg = stg;
 		if (coordinates != null) 
 			this.coordinates = coordinates;

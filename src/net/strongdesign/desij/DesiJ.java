@@ -602,12 +602,13 @@ public class DesiJ {
 					throw new FileNotFoundException(fileName);          
 			}       
 
-			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
-			STG stg = STGEditorFile.convertToSTG(file, true);
+//			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+//			STG stg = STGEditorFile.convertToSTG(file, true);
 //			STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
 
-
-			STGEditorFrame frame = new STGEditorFrame(fileName, stg);
+			STGEditorFrame frame = new STGEditorFrame();
+			
+			frame.open(fileName);
 			frame.getFileChooser().setCurrentDirectory(f);
 			frame.setVisible(true);
 

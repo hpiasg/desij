@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -46,7 +46,7 @@ public class TransitionCell extends mxCell implements ApplyAttributes{
 	public TransitionCell(Transition transition, STG stg) {
 		super(transition.getString(Transition.UNIQUE));
 		
-		/*
+		
 		Point co = transition.getSTG().getCoordinates(transition);
 		if (co==null) {
 			co = new Point(50,50);
@@ -73,7 +73,7 @@ public class TransitionCell extends mxCell implements ApplyAttributes{
 			setStyle("fontColor=green");
 		if (stg.getSignature(signalID) == Signature.ANY)
 			setStyle("fontColor=black;fillColor=yellow");
-*/		
+
 	}
 
 	public void applyAttributes() {

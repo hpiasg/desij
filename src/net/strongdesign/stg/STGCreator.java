@@ -166,7 +166,7 @@ public abstract class STGCreator {
 			throw new IllegalArgumentException("Need at least 2 pipelines with minimum length 2.");
 
 
-		STG stg = new STG(false);
+		STG stg = new STG();
 		int signal = -1;
 
 		for (int pipeline = 1; pipeline <= nroPipelines; ++pipeline) {
@@ -287,7 +287,7 @@ public abstract class STGCreator {
 	 */
 	public static STG getSequencer(String id, int signal) throws STGException {
 
-		STG stg = new STG(false);
+		STG stg = new STG();
 
 		// Define the signal names
 		final String _in  =  id + "in";
@@ -429,7 +429,7 @@ public abstract class STGCreator {
 	 */
 	public static STG getParalleliser(String id, int signal) throws STGException {
 
-		STG stg = new STG(false);
+		STG stg = new STG();
 
 
 		final String _in  =  id + "in";
@@ -580,7 +580,7 @@ public abstract class STGCreator {
 
 
 	public static STG getMerger(String id, int signal) throws STGException {
-		STG stg = new STG(false);
+		STG stg = new STG();
 
 		final String _in  =  id + "in";
 		final String _out =  id + "out";
@@ -696,7 +696,7 @@ public abstract class STGCreator {
 	}
 	
 	public static STG getMixer(String id, int signal) throws STGException {
-		STG stg = new STG(false);
+		STG stg = new STG();
 
 		final String _in  =  id + "in";
 		final String _out =  id + "out";

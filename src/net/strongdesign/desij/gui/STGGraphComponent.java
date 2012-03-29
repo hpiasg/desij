@@ -31,6 +31,7 @@ import java.util.Set;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.Transition;
 
 import com.mxgraph.layout.mxCircleLayout;
@@ -143,12 +144,12 @@ public class STGGraphComponent extends mxGraphComponent {
 	}
 	
 	
-	public void storeCoordinates(STGEditorCoordinates coordinates) {
+	public void storeCoordinates(STGCoordinates coordinates) {
 		
 		coordinates.clear();
 		for (Map.Entry<mxCell, Node> en: cell2Node.entrySet()) {
 			mxGeometry g = en.getKey().getGeometry();
-			coordinates.put(en.getValue(), new Point((int)g.getX(), (int)g.getY()));
+			coordinates.put(en.getValue(), new Point((int)g.getCenterX(), (int)g.getCenterY()));
 		}
 	}
 	
@@ -175,7 +176,7 @@ public class STGGraphComponent extends mxGraphComponent {
  * @param stg
  * @param coordinates 
  */
-	public STGEditorCoordinates initSTG(STG stg, STGEditorCoordinates coordinates, boolean isShorthand) {
+	public STGCoordinates initSTG(STG stg, STGCoordinates coordinates, boolean isShorthand) {
 
 		((mxGraphModel)graph.getModel()).clear();
 		
@@ -232,8 +233,10 @@ public class STGGraphComponent extends mxGraphComponent {
 				if (coordinates!=null) {
 					Point p = coordinates.get(node);
 					if (p!=null) {
-						source.getGeometry().setX(p.x);
-						source.getGeometry().setY(p.y);
+						double h=source.getGeometry().getHeight();
+						double w=source.getGeometry().getWidth();
+						source.getGeometry().setX(p.x-w/2);
+						source.getGeometry().setY(p.y-h/2);
 					} else {
 						// if no coordinate is given, find the average from its neighbours
 						int cnt=0;
@@ -258,8 +261,10 @@ public class STGGraphComponent extends mxGraphComponent {
 						}
 						
 						if (cnt>1) {
-							source.getGeometry().setX((double)px/cnt);
-							source.getGeometry().setY((double)py/cnt);
+							double h=source.getGeometry().getHeight();
+							double w=source.getGeometry().getWidth();
+							source.getGeometry().setX((double)px/cnt-w/2);
+							source.getGeometry().setY((double)py/cnt-h/2);
 						}
 					}
 				}
@@ -288,13 +293,13 @@ public class STGGraphComponent extends mxGraphComponent {
 				cl.execute(parent);
 				shiftModel();
 				
-				coordinates = new STGEditorCoordinates();
+				coordinates = new STGCoordinates();
 				// store new coordinates for the STG
 				for (Object ob: graph.getChildCells(parent, true, false)) {
 					if (ob instanceof mxCell) {
 						if (ob instanceof TransitionCell || ob instanceof PlaceCell) {
-							double dx = ((mxCell)ob).getGeometry().getX();
-							double dy = ((mxCell)ob).getGeometry().getY();
+							double dx = ((mxCell)ob).getGeometry().getCenterX();
+							double dy = ((mxCell)ob).getGeometry().getCenterY();
 							Node nd = cell2Node.get(ob);
 							coordinates.put(nd, new Point((int)dx, (int)dy));
 						}

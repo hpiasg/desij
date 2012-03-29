@@ -383,7 +383,7 @@ public abstract class STGUtil {
 
 
 	public static STG generateReachabilityGraph(STG stg) throws STGException  {
-		STG result 								= new STG(false);
+		STG result 								= new STG();
 
 		for (Integer signal : stg.getSignals()) {
 			result.setSignalName(signal, stg.getSignalName(signal));
