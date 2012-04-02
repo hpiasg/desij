@@ -64,9 +64,6 @@ import net.strongdesign.util.Pair;
  */
 public abstract class AbstractDecomposition   {
 
-
-
-
 	private int number = 0;
 
 	protected String filePrefix;

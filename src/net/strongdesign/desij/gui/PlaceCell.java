@@ -19,13 +19,9 @@
 
 package net.strongdesign.desij.gui;
 
-import java.awt.Color;
 import java.awt.Point;
-import java.awt.geom.Rectangle2D;
 
 import net.strongdesign.stg.Place;
-import net.strongdesign.stg.STGException;
-import net.strongdesign.stg.Signature;
 
 //import org.jgraph.graph.DefaultGraphCell;
 //import org.jgraph.graph.GraphConstants;

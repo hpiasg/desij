@@ -145,7 +145,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
 	
 	
 	/**The frame which contains this editor*/
-    private STGEditorFrame frame;
+//    private STGEditorFrame frame;
 	
 	public final STGEditorSwitchingAction GRID;
 	
@@ -211,7 +211,7 @@ implements Scrollable, MouseListener, MouseMotionListener, ActionListener {
         //if (this.coordinates == null)
           //  this.coordinates = STGEditorLayout.applyRandomLayout(getNodes());
 		
-		this.frame = frame;
+//		this.frame = frame;
 		this.options = options;
 		
 		this.scrollPane = (JScrollPane) getParent();

@@ -19,16 +19,14 @@
 
 package net.strongdesign.desij.gui;
 
-import java.awt.Color;
-import java.awt.geom.Rectangle2D;
 
 //import org.jgraph.graph.DefaultGraphCell;
 //import org.jgraph.graph.GraphConstants;
 
-import com.mxgraph.layout.hierarchical.model.mxGraphAbstractHierarchyCell;
+//import com.mxgraph.layout.hierarchical.model.mxGraphAbstractHierarchyCell;
 import com.mxgraph.layout.hierarchical.model.mxGraphHierarchyNode;
-import com.mxgraph.swing.mxGraphComponent;
-import com.mxgraph.util.mxConstants;
+//import com.mxgraph.swing.mxGraphComponent;
+//import com.mxgraph.util.mxConstants;
 
 public class NavigationCell extends mxGraphHierarchyNode {
 	/**

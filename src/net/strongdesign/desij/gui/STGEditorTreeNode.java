@@ -22,7 +22,6 @@ package net.strongdesign.desij.gui;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.STGCoordinates;
 
 public class STGEditorTreeNode extends DefaultMutableTreeNode{
 

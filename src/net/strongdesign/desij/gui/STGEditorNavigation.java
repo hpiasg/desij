@@ -21,18 +21,19 @@ package net.strongdesign.desij.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.STGCoordinates;
 
 //import org.jgraph.JGraph;
 //import org.jgraph.event.GraphSelectionEvent;
@@ -52,7 +53,7 @@ import net.strongdesign.stg.STGCoordinates;
 
 
 public class STGEditorNavigation extends JTree implements
-		TreeSelectionListener, ActionListener {
+		TreeSelectionListener, ActionListener, KeyListener, MouseListener {
 
 	/**
 	 * 
@@ -64,7 +65,6 @@ public class STGEditorNavigation extends JTree implements
 	private STGGraphComponent graphComponent;
 	private STGEditorTreeNode root;
 	
-	STGEditorTreeNode currentNode;//?
 	STGEditorTreeNode oldNode; // node remembered as the last node active, to store coordinates
 
 
@@ -77,63 +77,6 @@ public class STGEditorNavigation extends JTree implements
 		this.oldNode = oldNode;
 	}
 
-
-	public STGEditorTreeNode getCurrentNode() {
-		return currentNode;
-	}
-
-
-	public void setCurrentNode(STGEditorTreeNode currentNode) {
-		this.currentNode = currentNode;
-	}
-
-/*
-	public DefaultTreeModel createTestTree() {
-
-		// add tree nodes test
-		root = new STGEditorTreeNode("root node");
-		
-		DefaultMutableTreeNode category = null;
-		DefaultMutableTreeNode book = null;
-
-		DefaultTreeModel dtm = new DefaultTreeModel(root);
-		
-		category = new STGEditorTreeNode("Books for Java Programmers");
-		root.add(category);
-
-		// original Tutorial
-		book = new STGEditorTreeNode(
-				"The Java Tutorial: A Short Course on the Basics");
-		category.add(book);
-
-		// Tutorial Continued
-		book = new STGEditorTreeNode(
-				"The Java Tutorial Continued: The Rest of the JDK");
-		category.add(book);
-
-		// Swing Tutorial
-		book = new STGEditorTreeNode(
-				"The Swing Tutorial: A Guide to Constructing GUIs");
-		category.add(book);
-
-		// ...add more books for programmers...
-
-		category = new STGEditorTreeNode("Books for Java Implementers");
-		root.add(category);
-
-		// VM
-		book = new STGEditorTreeNode(
-				"The Java Virtual Machine Specification");
-		category.add(book);
-		
-		// Language Spec
-		book = new STGEditorTreeNode("The Java Language Specification");
-		category.add(book);
-		
-		return dtm;
-	}*/
-
-
 	public STGEditorNavigation(STGEditorFrame frame, STGGraphComponent graphComponent) {
 		this.graphComponent = graphComponent;
 		this.frame = frame;
@@ -144,6 +87,8 @@ public class STGEditorNavigation extends JTree implements
 		setModel(new DefaultTreeModel(root));
 		
 		addTreeSelectionListener(this);
+		addKeyListener(this);
+		addMouseListener(this);
 	}
 	
 	public STGEditorTreeNode getRootNode() {
@@ -169,7 +114,7 @@ public class STGEditorNavigation extends JTree implements
 		return sel;
 	}
 
-	public STGEditorTreeNode addSTGNode(STG stg, STGCoordinates coordinates,
+	public STGEditorTreeNode addSTGNode(STG stg,
 			String label, boolean isRoot) {
 		STGEditorTreeNode parent = root;
 		
@@ -268,12 +213,14 @@ public class STGEditorNavigation extends JTree implements
 	@Override
 	public void valueChanged(TreeSelectionEvent e) {
 		try {
+			
+			
 			if (e.getPath().getLastPathComponent() instanceof STGEditorTreeNode) {
 				
 				STGEditorTreeNode node = (STGEditorTreeNode) e.getPath().getLastPathComponent();
 				
 				if (node==oldNode) return;
-//				frame.setSTG(node);
+				
 				frame.setTitle(node.getLabel());
 				
 				if (oldNode!=null&&oldNode.getSTG()!=null) {
@@ -294,11 +241,18 @@ public class STGEditorNavigation extends JTree implements
 	}
 
 	public void showNode(STGEditorTreeNode node) {
-		setSelectionPath(new TreePath(node.getPath()));
-		expandPath(new TreePath(node.getPath()));
-		frame.setTitle(node.getLabel());
+		if (node==null) {
+			graphComponent.initSTG(null, frame.isShorthand());
+			frame.setTitle("DesiJ");
+		} else {
+			setSelectionPath(new TreePath(node.getPath()));
+			expandPath(new TreePath(node.getPath()));
+			frame.setTitle(node.getLabel());
+			
+		}
 	}
 
+	
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON3) {
 			JPopupMenu pop = new STGEditorNavigationPopUp(this);
@@ -317,9 +271,62 @@ public class STGEditorNavigation extends JTree implements
 	}
 
 	public void deleteSelectedNodes() {
-		for (TreePath path : getSelectionPaths()) {
+		// find some parent node to show next
+		STGEditorTreeNode next =  getSelectedNode().getParent();
+		((DefaultTreeModel)getModel()).removeNodeFromParent(getSelectedNode());
+
+		/*for (TreePath path : getSelectionPaths()) {
 			((DefaultTreeModel)getModel()).removeNodeFromParent(
 					(DefaultMutableTreeNode) path.getLastPathComponent());
+		}*/
+		
+		if (next==root) {
+			if (root.getChildCount()>0) {
+				next=(STGEditorTreeNode)root.getFirstChild();
+			} else {
+				next=null;
+			}
 		}
+		showNode(next);
+		
+	}
+
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		//
+	}
+
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		//
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		if (e.getKeyChar()==KeyEvent.VK_DELETE) {
+			deleteSelectedNodes();
+		}
+	}
+
+
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+	}
+
+
+	@Override
+	public void mouseEntered(MouseEvent arg0) {
+	}
+
+
+	@Override
+	public void mouseExited(MouseEvent arg0) {
+	}
+
+
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
 	}
 }

@@ -21,17 +21,12 @@ package net.strongdesign.desij.gui;
 
 import java.awt.Point;
 
-import com.mxgraph.examples.swing.editor.EditorActions.SetLabelPositionAction;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGeometry;
 
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
-
-//import org.jgraph.graph.DefaultGraphCell;
-
-//import org.jgraph.graph.GraphConstants;
 
 public class TransitionCell extends mxCell implements ApplyAttributes{
 	
