@@ -45,8 +45,9 @@ class ToggleTransitionRefiner extends PlaceHolderRefiner {
 	@Override
 	public void execute(STG stg) throws STGException {
 		for (Transition transition: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-			if (stg.getSignature(transition.getLabel().getSignal()) == Signature.INTERNAL &&
-					transition.getLabel().getDirection() == EdgeDirection.UNKNOWN) {
+			if ( (stg.getSignature(transition.getLabel().getSignal()) == Signature.INTERNAL || stg.getSignature(transition.getLabel().getSignal()) == Signature.INPUT) &&
+					transition.getLabel().getDirection() == EdgeDirection.UNKNOWN &&
+					stg.getSignalName(transition.getLabel().getSignal()).startsWith("ic") ) {
 				// only change the direction of the label of the placeholder transition
 				transition.getLabel().setDirection(EdgeDirection.TOGGLE);
 				// TODO: initial values for toggle signals should be defined
