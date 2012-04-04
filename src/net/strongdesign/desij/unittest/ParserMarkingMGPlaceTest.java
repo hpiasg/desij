@@ -44,7 +44,7 @@ public class ParserMarkingMGPlaceTest {
 		CLW.instance = new CLW(new String[0]);
 		Reader gFile = new StringReader(FileSupport.loadFileFromDisk("testfiles/ParserTestMGPlaceMarking.g"));
 		if(gFile == null) throw new RuntimeException();
-		STG stg = new GParser(gFile).STG(false);
+		STG stg = new GParser(gFile).STG();
 		Assert.assertNotNull(stg);
 	}
 }

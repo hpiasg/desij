@@ -20,21 +20,6 @@
 package net.strongdesign.desij.gui;
 
 
-import java.awt.BasicStroke;
-import java.awt.Dimension;
-import java.awt.GradientPaint;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-
-//import org.jgraph.graph.CellViewRenderer;
-//import org.jgraph.graph.EdgeView;
-//import org.jgraph.graph.GraphConstants;
-//import org.jgraph.graph.VertexRenderer;
-//import org.jgraph.graph.VertexView;
-
 public class PlaceView {//extends VertexView {
 	
 	/**

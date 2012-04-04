@@ -17,20 +17,20 @@
  * along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.strongdesign.desij.gui;
+package net.strongdesign.stg;
 
 import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.util.HashMap;
 
 
-import net.strongdesign.stg.Node;
-import net.strongdesign.stg.STG;
+import net.strongdesign.desij.gui.STGGraphComponent;
 
-public class STGEditorCoordinates extends HashMap<Node, Point> {
+public class STGCoordinates extends HashMap<Node, Point> {
 	private static final long serialVersionUID = 1708074655039330258L;
 
-	public STGEditorCoordinates clone(STG stg) {
-		STGEditorCoordinates result = new STGEditorCoordinates();
+	public STGCoordinates clone(STG stg) {
+		STGCoordinates result = new STGCoordinates();
 		
 		for (Node node : stg.getNodes()) {
 			Point np =  get(node);
@@ -38,6 +38,14 @@ public class STGEditorCoordinates extends HashMap<Node, Point> {
 				result.put(  (Node) node.clone(),   (Point)np.clone());
 		}
 		return result;
+	}
+	
+	public STGCoordinates() {
+		super();
+	}
+	
+	public STGCoordinates(STGGraphComponent component) {
+		
 	}
 	
 }

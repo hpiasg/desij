@@ -29,18 +29,16 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 	public STGEditorNavigationPopUp(ActionListener listener) {
 		super();
 		setBorder(BorderFactory.createRaisedBevelBorder());
-		
+
 		newItem("Delete selected nodes", listener);
-			
+
 	}
-	
+
 	private void newItem(String text, ActionListener listener) {
 		JMenuItem i = new JMenuItem(text);
 		i.addActionListener(listener);
 		add(i);
-		
+
 	}
-	
-	
-	
+
 }

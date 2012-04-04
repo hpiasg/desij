@@ -19,7 +19,9 @@
 
 package net.strongdesign.desij.gui;
 
+import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.Map;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.Transition;
 
 import com.mxgraph.layout.mxCircleLayout;
@@ -52,10 +54,17 @@ import com.mxgraph.view.mxStylesheet;
 
 public class STGGraphComponent extends mxGraphComponent {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7755698755334362626L;
+	
 	/** The current graph, representing the current STG. */
 	private mxIGraphModel model;
 	private final mxGraph graph;
 	protected mxRubberband rubberband;
+	HashMap<mxCell, Node> cell2Node;
+	
 	
 	public boolean isVertexIgnored(Object vertex) {
 		return !graph.getModel().isVertex(vertex)
@@ -132,88 +141,178 @@ public class STGGraphComponent extends mxGraphComponent {
 			setVertexLocation(obj, x, y);
 		}
 	}
+	
+	
+	public void storeCoordinates(STGCoordinates coordinates) {
+		
+		coordinates.clear();
+		for (Map.Entry<mxCell, Node> en: cell2Node.entrySet()) {
+			mxGeometry g = en.getKey().getGeometry();
+			coordinates.put(en.getValue(), new Point((int)g.getCenterX(), (int)g.getCenterY()));
+		}
+	}
+	
+	boolean isShorthandedPlace(Place node, Node []frto) {
+		
+		if (!(node instanceof Place)) return false;
+		if (((Place)node).getMarking()!=0) return false;
+		Collection<Node> ch= node.getChildren();
+		Collection<Node> pa= node.getParents();
+		if (ch.size()!=1||pa.size()!=1) return false;
+		Node a=(Node)pa.toArray()[0];
+		Node b=(Node)ch.toArray()[0];
+		if (a==b) return false;
+		if (frto!=null) {
+			frto[0]=a;
+			frto[1]=b;
+		}
+		return true;
+	}
+	
+	
+/**
+ * Initialises Graph component with given STG and coordinates  
+ * @param stg
+ * @param coordinates 
+ */
+	public void initSTG(STG stg, boolean isShorthand) {
 
-	public void initSTG(STG stg) {
-
+		((mxGraphModel)graph.getModel()).clear();
+		
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
+		
+		
+		
 		try {
 			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
-
+			cell2Node.clear();
+			
+			if (stg==null) return;
+			
+			STGCoordinates coordinates=stg.getCoordinates();
+			
 			for (Node node : stg.getNodes()) {
+				
 				mxCell cell = null;
 
 				if (node instanceof Place) {
-					cell = (mxCell) graph.insertVertex(parent, null,
-							((Place) node).getMarking(), 50, 50, 25, 25,
-							"shape=ellipse;perimeter=ellipsePerimeter");
+					
+					if (isShorthand&&isShorthandedPlace((Place)node, null)) continue;
+					
+					cell = new PlaceCell((Place)node);
+//					cell = (mxCell) graph.insertVertex(parent, null,
+//							((Place) node).getMarking(), 50, 50, 25, 25,
+//							"shape=ellipse;perimeter=ellipsePerimeter");
+					
+				} else if (node instanceof Transition) {
+					// decide whether to add this cell
+					cell = new TransitionCell((Transition)node, stg);
+					
+//					int signalID = ((Transition) node).getLabel().getSignal();
+//					String style = "fontColor=black";
+//					if (stg.getSignature(signalID) == Signature.INPUT)
+//						style = "fontColor=red";
+//					if (stg.getSignature(signalID) == Signature.OUTPUT)
+//						style = "fontColor=blue";
+//					if (stg.getSignature(signalID) == Signature.INTERNAL)
+//						style = "fontColor=green";
+//					if (stg.getSignature(signalID) == Signature.ANY)
+//						style = "fontColor=black;fillColor=yellow";
+//
+//					cell = (mxCell) graph.insertVertex(parent, null,
+//							((Transition) node).getString(Transition.UNIQUE),
+//							50, 50, 40, 20, style);
 				}
-
-				else if (node instanceof Transition) {
-					// cell = new TransitionCell((Transition)node, stg);
-					int signalID = ((Transition) node).getLabel().getSignal();
-					String style = "fontColor=black";
-					if (stg.getSignature(signalID) == Signature.INPUT)
-						style = "fontColor=red";
-					if (stg.getSignature(signalID) == Signature.OUTPUT)
-						style = "fontColor=blue";
-					if (stg.getSignature(signalID) == Signature.INTERNAL)
-						style = "fontColor=green";
-					if (stg.getSignature(signalID) == Signature.ANY)
-						style = "fontColor=black;fillColor=yellow";
-
-					cell = (mxCell) graph.insertVertex(parent, null,
-							((Transition) node).getString(Transition.UNIQUE),
-							50, 50, 40, 20, style);
-				}
-
+				cell2Node.put(cell, node);
 				nc.put(node, cell);
-				graph.addCell(cell);
-
+				graph.addCell(cell, parent);
 			}
 
 			for (Node node : stg.getNodes()) {
 				mxCell source = nc.get(node);
-
+				if (source==null) continue;
+				
+				if (coordinates!=null) {
+					Point p = coordinates.get(node);
+					if (p!=null) {
+						double h=source.getGeometry().getHeight();
+						double w=source.getGeometry().getWidth();
+						source.getGeometry().setX(p.x-w/2);
+						source.getGeometry().setY(p.y-h/2);
+					} else {
+						// if no coordinate is given, find the average from its neighbours
+						int cnt=0;
+						int px=0;
+						int py=0;
+						for (Node n : node.getChildren()) {
+							Point p2 = coordinates.get(n);
+							if (p2!=null) {
+								cnt++;
+								px+=p2.x;
+								py+=p2.y;
+							}
+						}
+						
+						for (Node n : node.getParents()) {
+							Point p2 = coordinates.get(n);
+							if (p2!=null) {
+								cnt++;
+								px+=p2.x;
+								py+=p2.y;
+							}
+						}
+						
+						if (cnt>1) {
+							double h=source.getGeometry().getHeight();
+							double w=source.getGeometry().getWidth();
+							source.getGeometry().setX((double)px/cnt-w/2);
+							source.getGeometry().setY((double)py/cnt-h/2);
+						}
+					}
+				}
+				
 				for (Node child : node.getChildren()) {
+					if (child instanceof Place) {
+						Node []frto=new Node[2];
+						
+						if (isShorthand) {
+							if (isShorthandedPlace((Place)child, frto)) {
+								mxCell target = nc.get(frto[1]);
+								graph.insertEdge(parent, null, null, source, target);
+							}
+						}
+					}
+					
 					mxCell target = nc.get(child);
-
-					graph.insertEdge(parent, null, null, source, target);
-
-					// source.add(new DefaultPort());
-					// target.add(new DefaultPort());
-					// DefaultEdge edge = new DefaultEdge();
-					//
-					// edge.setSource(source.getChildAt(0));
-					// edge.setTarget(target.getChildAt(0));
-
-					// GraphConstants.setFont(edge.getAttributes(),
-					// STGEditorFrame.STANDARD_FONT);
-					// GraphConstants.setLabelPosition(edge.getAttributes(), new
-					// Point2D.Double(GraphConstants.PERMILLE/2, 10));
-
-					// int v = node.getChildValue(child);
-					// if (v>1)
-					// edge.setUserObject(v);
-
-					// int arrow = GraphConstants.ARROW_TECHNICAL;
-					// GraphConstants.setLineEnd(edge.getAttributes(), arrow);
-					// GraphConstants.setEndFill(edge.getAttributes(), true);
-
-					// insert(edge);
+					if (source!=null&&target!=null)
+						graph.insertEdge(parent, null, null, source, target);
 				}
 			}
-
-			mxGraphLayout cl = new mxOrganicLayout(graph);
-			cl.execute(parent);
-
-			//
-			shiftModel();
-
+			
+			// do default layout, if coordinates are not given
+			if (coordinates==null||coordinates.size()==0) {
+				mxGraphLayout cl = new mxOrganicLayout(graph);
+				cl.execute(parent);
+				shiftModel();
+				
+				coordinates = new STGCoordinates();
+				// store new coordinates for the STG
+				for (Object ob: graph.getChildCells(parent, true, false)) {
+					if (ob instanceof mxCell) {
+						if (ob instanceof TransitionCell || ob instanceof PlaceCell) {
+							double dx = ((mxCell)ob).getGeometry().getCenterX();
+							double dy = ((mxCell)ob).getGeometry().getCenterY();
+							Node nd = cell2Node.get(ob);
+							coordinates.put(nd, new Point((int)dx, (int)dy));
+						}
+					}
+				}
+			}
 		} finally {
 			graph.getModel().endUpdate();
 		}
-
+		
 	}
 
 	protected Map<String, Object> setupStyles(mxGraph graph) {
@@ -244,10 +343,6 @@ public class STGGraphComponent extends mxGraphComponent {
 
 		return style;
 	}
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7755698755334362626L;
 
 	public void setLayout(int type) {
 
@@ -271,6 +366,7 @@ public class STGGraphComponent extends mxGraphComponent {
 				gl = new mxOrganicLayout(graph);
 
 			gl.execute(parent);
+			shiftModel();
 		} finally {
 			graph.getModel().endUpdate();
 		}
@@ -295,11 +391,12 @@ public class STGGraphComponent extends mxGraphComponent {
 		graph.setCellsDeletable(false);
 		graph.setAllowDanglingEdges(false);
 		graph.setCellsSelectable(true);
+		graph.setAutoSizeCells(true);
 		
 		this.setSwimlaneSelectionEnabled(true);
 		this.setConnectable(false);
 		rubberband = new mxRubberband(this);
-		
+		cell2Node = new HashMap <mxCell, Node>();
 		
 	}
 	

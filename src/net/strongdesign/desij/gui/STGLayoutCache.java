@@ -19,24 +19,9 @@
 
 package net.strongdesign.desij.gui;
 
-import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Map;
 
-import net.strongdesign.stg.Node;
-import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.Transition;
 
-
-//import org.jgraph.event.GraphModelEvent;
-//import org.jgraph.event.GraphModelListener;
-//import org.jgraph.graph.DefaultEdge;
-//import org.jgraph.graph.DefaultGraphCell;
-//import org.jgraph.graph.DefaultPort;
-//import org.jgraph.graph.GraphConstants;
-//import org.jgraph.graph.GraphLayoutCache;
-//import org.jgraph.graph.GraphModel;
 
 public class STGLayoutCache {// extends LayoutCache implements GraphModelListener {
 	/**

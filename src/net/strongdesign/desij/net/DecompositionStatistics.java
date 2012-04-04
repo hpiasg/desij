@@ -29,6 +29,7 @@ import net.strongdesign.stg.STG;
 
 public class DecompositionStatistics extends UnicastRemoteObject implements IDecompositionStatistics  {
 
+	private static final long serialVersionUID = 3046099525200549228L;
 	private int eventCounter = 0;
 	private Map<DecompositionEvent, Integer> events	= new HashMap<DecompositionEvent, Integer>();
 

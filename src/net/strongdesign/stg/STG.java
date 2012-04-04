@@ -84,10 +84,13 @@ public final class STG implements Cloneable {
 	private Stack<UndoOperation> undoStack;
 
 	/**The coordinates of the nodes for a graphical representation.*/
-	private Map<Node, Point> coordinates=null;
+	private STGCoordinates coordinates;
 
 	/**True if node coordinates are actually saved.*/
-	private boolean withCoordinates;
+	//private boolean withCoordinates;
+	public boolean isWithCoordinates() {
+		return !coordinates.isEmpty();
+	}
 
 	// *******************************************************************
 	// Construction and Generation
@@ -96,7 +99,7 @@ public final class STG implements Cloneable {
 	/**
 	 * Constructs an empty STG.
 	 */
-	public STG(boolean withCoordinates) {
+	public STG() {
 		places = new HashSet<Place>();
 		transitions = new HashSet<Transition>();
 		maxNodeNumber = 0;		
@@ -106,9 +109,9 @@ public final class STG implements Cloneable {
 		signalNames = new HashMap<Integer, String>();
 		signalNumbers = new HashMap<String, Integer>();
 		
-		this.withCoordinates = withCoordinates;
-		if (withCoordinates)
-			coordinates = new HashMap<Node, Point>();
+		//this.withCoordinates = withCoordinates;
+		//if (withCoordinates)
+		coordinates = new STGCoordinates();
 
 	}
 
@@ -119,8 +122,7 @@ public final class STG implements Cloneable {
 	 */
 	public STG clone() {
 		//The resulting copy 
-		STG result = new STG(withCoordinates);
-
+		STG result = new STG();
 
 		result.signalNames = new HashMap<Integer, String>(signalNames);
 		result.signalNumbers = new HashMap<String, Integer>(signalNumbers);
@@ -137,7 +139,7 @@ public final class STG implements Cloneable {
 				newPlace.setSTG(result);
 				result.places.add(newPlace);
 				newPlaces.put(place, newPlace);		        
-				if (withCoordinates)
+				if (isWithCoordinates())
 					result.coordinates.put(newPlace, coordinates.get(place));
 			}
 
@@ -147,7 +149,7 @@ public final class STG implements Cloneable {
 				newTransition.setSTG(result);
 				result.transitions.add(newTransition);
 				newTransitions.put(transition, newTransition);
-				if (withCoordinates)
+				if (isWithCoordinates())
 					result.coordinates.put(newTransition, coordinates.get(transition));
 			}
 
@@ -195,11 +197,9 @@ public final class STG implements Cloneable {
 
 		places = new HashSet<Place>();
 		transitions = new HashSet<Transition>();
-		withCoordinates = stg.withCoordinates;
-		if (withCoordinates)
-			coordinates = new HashMap<Node, Point>();
-		else
-			coordinates = null;
+		
+		coordinates = new STGCoordinates();
+		
 		signalOccurences = new HashMap<Integer, Integer>();
 		signatures = new HashMap<Integer, Signature>();
 		
@@ -216,7 +216,7 @@ public final class STG implements Cloneable {
 				newPlace.setSTG(this);
 				places.add(newPlace);
 				newPlaces.put(place, newPlace);		        
-				if (withCoordinates)
+				if (isWithCoordinates())
 					coordinates.put(newPlace, stg.coordinates.get(place));
 			}
 
@@ -226,7 +226,7 @@ public final class STG implements Cloneable {
 				newTransition.setSTG(this);
 				transitions.add(newTransition);
 				newTransitions.put(transition, newTransition);
-				if (withCoordinates)
+				if (isWithCoordinates())
 					coordinates.put(newTransition, stg.coordinates.get(transition));
 			}
 
@@ -1124,25 +1124,35 @@ public final class STG implements Cloneable {
 	 * @throws @link UnsupportedOperationException if @link #withCoordinates
 	 * is false.
 	 */
-	public Map<Node, Point> getCoordinates() {
-		if (!withCoordinates)
-			throw new UnsupportedOperationException("No coordinates available");
+	public STGCoordinates getCoordinates() {
 
-		return Collections.unmodifiableMap(coordinates);
+		return coordinates;
 	}
 
+
+	/**
+	 * creates a clone for coordinates from another STG
+	 */
+	public void copyCoordinates(STGCoordinates coordinates) {
+		this.coordinates.clear();
+		this.coordinates = (STGCoordinates)coordinates.clone();
+	}
+
+	
 	/**
 	 * Returns the coordinates of the given node.
 	 * @throws @link UnsupportedOperationException if @link #withCoordinates
 	 * is false.
 	 */
 	public Point getCoordinates(Node node) {
-		if (!withCoordinates)
-			throw new UnsupportedOperationException("No coordinates available");
+		if (!coordinates.containsKey(node)) return null;
+//			throw new UnsupportedOperationException("Coordinate for node "+node+" not found");
 
 		return coordinates.get(node);
 	}
 
+
+	
 	/**
 	 * Sets the coordinates of the given node.
 	 * @throws @link STGException if the node is unknown
@@ -1150,11 +1160,10 @@ public final class STG implements Cloneable {
 	 * is false.
 	 */
 	public Point setCoordinates(Node node, Point point) throws STGException {
-		if (!withCoordinates)
-			return null;
 
 		if (!places.contains(node) && !transitions.contains(node))
 			throw new STGException("Unknown node '"+node+"'");
+		
 		return coordinates.put(node, point);
 	}
 
@@ -1438,7 +1447,7 @@ public final class STG implements Cloneable {
 		int cur = 1;
 		
 		
-		STG result = new STG(false);
+		STG result = new STG();
 		
 		
 		while (stgs.size() > 1) {
@@ -1666,8 +1675,8 @@ public final class STG implements Cloneable {
 	 * @see #clone()
 	 */
 	private STG specialCloneWithPlaceMapping(Map <Place,Place> newPlaces) {
-		//The resulting copy 
-		STG result = new STG(false);
+		//The resulting copy
+		STG result = new STG();
 
 
 		result.signalNames = new HashMap<Integer, String>(signalNames);
@@ -1816,7 +1825,8 @@ public final class STG implements Cloneable {
 				return false;
 		} else if (!transitions.equals(other.transitions))
 			return false;
-		if (withCoordinates != other.withCoordinates)
+		
+		if (isWithCoordinates() != other.isWithCoordinates())
 			return false;
 		return true;
 	}
@@ -1834,6 +1844,7 @@ public final class STG implements Cloneable {
 		
 		return highestSignalNumber;
 	}
+
 }
 
 

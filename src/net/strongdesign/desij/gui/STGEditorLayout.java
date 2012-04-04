@@ -32,8 +32,8 @@ public class STGEditorLayout {
 	/**
 	 * Applies random layout
 	 */
-	public static STGEditorCoordinates applyRandomLayout(Collection<Node> nodes) {
-		STGEditorCoordinates result = new STGEditorCoordinates();
+	public static STGCoordinates applyRandomLayout(Collection<Node> nodes) {
+		STGCoordinates result = new STGCoordinates();
 		for (Node node : nodes)
 			result.put(node, new Point((int) (Math.random() * 500 + 250),
 					(int) (Math.random() * 500 + 250)));
@@ -44,9 +44,9 @@ public class STGEditorLayout {
 	 * Applies spring layout
 	 * @param count # of iterations
 	 */
-	public static STGEditorCoordinates applySpringLayout(STGEditorCoordinates coordinates, int count) {
+	public static STGCoordinates applySpringLayout(STGCoordinates coordinates, int count) {
 		//Attraction of neighboured nodes
-		double naturalLength = 100;
+/*		double naturalLength = 100;
 		double springConstantAttraction = 0.05;
 		double springConstantRepulsion = 0.5;
 		
@@ -146,7 +146,8 @@ public class STGEditorLayout {
 			}
 		}
 		
-		return coordinates;
+		return coordinates;*/
+		return null;
 	}
 		
 	

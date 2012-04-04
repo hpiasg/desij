@@ -137,8 +137,6 @@ public class Place  extends Node {
 	    if (unique && getIdentifier() != 0)
 	        result.append("_"+getIdentifier());
 	    
-	    	        
-
 	    
 	    if (tokens && marking!=0)
 	        result.append("("+marking+")");

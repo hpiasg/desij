@@ -90,7 +90,7 @@ public class BasicDecomposition extends AbstractDecomposition {
 					redDel(stgParam.stg);
 					logging(stgParam.stg, DecompositionEvent.FINISHED_STATIC, bSize);
 					return remainingTransitions.b;
-				}			
+				}
 				else { // auto conflicts have to be avoided
 					//some signal needs to be delambdarised
 					//check if backtracking is not desired

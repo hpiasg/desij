@@ -34,10 +34,13 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 	private final STGEditorAction VIEW = new STGEditorAction("View", KeyEvent.VK_V, null, 0, this);
 	private final STGEditorAction PETRINET = new STGEditorAction("Petri net", KeyEvent.VK_P, null, 0, this);
 	private final STGEditorAction STG = new STGEditorAction("STG", KeyEvent.VK_S, null, 0, this);
+	
+	private final STGEditorAction PARTITION = new STGEditorAction("Partition", 0, null, 0, this);
+	
 	private final STGEditorAction DECOMPOSITION = new STGEditorAction("Decomposition", KeyEvent.VK_D, null, 0, this);
 	private final STGEditorAction HELP = new STGEditorAction("Help", KeyEvent.VK_H, null, 0, this);
 
-
+	
 	
 	public STGEditorMenuBar(STGEditorFrame frame) {//, STGLayoutCache cache) {
 		super();
@@ -85,6 +88,7 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		edit.add(frame.LAYOUT);
 		
 		
+		view.add(frame.IS_SHORTHAND);
 //		view.add(editor.ZOOM_IN);
 //		view.add(editor.ZOOM_OUT);
 //		view.add(editor.ROTATE_CW);
@@ -105,11 +109,28 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		
 		stg.add(frame.SIGNAL_TYPE);
 		
-		decomposition.add(frame.INITIAL_PARTITION);
-		decomposition.add(frame.REDUCE);
-
+		JMenu partition = new JMenu(PARTITION);
+		decomposition.add(partition);
+		
+		partition.add(frame.FINEST_PARTITION);
+		partition.add(frame.ROUGHEST_PARTITION);
+		partition.add(frame.MULTISIGNAL_PARTITION);
+		partition.add(frame.AVOIDCSC_PARTITION);
+		partition.add(frame.REDUCECONC_PARTITION);
+		partition.add(frame.LOCKED_PARTITION);
+		partition.add(frame.BEST_PARTITION);
+		
+		JMenu reduce = new JMenu(frame.REDUCE); 
+		decomposition.add(reduce);
+		
+		reduce.add(frame.DECO_BASIC);
+		reduce.add(frame.DECO_INTERNAL);
+		reduce.add(frame.DECO_TREE);
+		reduce.add(frame.DECO_CSC_AWARE);
+		reduce.add(frame.DECO_ICSC_AWARE);
+		
 		help.add(frame.ABOUT);
-			
+		
 		
 		/*
 		JMenu edit = new JMenu("Edit");

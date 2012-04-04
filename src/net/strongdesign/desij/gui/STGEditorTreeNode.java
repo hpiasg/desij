@@ -19,39 +19,48 @@
 
 package net.strongdesign.desij.gui;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+
 import net.strongdesign.stg.STG;
 
+public class STGEditorTreeNode extends DefaultMutableTreeNode{
 
+	private static final long serialVersionUID = 971545642212448511L;
 
-public class STGEditorTreeNode {
-
+	private STG stg;
+//	private STGCoordinates coordinates;
 	
-    private STG stg;
-    private String label;	
+    private String label;
+    private String fileName; // related file name (if it exists)
 	private boolean procreative;
 	private boolean isSTG;
-	
-	private STGEditorTreeNode parent;
-	
     
-	public STGEditorTreeNode(String label, STG stg, boolean procreative, STGEditorTreeNode parent) {
+	public STGEditorTreeNode(String label, STG stg, boolean procreative) {
+		super(label);
         this.stg = stg;
         this.procreative = procreative;
 		this.label = label;
-		this.parent = parent;
 		isSTG = true;
 	}
 	
-	public STGEditorTreeNode(String label, STGEditorTreeNode parent) {
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public STGEditorTreeNode(String label) {
+		super(label);
 		this.stg = null;
-		this.procreative = true;		
+		this.procreative = true;
 		this.label = label;
-		this.parent = parent;
-		isSTG = false;		
+		isSTG = false;
 	}
 	
 	public STGEditorTreeNode getParent() {
-		return parent;
+		return (STGEditorTreeNode)parent;
 	}
 	
 	public boolean isSTG() {
@@ -86,6 +95,14 @@ public class STGEditorTreeNode {
 	public String toString() {
 		return label;
 	}
-    
+	
+/*
+	public void setCoordinates(STGCoordinates coordinates) {
+		this.coordinates = coordinates;
+	}
+
+	public STGCoordinates getCoordinates() {
+		return coordinates;
+	}*/
     
 }

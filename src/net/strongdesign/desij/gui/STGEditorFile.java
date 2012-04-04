@@ -19,12 +19,13 @@
 
 package net.strongdesign.desij.gui;
 
+import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGFile;
 
 public abstract class STGEditorFile extends STGFile {
 	
 //	
-	public static STGEditorCoordinates convertToCoordinates(String file) {
+	public static STGCoordinates convertToCoordinates(String file) {
 //		STGEditorCoordinates result = new STGEditorCoordinates();
 //		try {
 //			BufferedReader reader = new BufferedReader(new StringReader(file));

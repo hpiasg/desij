@@ -239,9 +239,6 @@ public abstract class Node  implements Cloneable {
 	public void addToChildValue(Node node, int value){
 		setChildValue(node, value + getChildValue(node));
 	}
-		
-
-	
 
 	/**
 	 * Returns the parents of the instance.
@@ -249,6 +246,10 @@ public abstract class Node  implements Cloneable {
 	 */
 	public final Set<Node> getParents() {
 		return parentValues.keySet();
+	}
+	
+	public final boolean hasParents() {
+		return !parentValues.isEmpty();
 	}
 
 	/**
@@ -259,7 +260,9 @@ public abstract class Node  implements Cloneable {
 		return  childValues.keySet();
 	}
 
-	
+	public final boolean hasChildren() {
+		return !childValues.isEmpty();
+	}
 	
 	/**
 	 * Gets the arc-weight to a node as a parent of this instance.

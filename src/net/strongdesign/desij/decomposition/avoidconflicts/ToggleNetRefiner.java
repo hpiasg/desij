@@ -50,8 +50,9 @@ class ToggleNetRefiner extends PlaceHolderRefiner {
 	public void execute(STG stg) throws STGException  {
 		int placeNumber = 0;
 		for (Transition transition: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-			if (stg.getSignature(transition.getLabel().getSignal()) == Signature.INTERNAL &&
-					transition.getLabel().getDirection() == EdgeDirection.UNKNOWN) {
+			if ( (stg.getSignature(transition.getLabel().getSignal()) == Signature.INTERNAL || stg.getSignature(transition.getLabel().getSignal()) == Signature.INPUT) &&
+					transition.getLabel().getDirection() == EdgeDirection.UNKNOWN && 
+					stg.getSignalName(transition.getLabel().getSignal()).startsWith("ic") ) {
 				Place p_H = stg.addPlace("p_H" + (++placeNumber), 0);
 				Place p_L = stg.addPlace("p_L" + placeNumber, 1);
 				Transition t_plus = stg.addTransition(new SignalEdge(transition.getLabel().getSignal(), EdgeDirection.UP));

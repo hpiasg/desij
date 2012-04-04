@@ -181,6 +181,7 @@ public class DesiJ {
 						"DesiJ - An STG Decomposer dedicated to the Synthesis of SI Circuits\n" + 
 						"(c) 2004-2007 by Mark Schaefer, University of Augsburg, mark.schaefer@informatik.uni-augsburg.de\n"+
 						"(c) 2008-2012 by Dominic Wist, Hasso-Plattner-Institut, dominic.wist@hpi.uni-potsdam.de\n"+
+						"(c) 2012-2012 by Stanislavs Golubcovs, University of Augsburg, stanislavs.golubcovs@informatik.uni-augsburg.de\n"+
 				"DesiJ comes as is with no warranty. Use at your own risk.");
 
 			Date start = new Date();
@@ -602,15 +603,15 @@ public class DesiJ {
 					throw new FileNotFoundException(fileName);          
 			}       
 
-			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
-			STG stg = STGEditorFile.convertToSTG(file, true);
+//			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+//			STG stg = STGEditorFile.convertToSTG(file, true);
 //			STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
 
-
-			STGEditorFrame frame = new STGEditorFrame(fileName, stg);
+			STGEditorFrame frame = new STGEditorFrame();
+			
+			frame.open(fileName);
+			frame.getFileChooser().setCurrentDirectory(f);
 			frame.setVisible(true);
-
-
 
 			frame.addWindowListener(new WindowAdapter() { // callback for closing the GUI
 				public void windowClosed(WindowEvent e) {

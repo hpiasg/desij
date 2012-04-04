@@ -25,6 +25,8 @@ import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,6 +35,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.zip.ZipOutputStream;
 
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -41,9 +44,12 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
-import net.strongdesign.stg.Node;
+import net.strongdesign.desij.decomposition.AbstractDecomposition;
+import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.Signature;
@@ -51,19 +57,13 @@ import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.traversal.CollectorFactory;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.util.FileSupport;
-import net.strongdesign.stg.Place;
-import net.strongdesign.stg.Transition;
-
-//import org.jgraph.JGraph;
-//import org.jgraph.graph.DefaultGraphModel;
-//import org.jgraph.graph.GraphModel;
 
 /**
  * This is the main class of the DesiJ GUI. It contains a graphical
  * representation of STGs and a navigation view for navigating between different
  * STGs.
  */
-public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
+public class STGEditorFrame extends JFrame implements ActionListener, ItemListener {
 	private static final long serialVersionUID = 7606945539229848668L;
 
 	public final STGEditorAction OPEN = new STGEditorAction("Open",
@@ -72,7 +72,7 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 			KeyEvent.VK_N, 'n', 0, this);
 
 	public final STGEditorAction LAYOUT = new STGEditorAction("Spring layout",
-			KeyEvent.VK_S, 'l', 0, this);
+			KeyEvent.VK_L, 'l', 0, this);
 
 	public final STGEditorAction SAVE = new STGEditorAction("Save",
 			KeyEvent.VK_S, 'S', 0, this);
@@ -80,12 +80,38 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 			KeyEvent.VK_A, null, 0, this);
 	public final STGEditorAction EXIT = new STGEditorAction("Exit",
 			KeyEvent.VK_X, null, 0, this);
+
 	public final STGEditorAction INITIAL_PARTITION = new STGEditorAction(
-			"Initial partition", KeyEvent.VK_I, null, 0, this);
+			"Initial partition", 0, null, 0, this);
+	
+	public final STGEditorAction FINEST_PARTITION = new STGEditorAction(
+			"Finest partition", 0, null, 0, this);
+	public final STGEditorAction ROUGHEST_PARTITION = new STGEditorAction(
+			"Roughest partition", 0, null, 0, this);
+	public final STGEditorAction MULTISIGNAL_PARTITION = new STGEditorAction(
+			"Signal re-use heuristic", 0, null, 0, this);
+	
+	public final STGEditorAction AVOIDCSC_PARTITION = new STGEditorAction(
+			"Avoid CSC", 0, null, 0, this);
+	public final STGEditorAction REDUCECONC_PARTITION = new STGEditorAction(
+			"Reduce concurrency", 0, null, 0, this);
+	public final STGEditorAction LOCKED_PARTITION = new STGEditorAction(
+			"Locked signals partition", 0, null, 0, this);
+	public final STGEditorAction BEST_PARTITION = new STGEditorAction(
+			"Best partition", 0, null, 0, this);
+	
 	public final STGEditorAction RG = new STGEditorAction(
 			"Create reachability graph", KeyEvent.VK_R, null, 0, this);
-	public final STGEditorAction REDUCE = new STGEditorAction(
-			"Reduce Component", KeyEvent.VK_R, null, 0, this);
+	
+	public final STGEditorAction REDUCE = new STGEditorAction("Reduce Component", 0, null, 0, this);
+	public final STGEditorAction DECO_BASIC = new STGEditorAction("Basic", 0, null, 0, this);
+	public final STGEditorAction DECO_INTERNAL = new STGEditorAction("Internal signals", 0, null, 0, this);
+	public final STGEditorAction DECO_TREE = new STGEditorAction("Tree", 0, null, 0, this);
+	public final STGEditorAction DECO_CSC_AWARE = new STGEditorAction("CSC aware", 0, null, 0, this);
+	public final STGEditorAction DECO_ICSC_AWARE = new STGEditorAction("Irr. CSC aware", 0, null, 0, this);
+	
+	
+	
 	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction(
 			"Change signal types", KeyEvent.VK_C, null, 0, this);
 	public final STGEditorAction COPY_STG = new STGEditorAction("Copy STG",
@@ -94,6 +120,9 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	public final STGEditorAction ABOUT = new STGEditorAction("About JDesi",
 			KeyEvent.VK_A, null, 0, this);
 
+	
+	public JCheckBoxMenuItem IS_SHORTHAND = new JCheckBoxMenuItem("Shorthand notation");
+	
 	public final STGEditorAction LAYOUT1 = new STGEditorAction("Organic",
 			KeyEvent.VK_1, '1', 0, this);
 	public final STGEditorAction LAYOUT2 = new STGEditorAction("Circle",
@@ -121,6 +150,8 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 
 	Map<String, Object> transitionStyle;
 	Map<String, Object> placeStyle;
+	
+	private JFileChooser fileChooser = new JFileChooser();
 
 	/** The navigation view. */
 	private STGEditorNavigation navigationView;
@@ -131,10 +162,15 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	/** The split pane containing the navigation view and the current graph. */
 	private JSplitPane splitPane;
 
-	private String label;
+	//private String label;
 
-
-
+	private boolean useShorthand;
+	
+	
+	public JFileChooser getFileChooser() {
+		return fileChooser;
+	}
+	
 	/**
 	 * Constructs an instance.
 	 * 
@@ -143,13 +179,15 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	 * @param stg
 	 *            The initial STG.
 	 */
-	public STGEditorFrame(String windowLabel, STG stg) {
+	public STGEditorFrame(/*String windowLabel, STG stg*/) {
 
 		// Initialise window
-		super(windowLabel);
+		//super(windowLabel);
+		super();
 		setBounds(new Rectangle(50, 50, 800, 600));
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		this.label = windowLabel;
+		
+//		this.label = windowLabel;
 
 		// Initialise navigation view
 		// navigationView = new STGEditorNavigation(stg, this);
@@ -161,17 +199,12 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 		// graph = new mxGraph(model, cache);
 
 		graphComponent = new STGGraphComponent();
-		graphComponent.initSTG(stg);
 		
 		graphOutline = new mxGraphOutline(graphComponent);
 
-		// graphComponent.setAntiAlias(true);
 
-		// Build up the graph corresponding to the STG
-		// cache.init();
 
-		navigationView = new STGEditorNavigation(this);
-		navigationView.setModel(navigationView.createTestTree());
+		navigationView = new STGEditorNavigation(this, graphComponent);
 
 		// Put it all together
 		JSplitPane vert = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -191,6 +224,13 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 		menuBar = new STGEditorMenuBar(this);// , cache);
 
 		setJMenuBar(menuBar);
+		IS_SHORTHAND.addItemListener(this);
+		
+//		if (stg!=null) {
+//			STGEditorTreeNode node = navigationView.addSTGNode(stg, null, windowLabel, true);
+//			navigationView.showNode(node);
+//		}
+		
 	}
 
 	public void saveProject(String fileName) throws FileNotFoundException {
@@ -229,35 +269,41 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	}
 
 	public String getFileName() {
-		return navigationView.getCurrentNode().getLabel();
+		return navigationView.getSelectedNode().getFileName();
 	}
 
 	public void setFileName(String fileName) {
-		navigationView.getCurrentNode().setLabel(fileName);
+		navigationView.getSelectedNode().setFileName(fileName);
+		navigationView.getSelectedNode().setLabel(fileName);
 	}
 
 	public void updateSTG(STG stg) {
-		// editor.setSTG(stg, null);
+		//editor.setSTG(stg, null);
 	}
 
-	public void run() {
 
-	}
 
+	/*
 	public void setSTG(STGEditorTreeNode node) {
 
-		if (!node.isSTG())
-			return;
+		if (!node.isSTG()) return;
 
 		// model=new DefaultGraphModel();
 		// cache = new STGLayoutCache(node.getSTG(), model);
 		// graph.setGraphLayoutCache(cache);
 
 		// cache.init();
+		STGEditorCoordinates coordinates = node.getCoordinates();
+		if (coordinates==null) return;
+		
+		for (Node n: node.getSTG().getNodes()) {
+			
+		}
 
 		splitPane.validate();
 	}
-
+*/
+	
 	// /* //Former STG will be saved in STGEditorTreeNode
 	// if (editor != null)
 	// if (currentNode.isSTG())
@@ -376,31 +422,65 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	// }
 	// }
 	//
-	public void initialPartition() throws STGException {
-		STGEditorTreeNode curNode = navigationView.getCurrentNode();
-		if (!curNode.isSTG())
-			return;
-		STG curSTG = curNode.getSTG();
-
-		STGEditorTreeNode newNode = new STGEditorTreeNode("Initial components",
-				navigationView.getCurrentNode());
-		navigationView.addNode(newNode, "Partition");
-
-		for (STG s : Partition.splitByPartition(curSTG,
-				Partition.getFinestPartition(curSTG, null))) {
+	public void initialPartition(String partitionString) throws STGException {
+		STGEditorTreeNode projectNode = navigationView.getProjectNode();
+		if (navigationView.getSelectedNode()==projectNode) {
+			graphComponent.storeCoordinates(projectNode.getSTG().getCoordinates());
+		}
+		
+		if (!projectNode.isSTG()) return;
+		
+		STG curSTG = projectNode.getSTG();
+		projectNode.removeAllChildren();
+		
+		STGEditorTreeNode initComponents = new STGEditorTreeNode(partitionString);
+		
+		projectNode.add(initComponents);
+		
+		//navigationView.addNode(initComponents, "Partition");
+		Partition partition;
+		
+		
+		if (partitionString.equals("finest"))
+			partition = Partition.getFinestPartition(curSTG,null);
+		else if (partitionString.equals("roughest"))
+			partition = Partition.getRoughestPartition(curSTG, null);
+		else if (partitionString.equals("multisignaluse"))
+			partition = Partition.getMultipleSignalUsagePartition(curSTG);
+		else if (partitionString.equals("avoidcsc"))
+			partition = Partition.getCSCAvoidancePartition(curSTG);
+		else if (partitionString.equals("reduceconc"))
+			partition = Partition.getPartitionConcurrencyReduction(curSTG);
+		else if (partitionString.equals("lockedsignals"))
+			partition = Partition.getLockedSignalsPartition(curSTG);
+		else if (partitionString.equals("best"))
+			partition = Partition.getBestPartition(curSTG);
+		else
+			partition = Partition.fromString(curSTG, partitionString);
+		
+		
+		for (STG s : Partition.splitByPartition(curSTG, partition)) {
 
 			StringBuilder signalNames = new StringBuilder();
 			for (Integer sig : s.collectUniqueCollectionFromTransitions(
 					ConditionFactory.getSignatureOfCondition(Signature.OUTPUT),
 					CollectorFactory.getSignalCollector()))
-				signalNames.append(sig.toString());
+				signalNames.append(" "+curSTG.getSignalName(sig));
 
 			STGEditorTreeNode nn = new STGEditorTreeNode(
-					signalNames.toString(), s, true, newNode);
-			navigationView.addNode(nn, signalNames.toString());
+					signalNames.toString(), s, true);
+			
+			nn.getSTG().copyCoordinates(projectNode.getSTG().getCoordinates());
+			
+			
+			
+			initComponents.add(nn);
+			//navigationView.addNode(nn, signalNames.toString());
 		}
-
-		navigationView.setCurrentNode(newNode);
+		
+		navigationView.updateUI();
+		
+		navigationView.showNode(initComponents);
 	}
 
 	//
@@ -468,20 +548,22 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	// "Deleted: "+node.getString(Node.UNIQUE), false));
 	// repaint();
 	// }
-	//
-	//
+
+
 	public void exit() {
 		dispose();
 	}
 
-	public void open() {
-		JFileChooser fileChooser = new JFileChooser();
+	public void open(String fileName) {
+		
 		fileChooser.setMultiSelectionEnabled(false);
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
-
-		fileChooser.showOpenDialog(this);
-		label = fileChooser.getSelectedFile().getAbsolutePath();
-		String fileName = label;
+		
+		
+		if (fileName==null) {
+			if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return; 
+			fileName = fileChooser.getSelectedFile().getAbsolutePath();
+		}
 
 		try {
 
@@ -491,9 +573,16 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 				if (!f.exists())
 					throw new FileNotFoundException(fileName);
 			}
-
+			
 			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+			//fileName = f.getAbsolutePath();
 			STG stg = STGEditorFile.convertToSTG(file, true);
+			
+			// add new tree element
+			
+			STGEditorTreeNode node = navigationView.addSTGNode(stg, fileName, true);
+			navigationView.showNode(node);
+			setFileName(fileName);
 			
 			// STGEditorCoordinates coordinates =
 			// STGEditorFile.convertToCoordinates(file);
@@ -526,59 +615,62 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	}
 
 	private void save() throws IOException {
+		
+		STGEditorTreeNode selectedNode = navigationView.getSelectedNode();
+		graphComponent.storeCoordinates(selectedNode.getSTG().getCoordinates());
+		
 		String name = getFileName();
 		if (name == null) {
-			JFileChooser fileChooser = null;
+			fileChooser.setMultiSelectionEnabled(false);
+			
+/*			JFileChooser fileChooser = null;
 			try {
 				fileChooser = new JFileChooser(new File(".").getCanonicalPath());
 			} catch (IOException e1) {
 				e1.printStackTrace();
-			}
-			fileChooser.setSelectedFile(new File(navigationView
-					.getCurrentNode().toString().replaceAll(" ", "_")
-					.replaceAll(":", "")
-					+ ".g"));
+			}*/
+			
+/*			fileChooser.setSelectedFile(new File(selectedNode.toString().replaceAll(" ", "_").replaceAll(":", "")
+					+ ".g"));*/
+			
 			fileChooser.setFileFilter(STGFileFilter.STANDARD);
 			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
 				return;
 			name = fileChooser.getSelectedFile().getAbsolutePath();
-			if (name == null)
-				return;
-			label = name;
+			if (name == null) return;
 		}
 
-		FileSupport.saveToDisk(
-				STGFile.convertToG(navigationView.getCurrentNode().getSTG()),
-				label);
+		FileSupport.saveToDisk(STGFile.convertToG(selectedNode.getSTG()), name);
+		
 	}
 
 	private void saveAs() throws IOException {
-		String name = label;
+		String name = null;
 
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
-		if (name != null)
-			fileChooser.setSelectedFile(new File(label));
+		
+//		if (name != null)
+//			fileChooser.setSelectedFile(new File(name));
+		
 		fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
 			return;
 		name = fileChooser.getSelectedFile().getAbsolutePath();
-		if (name == null)
-			return;
-		label = name;
+		if (name == null) return;
 
 		FileSupport.saveToDisk(
-				STGFile.convertToG(navigationView.getCurrentNode().getSTG()),
-				label);
+				STGFile.convertToG(navigationView.getSelectedNode().getSTG()), name);
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
+		
 		try {
 			// if (source == SPRING_LAYOUT) springLayout();
 			if (source == OPEN)
-				open();
+				open(null);
 			else if (source == SAVE)
 				save();
 			else if (source == SAVE_AS)
@@ -588,18 +680,45 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 			// else if (source == RG) rg();
 			else if (source == COPY_STG)
 				copySTG();
-			else if (source == INITIAL_PARTITION)
-				initialPartition();
+			else if (source == FINEST_PARTITION)
+				initialPartition("finest");
+			else if (source == ROUGHEST_PARTITION)
+				initialPartition("roughest");
+			else if (source == MULTISIGNAL_PARTITION)
+				initialPartition("multisignal");
+			else if (source == AVOIDCSC_PARTITION)
+				initialPartition("avoidcsc");
+			else if (source == REDUCECONC_PARTITION)
+				initialPartition("reduceconc");
+			else if (source == LOCKED_PARTITION)
+				initialPartition("lockedsignals");
+			else if (source == BEST_PARTITION)
+				initialPartition("best");
+			
 			// else if (source == SIGNAL_TYPE) changeSignalType();
 			// else if (source == SPRING_LAYOUT_EXCLUDE);
 			// else if (source == SPRING_LAYOUT_INCLUDE);
-			// else if (source == REDUCE) {backgroundMethod = "reduce"; new
-			// Thread(this).start(); }
-			// //else if (source == REDUCE) {new
-			// DecompositionOptions("Decomposition", currentNode.getSTG(), new
-			// DesijCommandLineWrapper(new String[]{""})).setVisible(true);}
-			// else if (source == ABOUT) {new
-			// STGEditorAbout(this).setVisible(true);}
+//			else if (source == REDUCE) {backgroundMethod = "reduce"; new
+//				Thread(this).start(); 
+//			}
+			else if (
+					source == DECO_BASIC||
+					source == DECO_INTERNAL||
+					source == DECO_TREE||
+					source == DECO_CSC_AWARE||
+					source == DECO_ICSC_AWARE) {
+				
+				reduce(source);
+			}
+//			else if (source == REDUCE) {
+//				 //new DecompositionOptions("Decomposition", currentNode.getSTG(), new
+////						 DesijCommandLineWrapper(new String[]{""})).setVisible(true);
+//				 reduce();
+//			}
+			
+			else if (source == ABOUT) {
+				new STGEditorAbout(this).setVisible(true);
+			}
 			else if (source == LAYOUT1)
 				graphComponent.setLayout(1);
 			else if (source == LAYOUT2)
@@ -701,88 +820,119 @@ public class STGEditorFrame extends JFrame implements Runnable, ActionListener {
 	// // return result;
 	// // }
 	//
-	// private void reduce() {
-	// if (!currentNode.isSTG()) {
-	// JOptionPane.showMessageDialog(this, "No STG selected", "JDesi - Reduce",
-	// JOptionPane.ERROR_MESSAGE);
-	// return;
-	// }
-	//
-	// class Deco extends BasicDecomposition {
-	//
-	// private STGEditorTreeNode parent;
-	//
-	//
-	//
-	// public Deco(STGEditorTreeNode parent) {
-	// super();
-	// this.parent = parent;
-	//
-	//
-	// // navigation.getModel().insertNodeInto(new STGEditorTreeNode("1. Try"),
-	// parent, parent.getChildCount());
-	//
-	//
-	//
-	// }
-	//
-	// public void logging(DecompositionParameter decoPara, DecompositionEvent
-	// event, Object affectedNodes) {
-	// if (affectedNodes != null && affectedNodes instanceof Collection &&
-	// ((Collection)affectedNodes).size()==0)
-	// return;
-	//
-	//
-	// //
-	//
-	//
-	// if (event == DecompositionEvent.BACKTRACKING) {
-	// // navigation.getModel().insertNodeInto(new
-	// STGEditorTreeNode("Added signal: "+affectedNodes), parent,
-	// parent.getChildCount());
-	//
-	// }
-	// }
-	// }
-	//
-	// //setSTG(currentNode);
-	//
-	// currentNode.setProcreative();
-	//
-	// DecompositionParameter decoPara = new DecompositionParameter();
-	// decoPara.stg = currentNode.getSTG().clone();
-	// DesiJ.risky = false;
-	//
-	//
-	// Deco deco = new Deco(currentNode);
-	// try {
-	// deco.reduce(decoPara);
-	// }
-	// catch (Exception e) {
-	// e.printStackTrace();
-	// }
-	// }
-	// private void rg() {
-	//
-	//
-	// STG rg = STGUtil.generateReachabilityGraph(currentNode.getSTG());
-	//
-	// currentNode.setProcreative();
-	// addChild(rg, null, "Reachability graph", false);
-	//
-	//
-	//
-	// }
-	//
-	// private void save(String file, String fileName) {
-	// try {
-	// FileSupport.saveToDisk(file, fileName);
-	// }
-	// catch (IOException e) {
-	// JOptionPane.showMessageDialog(this, "Could not save file: "+fileName,
-	// "JDesi Error", JOptionPane.ERROR_MESSAGE);
-	// }
-	// }
-	//
-	// }
+	
+	 private void reduce(Object source) {
+		 STGEditorTreeNode currentNode = navigationView.getSelectedNode(); 
+		 if (!currentNode.isSTG()) {
+			 JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
+			 JOptionPane.ERROR_MESSAGE);
+			 return;
+		 }
+		
+		 
+//		class Deco extends BasicDecomposition {
+//			private STGEditorTreeNode parent;
+//			public Deco(STGEditorTreeNode parent) {
+//				super("Deco calls");
+//				this.parent = parent;
+//			}
+			
+/*			 public void logging(DecompositionParameter decoPara, DecompositionEvent
+			 event, Object affectedNodes) {
+				 
+				 if (affectedNodes != null && affectedNodes instanceof Collection &&
+						 ((Collection)affectedNodes).size()==0)
+					 return;
+				 //
+				
+				 if (event == DecompositionEvent.BACKTRACKING) {
+					 // navigation.getModel().insertNodeInto(new
+					 STGEditorTreeNode("Added signal: "+affectedNodes), parent,
+					 parent.getChildCount());
+				
+				 }
+			 }*/
+			 
+//		 }
+		 
+		
+		 //setSTG(currentNode);
+//		
+//		 currentNode.setProcreative();
+//		
+//		 DecompositionParameter decoPara = new DecompositionParameter();
+//		 decoPara.stg = currentNode.getSTG().clone();
+//		 DesiJ.risky = false;
+//		
+		
+		// 1. make a copy of current node, write it to the parameter
+		
+		STG stg = currentNode.getSTG().clone();
+		STGInOutParameter componentParameter = new STGInOutParameter(stg);
+		
+		AbstractDecomposition deco = null;
+		
+		// 2. run reduce on it, add it to the tree
+
+		try {
+			if (source==DECO_BASIC) deco = new BasicDecomposition("Deco calls");
+//			if (source==DECO_INTERNAL) deco = new BasicDecomposition("Deco calls");
+			
+			if (deco==null) return;
+			
+			deco.reduce(componentParameter);
+			STGEditorTreeNode nn = new STGEditorTreeNode("Reduced", stg, true);
+			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
+			currentNode.add(nn);
+			
+			navigationView.updateUI();
+			navigationView.showNode(nn);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	 }
+
+	public void setShorthand(boolean useShorthand) {
+		
+		this.useShorthand = useShorthand;
+	}
+
+	public boolean isShorthand() {
+		return useShorthand;
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+		if (isShorthand()!=IS_SHORTHAND.isSelected()) {
+			setShorthand(IS_SHORTHAND.isSelected());
+			//update visual
+			navigationView.refreshSelection();
+		}
+	}
+
+	 
+//	 private void rg() {
+//	
+//	
+//	 STG rg = STGUtil.generateReachabilityGraph(currentNode.getSTG());
+//	
+//	 currentNode.setProcreative();
+//	 addChild(rg, null, "Reachability graph", false);
+//	
+//	
+//	
+//	 }
+//	
+//	 private void save(String file, String fileName) {
+//	 try {
+//	 FileSupport.saveToDisk(file, fileName);
+//	 }
+//	 catch (IOException e) {
+//	 JOptionPane.showMessageDialog(this, "Could not save file: "+fileName,
+//	 "JDesi Error", JOptionPane.ERROR_MESSAGE);
+//	 }
+//	 }
+//	
+//	 }
 }
