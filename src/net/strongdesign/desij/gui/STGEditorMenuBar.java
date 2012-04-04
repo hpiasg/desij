@@ -120,15 +120,20 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		partition.add(frame.LOCKED_PARTITION);
 		partition.add(frame.BEST_PARTITION);
 		
-		JMenu reduce = new JMenu(frame.REDUCE); 
-		decomposition.add(reduce);
+		decomposition.add(frame.REDUCE);
 		
-		reduce.add(frame.DECO_BASIC);
-		reduce.add(frame.DECO_INTERNAL);
-		reduce.add(frame.DECO_TREE);
-		reduce.add(frame.DECO_CSC_AWARE);
-		reduce.add(frame.DECO_ICSC_AWARE);
+		JMenu decomp = new JMenu(frame.DECOMPOSE); 
+		decomposition.add(decomp);
 		
+		decomp.add(frame.DECO_BASIC);
+		decomp.add(frame.DECO_SINGLE_SIG);
+		decomp.add(frame.DECO_MULTI_SIG);
+		decomp.add(frame.DECO_TREE);
+		decomp.add(frame.DECO_CSC_AWARE);
+		decomp.add(frame.DECO_ICSC_AWARE);
+		
+		
+//		decomposition.add(frame.RESOLVE_INTERNAL);
 		help.add(frame.ABOUT);
 		
 		

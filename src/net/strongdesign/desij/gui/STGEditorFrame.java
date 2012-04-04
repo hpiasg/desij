@@ -32,7 +32,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipOutputStream;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -44,9 +47,15 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
+import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.AbstractDecomposition;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
+import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
+import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
+import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
+import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
@@ -83,14 +92,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	public final STGEditorAction INITIAL_PARTITION = new STGEditorAction(
 			"Initial partition", 0, null, 0, this);
-	
 	public final STGEditorAction FINEST_PARTITION = new STGEditorAction(
 			"Finest partition", 0, null, 0, this);
 	public final STGEditorAction ROUGHEST_PARTITION = new STGEditorAction(
 			"Roughest partition", 0, null, 0, this);
 	public final STGEditorAction MULTISIGNAL_PARTITION = new STGEditorAction(
 			"Signal re-use heuristic", 0, null, 0, this);
-	
 	public final STGEditorAction AVOIDCSC_PARTITION = new STGEditorAction(
 			"Avoid CSC", 0, null, 0, this);
 	public final STGEditorAction REDUCECONC_PARTITION = new STGEditorAction(
@@ -104,12 +111,16 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			"Create reachability graph", KeyEvent.VK_R, null, 0, this);
 	
 	public final STGEditorAction REDUCE = new STGEditorAction("Reduce Component", 0, null, 0, this);
+	
+	public final STGEditorAction DECOMPOSE = new STGEditorAction("Decompose", 0, null, 0, this);
 	public final STGEditorAction DECO_BASIC = new STGEditorAction("Basic", 0, null, 0, this);
-	public final STGEditorAction DECO_INTERNAL = new STGEditorAction("Internal signals", 0, null, 0, this);
+	public final STGEditorAction DECO_SINGLE_SIG = new STGEditorAction("Single signal", 0, null, 0, this);
+	public final STGEditorAction DECO_MULTI_SIG = new STGEditorAction("Multi signal", 0, null, 0, this);
 	public final STGEditorAction DECO_TREE = new STGEditorAction("Tree", 0, null, 0, this);
 	public final STGEditorAction DECO_CSC_AWARE = new STGEditorAction("CSC aware", 0, null, 0, this);
 	public final STGEditorAction DECO_ICSC_AWARE = new STGEditorAction("Irr. CSC aware", 0, null, 0, this);
 	
+	public final STGEditorAction RESOLVE_INTERNAL = new STGEditorAction("Resolve internal signals", 0, null, 0, this);
 	
 	
 	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction(
@@ -123,18 +134,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	
 	public JCheckBoxMenuItem IS_SHORTHAND = new JCheckBoxMenuItem("Shorthand notation");
 	
-	public final STGEditorAction LAYOUT1 = new STGEditorAction("Organic",
-			KeyEvent.VK_1, '1', 0, this);
-	public final STGEditorAction LAYOUT2 = new STGEditorAction("Circle",
-			KeyEvent.VK_2, '2', 0, this);
-	public final STGEditorAction LAYOUT3 = new STGEditorAction("Compact Tree",
-			KeyEvent.VK_3, '3', 0, this);
-	public final STGEditorAction LAYOUT4 = new STGEditorAction("Parallel Edge",
-			KeyEvent.VK_4, '4', 0, this);
-	public final STGEditorAction LAYOUT5 = new STGEditorAction("Partition",
-			KeyEvent.VK_5, '5', 0, this);
-	public final STGEditorAction LAYOUT6 = new STGEditorAction("Stack",
-			KeyEvent.VK_6, '6', 0, this);
+	public final STGEditorAction LAYOUT1 = new STGEditorAction("Organic",	KeyEvent.VK_1, '1', 0, this);
+	public final STGEditorAction LAYOUT2 = new STGEditorAction("Circle",	KeyEvent.VK_2, '2', 0, this);
+	public final STGEditorAction LAYOUT3 = new STGEditorAction("Compact Tree",	KeyEvent.VK_3, '3', 0, this);
+	public final STGEditorAction LAYOUT4 = new STGEditorAction("Parallel Edge",	KeyEvent.VK_4, '4', 0, this);
+	public final STGEditorAction LAYOUT5 = new STGEditorAction("Partition",		KeyEvent.VK_5, '5', 0, this);
+	public final STGEditorAction LAYOUT6 = new STGEditorAction("Stack",			KeyEvent.VK_6, '6', 0, this);
 
 	public final static Font STANDARD_FONT = new Font("Arial", Font.PLAIN, 16);
 	public final static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 12);
@@ -166,7 +171,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	private boolean useShorthand;
 	
-	
 	public JFileChooser getFileChooser() {
 		return fileChooser;
 	}
@@ -179,7 +183,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	 * @param stg
 	 *            The initial STG.
 	 */
-	public STGEditorFrame(/*String windowLabel, STG stg*/) {
+	public STGEditorFrame() {
 
 		// Initialise window
 		//super(windowLabel);
@@ -225,11 +229,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 		setJMenuBar(menuBar);
 		IS_SHORTHAND.addItemListener(this);
-		
-//		if (stg!=null) {
-//			STGEditorTreeNode node = navigationView.addSTGNode(stg, null, windowLabel, true);
-//			navigationView.showNode(node);
-//		}
 		
 	}
 
@@ -422,7 +421,9 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// }
 	// }
 	//
-	public void initialPartition(String partitionString) throws STGException {
+	
+	public void initialPartition(Object source) throws STGException {
+		
 		STGEditorTreeNode projectNode = navigationView.getProjectNode();
 		if (navigationView.getSelectedNode()==projectNode) {
 			graphComponent.storeCoordinates(projectNode.getSTG().getCoordinates());
@@ -433,33 +434,41 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		STG curSTG = projectNode.getSTG();
 		projectNode.removeAllChildren();
 		
+		String partitionString = "";
+		if (source==FINEST_PARTITION) partitionString = "finest";
+		if (source==ROUGHEST_PARTITION) partitionString = "roughest";
+		if (source==MULTISIGNAL_PARTITION) partitionString = "multisignaluse";
+		if (source==AVOIDCSC_PARTITION) partitionString = "avoidcsc";
+		if (source==REDUCECONC_PARTITION) partitionString = "reduceconc";
+		if (source==LOCKED_PARTITION) partitionString = "lockedsignals";
+		if (source==BEST_PARTITION) partitionString = "best";
+		
 		STGEditorTreeNode initComponents = new STGEditorTreeNode(partitionString);
 		
 		projectNode.add(initComponents);
-		
 		//navigationView.addNode(initComponents, "Partition");
-		Partition partition;
 		
+		projectNode.partition=null;
 		
-		if (partitionString.equals("finest"))
-			partition = Partition.getFinestPartition(curSTG,null);
-		else if (partitionString.equals("roughest"))
-			partition = Partition.getRoughestPartition(curSTG, null);
-		else if (partitionString.equals("multisignaluse"))
-			partition = Partition.getMultipleSignalUsagePartition(curSTG);
-		else if (partitionString.equals("avoidcsc"))
-			partition = Partition.getCSCAvoidancePartition(curSTG);
-		else if (partitionString.equals("reduceconc"))
-			partition = Partition.getPartitionConcurrencyReduction(curSTG);
-		else if (partitionString.equals("lockedsignals"))
-			partition = Partition.getLockedSignalsPartition(curSTG);
-		else if (partitionString.equals("best"))
-			partition = Partition.getBestPartition(curSTG);
+		if (source==FINEST_PARTITION)
+			projectNode.partition = Partition.getFinestPartition(curSTG,null);
+		else if (source==ROUGHEST_PARTITION)
+			projectNode.partition = Partition.getRoughestPartition(curSTG, null);
+		else if (source==MULTISIGNAL_PARTITION)
+			projectNode.partition = Partition.getMultipleSignalUsagePartition(curSTG);
+		else if (source==AVOIDCSC_PARTITION)
+			projectNode.partition = Partition.getCSCAvoidancePartition(curSTG);
+		else if (source==REDUCECONC_PARTITION)
+			projectNode.partition = Partition.getPartitionConcurrencyReduction(curSTG);
+		else if (source==LOCKED_PARTITION)
+			projectNode.partition = Partition.getLockedSignalsPartition(curSTG);
+		else if (source==BEST_PARTITION)
+			projectNode.partition = Partition.getBestPartition(curSTG);
 		else
-			partition = Partition.fromString(curSTG, partitionString);
+			return;
 		
 		
-		for (STG s : Partition.splitByPartition(curSTG, partition)) {
+		for (STG s : Partition.splitByPartition(curSTG, projectNode.partition)) {
 
 			StringBuilder signalNames = new StringBuilder();
 			for (Integer sig : s.collectUniqueCollectionFromTransitions(
@@ -680,57 +689,37 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			// else if (source == RG) rg();
 			else if (source == COPY_STG)
 				copySTG();
-			else if (source == FINEST_PARTITION)
-				initialPartition("finest");
-			else if (source == ROUGHEST_PARTITION)
-				initialPartition("roughest");
-			else if (source == MULTISIGNAL_PARTITION)
-				initialPartition("multisignal");
-			else if (source == AVOIDCSC_PARTITION)
-				initialPartition("avoidcsc");
-			else if (source == REDUCECONC_PARTITION)
-				initialPartition("reduceconc");
-			else if (source == LOCKED_PARTITION)
-				initialPartition("lockedsignals");
-			else if (source == BEST_PARTITION)
-				initialPartition("best");
-			
-			// else if (source == SIGNAL_TYPE) changeSignalType();
-			// else if (source == SPRING_LAYOUT_EXCLUDE);
-			// else if (source == SPRING_LAYOUT_INCLUDE);
-//			else if (source == REDUCE) {backgroundMethod = "reduce"; new
-//				Thread(this).start(); 
-//			}
-			else if (
+			else if (source == FINEST_PARTITION||
+					source == ROUGHEST_PARTITION||
+					source == MULTISIGNAL_PARTITION||
+					source == AVOIDCSC_PARTITION||
+					source == REDUCECONC_PARTITION||
+					source == LOCKED_PARTITION||
+					source == BEST_PARTITION
+					) {
+				initialPartition(source);
+			} else if (
+					source == DECO_MULTI_SIG||
+					source == DECO_SINGLE_SIG||
 					source == DECO_BASIC||
-					source == DECO_INTERNAL||
 					source == DECO_TREE||
 					source == DECO_CSC_AWARE||
 					source == DECO_ICSC_AWARE) {
 				
-				reduce(source);
-			}
-//			else if (source == REDUCE) {
+				decompose(source);
+			} else if (source == REDUCE) {
 //				 //new DecompositionOptions("Decomposition", currentNode.getSTG(), new
 ////						 DesijCommandLineWrapper(new String[]{""})).setVisible(true);
-//				 reduce();
-//			}
-			
-			else if (source == ABOUT) {
+				 reduce();
+			} else if (source == ABOUT) {
 				new STGEditorAbout(this).setVisible(true);
 			}
-			else if (source == LAYOUT1)
-				graphComponent.setLayout(1);
-			else if (source == LAYOUT2)
-				graphComponent.setLayout(2);
-			else if (source == LAYOUT3)
-				graphComponent.setLayout(3);
-			else if (source == LAYOUT4)
-				graphComponent.setLayout(4);
-			else if (source == LAYOUT5)
-				graphComponent.setLayout(5);
-			else if (source == LAYOUT6)
-				graphComponent.setLayout(6);
+			else if (source == LAYOUT1)	graphComponent.setLayout(1);
+			else if (source == LAYOUT2)	graphComponent.setLayout(2);
+			else if (source == LAYOUT3)	graphComponent.setLayout(3);
+			else if (source == LAYOUT4)	graphComponent.setLayout(4);
+			else if (source == LAYOUT5)	graphComponent.setLayout(5);
+			else if (source == LAYOUT6)	graphComponent.setLayout(6);
 
 		} catch (Exception ee) {
 			ee.printStackTrace();
@@ -820,14 +809,101 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// // return result;
 	// // }
 	//
+
+	private void reduce() {
+		
+		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
+
+		if (!currentNode.isSTG()) {
+			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
+			JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		if (!currentNode.isSTG()) return;
+		
+//		class Deco extends BasicDecomposition {
+//			private STGEditorTreeNode parent;
+//			public Deco(STGEditorTreeNode parent) {
+//				super("basic");
+//				this.parent = parent;
+//			}
+//			
+///*			 public void logging(DecompositionParameter decoPara, DecompositionEvent
+//			 event, Object affectedNodes) {
+//				 
+//				 if (affectedNodes != null && affectedNodes instanceof Collection &&
+//						 ((Collection)affectedNodes).size()==0)
+//					 return;
+//				 //
+//				
+//				 if (event == DecompositionEvent.BACKTRACKING) {
+//					 // navigation.getModel().insertNodeInto(new
+//					 STGEditorTreeNode("Added signal: "+affectedNodes), parent,
+//					 parent.getChildCount());
+//				
+//				 }
+//			 }*/
+//			 
+//		 }
+		 
+		
+		 //setSTG(currentNode);
+		
+//		
+//		 currentNode.setProcreative();
+//		
+//		 DecompositionParameter decoPara = new DecompositionParameter();
+//		 decoPara.stg = currentNode.getSTG().clone();
+//		 DesiJ.risky = false;
+//		
+		
+		// 1. make a copy of current node, write it to the parameter
+		
+		STG stg = currentNode.getSTG().clone();
+		STGInOutParameter componentParameter = new STGInOutParameter(stg);
+		
+		
+		// 2. run reduce on it, add it to the tree
+
+		try {
+			
+			BasicDecomposition deco = new BasicDecomposition("basic");
+			deco.reduce(componentParameter);
+			
+			STGEditorTreeNode nn = new STGEditorTreeNode("reduced", stg, true);
+			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
+			currentNode.add(nn);
+			
+			navigationView.updateUI();
+			navigationView.showNode(nn);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
-	 private void reduce(Object source) {
-		 STGEditorTreeNode currentNode = navigationView.getSelectedNode(); 
-		 if (!currentNode.isSTG()) {
-			 JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
-			 JOptionPane.ERROR_MESSAGE);
-			 return;
-		 }
+	private void decompose(Object source) {
+		 
+//		 STGEditorTreeNode currentNode = navigationView.getSelectedNode(); 
+	 
+		STGEditorTreeNode projectNode = navigationView.getProjectNode();
+
+		if (!projectNode.isSTG()) {
+			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
+			JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		if (navigationView.getSelectedNode()==projectNode) {
+			graphComponent.storeCoordinates(projectNode.getSTG().getCoordinates());
+		}
+		
+		if (!projectNode.isSTG()) return;
+		
+		STG curSTG = projectNode.getSTG();
+		projectNode.removeAllChildren();
+		 
 		
 		 
 //		class Deco extends BasicDecomposition {
@@ -867,7 +943,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		// 1. make a copy of current node, write it to the parameter
 		
-		STG stg = currentNode.getSTG().clone();
+		STG stg = projectNode.getSTG().clone();
 		STGInOutParameter componentParameter = new STGInOutParameter(stg);
 		
 		AbstractDecomposition deco = null;
@@ -875,18 +951,80 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		// 2. run reduce on it, add it to the tree
 
 		try {
-			if (source==DECO_BASIC) deco = new BasicDecomposition("Deco calls");
-//			if (source==DECO_INTERNAL) deco = new BasicDecomposition("Deco calls");
+			
+			//memorize internal signals and change signature to output,
+			//they will be set back to internal after decomposition
+			Set<Integer> internals = stg.collectUniqueCollectionFromTransitions(
+					ConditionFactory.getSignatureOfCondition(Signature.INTERNAL),
+					CollectorFactory.getSignalNameCollector());
+
+
+			//change internals to outputs
+			stg.setSignature(internals, Signature.OUTPUT);
+			
+			if (source==DECO_BASIC) deco = new BasicDecomposition("basic");
+			if (source==DECO_SINGLE_SIG) deco = new LazyDecompositionSingleSignal("lazy_single");
+			if (source==DECO_MULTI_SIG) deco = new LazyDecompositionMultiSignal("lazy_multi");
+			if (source==DECO_TREE) deco = new TreeDecomposition("tree");
+			if (source==DECO_CSC_AWARE) deco = new CscAwareDecomposition("csc_aware");
+			if (source==DECO_ICSC_AWARE) deco = new IrrCscAwareDecomposition("icsc_aware");
 			
 			if (deco==null) return;
 			
-			deco.reduce(componentParameter);
-			STGEditorTreeNode nn = new STGEditorTreeNode("Reduced", stg, true);
-			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
-			currentNode.add(nn);
+			
+			Collection<STG> components=null;
+			final Integer BEFORE_ALL = new Integer(23);
+			stg.addUndoMarker(BEFORE_ALL);
+			
+			if (projectNode.partition==null) {
+				projectNode.partition = Partition.getFinestPartition(projectNode.getSTG(),null);
+			}
+			
+			components = deco.decompose(stg, projectNode.partition);
+
+			// set internals back, but only those which are produced in a component and not used as input from
+			// another component
+			for (STG component : components) {
+				for (Integer signal : component.getSignals())
+					if (component.getSignature(signal) == Signature.OUTPUT
+							&& internals.contains(signal))
+						component.setSignature(signal, Signature.INTERNAL);
+			}
+			
+			String deco_name  = deco.getClass().getSimpleName();
+			
+			STGEditorTreeNode initComponents = new STGEditorTreeNode(deco_name);
+			projectNode.add(initComponents);
+			
+			for (STG s : components) {
+				StringBuilder signalNames = new StringBuilder();
+				for (Integer sig : s.collectUniqueCollectionFromTransitions(
+						ConditionFactory.getSignatureOfCondition(Signature.OUTPUT),
+						CollectorFactory.getSignalCollector()))
+					signalNames.append(" "+curSTG.getSignalName(sig));
+
+				STGEditorTreeNode nn = new STGEditorTreeNode(
+						signalNames.toString(), s, true);
+				
+				nn.getSTG().copyCoordinates(projectNode.getSTG().getCoordinates());
+				
+				
+				
+				initComponents.add(nn);
+				//navigationView.addNode(nn, signalNames.toString());
+			}
 			
 			navigationView.updateUI();
-			navigationView.showNode(nn);
+			
+			navigationView.showNode(initComponents);
+			
+			
+/*			STGEditorTreeNode nn = new STGEditorTreeNode(deco_name, stg, true);
+			nn.getSTG().copyCoordinates((STGCoordinates)projectNode.getSTG().getCoordinates());
+			projectNode.add(nn);
+			
+			navigationView.updateUI();
+			navigationView.showNode(nn);*/
 			
 		} catch (Exception e) {
 			e.printStackTrace();

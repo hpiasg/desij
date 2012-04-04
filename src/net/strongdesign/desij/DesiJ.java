@@ -264,7 +264,7 @@ public class DesiJ {
 
 		catch (Exception e) 
 		{
-			System.err.println(" - Bluescreen of Death - \nPlease send this error message to the above email adress.");
+			System.err.println(" FATAL ERROR: \nPlease send this error message to the above email adress.");
 			e.printStackTrace();
 			exitCode = 255;
 		}

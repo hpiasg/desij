@@ -21,6 +21,7 @@ package net.strongdesign.desij.gui;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 
 public class STGEditorTreeNode extends DefaultMutableTreeNode{
@@ -34,6 +35,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
     private String fileName; // related file name (if it exists)
 	private boolean procreative;
 	private boolean isSTG;
+	public Partition partition;
     
 	public STGEditorTreeNode(String label, STG stg, boolean procreative) {
 		super(label);
