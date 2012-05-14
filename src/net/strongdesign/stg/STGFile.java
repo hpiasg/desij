@@ -210,10 +210,10 @@ public abstract class STGFile {
 				String name=transition.getString(0);
 				if (!withSignalNames) name  = signalPrefix;
 				if (used.contains(name)) {
-					while (used.contains(name+"_"+id)) {
+					while (used.contains(name+"/"+id)) {
 						id++;
 					}
-					name=name+"_"+id;
+					name=name+"/"+id;
 				}
 				
 				savedNames.put(transition, name);

@@ -274,6 +274,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public void setFileName(String fileName) {
 		navigationView.getSelectedNode().setFileName(fileName);
 		navigationView.getSelectedNode().setLabel(fileName);
+		navigationView.updateUI();
 	}
 
 	public void updateSTG(STG stg) {
@@ -612,7 +613,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			// new STGEditorFrame(fileName, stg, coordinates).setVisible(true);
 		} catch (ParseException e) {
 			JOptionPane.showMessageDialog(this, "Could not parse file: "
-					+ fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
+					+ fileName+"\n"+ e.getMessage(), "JDesi Error", JOptionPane.ERROR_MESSAGE);
 		} catch (IOException e) {
 			JOptionPane.showMessageDialog(this, "Could not load file: "
 					+ fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
@@ -813,6 +814,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	private void reduce() {
 		
 		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
+		graphComponent.storeCoordinates(currentNode.getSTG().getCoordinates());
 
 		if (!currentNode.isSTG()) {
 			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",

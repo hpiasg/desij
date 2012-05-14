@@ -121,6 +121,7 @@ public class STGEditorNavigation extends JTree implements
 		if (!isRoot) parent = getSelectedNode();
 		
 		STGEditorTreeNode node = new STGEditorTreeNode(label, stg, false);
+		
 		parent.add(node);
 		
 	//	coordinates = graphComponent.initSTG(stg, coordinates);

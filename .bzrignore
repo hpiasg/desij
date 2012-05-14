@@ -2,6 +2,8 @@
 *.project
 *.class
 bin/
+BreezeParser*.java
+hcExpressionParser*.java
 GParser*.java
 ParseException.java
 SimpleCharStream.java

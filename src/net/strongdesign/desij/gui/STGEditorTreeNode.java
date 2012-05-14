@@ -37,11 +37,19 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 	private boolean isSTG;
 	public Partition partition;
     
+	private String fullName(String label) {
+		if (stg==null) return label;
+		
+		return label+" T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces();
+	}
+	
 	public STGEditorTreeNode(String label, STG stg, boolean procreative) {
 		super(label);
+		
         this.stg = stg;
         this.procreative = procreative;
-		this.label = label;
+		this.label = fullName(label);
+
 		isSTG = true;
 	}
 	
@@ -75,7 +83,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
     
     
 	public void setLabel(String label) {
-		this.label = label;
+		this.label = fullName(label);
 	}
 	
 	public String getLabel() {
