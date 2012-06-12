@@ -33,7 +33,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipOutputStream;
@@ -47,7 +46,6 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
-import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.AbstractDecomposition;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
@@ -125,6 +123,9 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	
 	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction(
 			"Change signal types", KeyEvent.VK_C, null, 0, this);
+	
+	public final STGEditorAction GENERATE_STG = new STGEditorAction("Generate STG from expression", 0, null, 0, this);
+	
 	public final STGEditorAction COPY_STG = new STGEditorAction("Copy STG",
 			KeyEvent.VK_Y, 'C', 0, this);
 
@@ -152,6 +153,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	
 	private final STGGraphComponent graphComponent;
 	private final mxGraphOutline graphOutline;
+	
+	private final STGGeneratorFrame stgGenerator;
 
 	Map<String, Object> transitionStyle;
 	Map<String, Object> placeStyle;
@@ -206,7 +209,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		graphOutline = new mxGraphOutline(graphComponent);
 
-
+		stgGenerator = new STGGeneratorFrame(this);
 
 		navigationView = new STGEditorNavigation(this, graphComponent);
 
@@ -261,11 +264,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// }
 	// }
 	//
-	public void setNav(STGEditorNavigation nav) {
+	
+	//public void setNav(STGEditorNavigation nav) {
 		// navigation = nav;
 		// // navModel = navigation.getModel();
 		// currentNode = (STGEditorTreeNode)navModel.getRoot();
-	}
+	//}
 
 	public String getFileName() {
 		return navigationView.getSelectedNode().getFileName();
@@ -564,6 +568,18 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		dispose();
 	}
 
+	
+	/**
+	 * Adds new root STG to the tree of STGs
+	 * @param stg
+	 * @param name
+	 */
+	public void addSTG(STG stg, String name) {
+		STGEditorTreeNode node = navigationView.addSTGNode(stg, name, true);
+		navigationView.showNode(node);
+		setFileName(name);
+	}
+	
 	public void open(String fileName) {
 		
 		fileChooser.setMultiSelectionEnabled(false);
@@ -590,9 +606,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			
 			// add new tree element
 			
-			STGEditorTreeNode node = navigationView.addSTGNode(stg, fileName, true);
-			navigationView.showNode(node);
-			setFileName(fileName);
+			addSTG(stg, fileName);
 			
 			// STGEditorCoordinates coordinates =
 			// STGEditorFile.convertToCoordinates(file);
@@ -690,6 +704,9 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			// else if (source == RG) rg();
 			else if (source == COPY_STG)
 				copySTG();
+			else if (source == GENERATE_STG) {
+				generateSTG();
+			}
 			else if (source == FINEST_PARTITION||
 					source == ROUGHEST_PARTITION||
 					source == MULTISIGNAL_PARTITION||
@@ -739,6 +756,15 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	}
 
+	/*
+	 * Generates an STG from a given Handshake Component expression
+	 * 
+	 */
+	private void generateSTG() {
+		stgGenerator.setVisible(true);
+
+	}
+	
 	// private void changeSignalType() {
 	// signalChooser = new STGEditorSignalChooser("JDesi - Signals of "+
 	// currentNode, currentNode.getSTG(), this);

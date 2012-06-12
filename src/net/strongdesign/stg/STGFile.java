@@ -373,7 +373,7 @@ public abstract class STGFile {
 				String marking = place.getMarking()==1?"":"="+place.getMarking();
 				
 				if (savedNames.containsKey(place)) {
-					result.append(" " + place.getString(0)  ); 
+					result.append(" " + savedNames.get(place)  ); 
 				} else {
 					result.append(" <" );
 					result.append( 	

@@ -108,6 +108,8 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 
 		
 		stg.add(frame.SIGNAL_TYPE);
+		stg.add(frame.GENERATE_STG);
+		
 		
 		JMenu partition = new JMenu(PARTITION);
 		decomposition.add(partition);
