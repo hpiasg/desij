@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist
  *
  * This file is part of DesiJ.
  * 
@@ -30,6 +30,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -39,11 +40,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
+import net.strongdesign.balsa.BreezeNet;
+import net.strongdesign.balsa.breezefile.AbstractBreezeElement;
+import net.strongdesign.balsa.breezefile.BreezeComponentElement;
+import net.strongdesign.balsa.breezefile.BreezeElementFactory;
+import net.strongdesign.balsa.breezefile.BreezePartElement;
+import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
+import net.strongdesign.balsa.breezeparser.BreezeParser;
+import net.strongdesign.balsa.components.HSComponent;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
@@ -192,6 +204,8 @@ public class DesiJ {
 				interactiveDecomposition();
 			else if (CLW.instance.CL.isEnabled()) 
 				commandLine();
+			else if (CLW.instance.OPERATION.getValue().equals("breeze"))
+				breeze();
 			else if (CLW.instance.OPERATION.getValue().equals("decompose")) 
 				decompose();
 			else if (CLW.instance.OPERATION.getValue().equals("rg")) 
@@ -300,14 +314,32 @@ public class DesiJ {
 		return exitCode;
 	}
 
+	private static void breeze() throws Exception {
+		
+		STG stg = ComponentSTGFactory.breeze2stg();
+		if (CLW.instance.OUTFILE.getValue().equals("")) {
+			System.out.print(STGFile.convertToG(stg));
+		} else {
+			FileSupport.saveToDisk(STGFile.convertToG(stg),CLW.instance.OUTFILE.getValue() );
+		}
+		
+	} 
+
 
 	private static void createSTG() throws STGException, IOException {
-		STG stg = STGCreator.getPredefinedSTG(CLW.instance.MODEL.getValue());
+		STG stg=null;
+		if (CLW.instance.MODEL.getValue().startsWith("$Bzr")) {
+			stg = ComponentSTGFactory.createSTGComponent(CLW.instance.MODEL.getValue(), null, null);
+		} else {
+			stg = STGCreator.getPredefinedSTG(CLW.instance.MODEL.getValue());
+		}
 
-		FileSupport.saveToDisk(STGFile.convertToG(stg),CLW.instance.OUTFILE.getValue() );
+		if (CLW.instance.OUTFILE.getValue().equals("")) {
+			System.out.print(STGFile.convertToG(stg));
+		} else {
+			FileSupport.saveToDisk(STGFile.convertToG(stg),CLW.instance.OUTFILE.getValue() );
+		}
 	}
-
-
 
 	public static STG loadSTG(String fileName, boolean withCoordinates) throws ParseException, IOException, STGException {
 		STG stg;
@@ -471,10 +503,6 @@ public class DesiJ {
 	}
 
 
-
-
-
-
 	private static void show() 
 	throws IOException, FileNotFoundException, ParseException, InterruptedException, STGException {
 		for (String fileName : CLW.instance.getOtherParameters()) {
@@ -593,32 +621,51 @@ public class DesiJ {
 	}
 
 	private static void interactiveDecomposition() throws FileNotFoundException, IOException, ParsingException, ParseException, STGException  {   
-		//load STG
-		for (String fileName : CLW.instance.getOtherParameters()) {
-
-			File f= new File(fileName);
-			if (! f.exists() ) {
-				f = new File(fileName+".g");
-				if (! f.exists())
-					throw new FileNotFoundException(fileName);          
-			}       
-
-//			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
-//			STG stg = STGEditorFile.convertToSTG(file, true);
-//			STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
-
-			STGEditorFrame frame = new STGEditorFrame();
+		STGEditorFrame frame = new STGEditorFrame();
+		//load breeze
+		if (CLW.instance.OPERATION.getValue().equals("breeze")) {
 			
-			frame.open(fileName);
-			frame.getFileChooser().setCurrentDirectory(f);
-			frame.setVisible(true);
+			STG stg;
+			try {
+				stg = ComponentSTGFactory.breeze2stg();
+				
+				String str = "Generated breeze";
+				
+				frame.addSTG(stg, str);
+				
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			
+		} else {
+			//load STG
+			for (String fileName : CLW.instance.getOtherParameters()) {
 
-			frame.addWindowListener(new WindowAdapter() { // callback for closing the GUI
-				public void windowClosed(WindowEvent e) {
-					System.exit(0); // interactive GUI-based decomposition should never be called from an external tool, eg. WorkCraft
-				}
-			});
+				File f= new File(fileName);
+				if (! f.exists() ) {
+					f = new File(fileName+".g");
+					if (! f.exists())
+						throw new FileNotFoundException(fileName);          
+				}       
+				
+//				String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+//				STG stg = STGEditorFile.convertToSTG(file, true);
+//				STGEditorCoordinates coordinates = STGEditorFile.convertToCoordinates(file);
+				
+				frame.open(fileName);
+				frame.getFileChooser().setCurrentDirectory(f);
+			}
 		}
+		
+		frame.setVisible(true);
+
+		frame.addWindowListener(new WindowAdapter() { // callback for closing the GUI
+			public void windowClosed(WindowEvent e) {
+				System.exit(0); // interactive GUI-based decomposition should never be called from an external tool, eg. WorkCraft
+			}
+		});
 	}
 
 

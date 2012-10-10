@@ -8,7 +8,7 @@ public class HCMessage extends HCTerm {
 	public String message;
 	
 	@Override
-	public HCTerm expand(ExpansionType type) throws Exception {
+	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) throws Exception {
 		return null;
 	}
 
@@ -18,12 +18,10 @@ public class HCMessage extends HCTerm {
 	}
 
 	@Override
-	public int getMaxCount() {
-		return 0;
+	public void setInstanceNumber(int num, HCChannelSenseController sig) {
+		
 	}
 
-	@Override
-	public void setInstanceNumber(int num) {
-	}
+
 
 }

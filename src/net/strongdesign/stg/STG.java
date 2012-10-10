@@ -523,9 +523,6 @@ public final class STG implements Cloneable {
 			p.setMarking(marking.getMarking(p).intValue() );
 	}
 
-
-
-
 	// *******************************************************************
 	// Signals and Signatures
 	// *******************************************************************
@@ -1317,15 +1314,21 @@ public final class STG implements Cloneable {
 			}
 		}
 
+		
+		Set<Node> toRemove = new HashSet<Node>(); // avoid concurrent container modification
+		
 		for (Node node : parents){
-			node.disconnect();
 			contractionUndo.addUndo(new UndoRemoveNode(node));
-			places.remove(node);
+			toRemove.add(node);
 		}
 
 		for (Node node : children){
-			node.disconnect();
 			contractionUndo.addUndo(new UndoRemoveNode(node));
+			toRemove.add(node);
+		}
+		
+		for (Node node: toRemove) {
+			node.disconnect();
 			places.remove(node);
 		}
 
@@ -1460,6 +1463,8 @@ public final class STG implements Cloneable {
 
 		return stgs.peek();
 	}
+	
+	
 	/**
 	 * Generates the parallel composition of 2 STGs according to the STG-decomposition papers of Vogler et al.
 	 * Acts as a helper for the parallel compositon of n STGs, in particular with n > 2
@@ -1552,7 +1557,7 @@ public final class STG implements Cloneable {
 		}
 
 		// for each transition of N2, whereas its signal is not an element of set A make a copy in result;
-		// if the transition-signal is an element of setA compute the cartesian product of transN2 and all 
+		// if the transition-signal is an element of setA compute the Cartesian product of transN2 and all 
 		// the corresponding transitions in N1 with the same label
 
 		for (Transition transOfN2 : n2.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
@@ -1844,7 +1849,121 @@ public final class STG implements Cloneable {
 		
 		return highestSignalNumber;
 	}
+	
+	
+	
+	/*
+	 * returns true, if a transition has enough tokens to fire
+	 */
+	public boolean canFire(Transition t) {
+		
+		for (Node n : t.getParents()) {
+			Place p = (Place)n;  
+			if (p.getMarking()<t.getParentValue(p)) return false; 
+		}
+		return true;
+	}
+	
+	/*
+	 * fires a given transition (moves tokens)
+	 */
+	public void fireTransition(Transition t) {
+		if (canFire(t)) {
+			
+			for (Node n : t.getParents()) {
+				Place p = (Place)n;
+				int pv = t.getParentValue(p);
+				p.setMarking(p.getMarking()-pv); 
+			}
+			
+			for (Node n : t.getChildren()) {
+				Place p = (Place)n;
+				int cv = t.getChildValue(p);
+				p.setMarking(p.getMarking()+cv); 
+			}
+		}
+	}
 
+	/*
+	 * returns true, if a transition has enough tokens to unfire
+	 */
+	public boolean canUnFire(Transition t) {
+		
+		for (Node n : t.getChildren()) {
+			Place p = (Place)n;  
+			if (p.getMarking()<t.getChildValue(p)) return false; 
+		}
+		return true;
+	}
+	
+	/*
+	 * unFires a given transition (moves tokens)
+	 */
+	public void unFireTransition(Transition t) {
+		if (canUnFire(t)) {
+			
+			for (Node n : t.getChildren()) {
+				Place p = (Place)n;
+				int pv = t.getChildValue(p);
+				p.setMarking(p.getMarking()-pv); 
+			}
+			
+			for (Node n : t.getParents()) {
+				Place p = (Place)n;
+				int cv = t.getParentValue(p);
+				p.setMarking(p.getMarking()+cv); 
+			}
+		}
+	}
+	
+	
+	/*
+	 * 1. creates the Cartesian product of the given two sets of places,
+	 * 2. creates appropriate transition arcs
+	 * 3. sets appropriate token counts
+	 * 4. removes old arcs and old places form the STG
+	 */
+	static public Set<Place> cartesianProductBinding(STG stg, Set<Place> inPlaces, Set<Place> outPlaces) {
+		
+		Place newPlace;
+		
+		Set<Place> toDelete = new HashSet<Place>();
+		Set<Place> toReturn = new HashSet<Place>();
+		
+		for (Place p1 : inPlaces) {
+			for (Place p2: outPlaces) {
+				int m1 = p1.getMarking(); 
+				int m2 = p2.getMarking();
+				newPlace = stg.addPlace("p", m1+m2);
+				toReturn.add(newPlace);
+
+				// now copy arcs
+				for (Node n : p1.getParents()) {
+					newPlace.setParentValue(n, p1.getParentValue(n));
+				}
+				for (Node n : p1.getChildren()) {
+					newPlace.setChildValue(n, p1.getChildValue(n));
+				}
+				for (Node n : p2.getParents()) {
+					newPlace.setParentValue(n, p2.getParentValue(n));
+				}
+				for (Node n : p2.getChildren()) {
+					newPlace.setChildValue(n, p2.getChildValue(n));
+				}
+				
+				// mark places, which will be removed from the STG
+				toDelete.add(p1);
+				toDelete.add(p2);
+			}
+		}
+		
+		// now remove all the marked places
+		for (Place p: toDelete) {
+			stg.removePlace(p);
+		}
+		
+		return toReturn;
+	}
 }
 
 

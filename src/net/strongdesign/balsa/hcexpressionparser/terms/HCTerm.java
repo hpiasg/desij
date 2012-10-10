@@ -1,14 +1,11 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
-import net.strongdesign.stg.Place;
-import net.strongdesign.stg.STG;
-
 public abstract class HCTerm implements Cloneable {
 	public enum ExpansionType {UP, DOWN};
 	
-	abstract public HCTerm expand(ExpansionType type) throws Exception;
+	abstract public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) throws Exception;
 	abstract public String toString();
-	abstract public int getMaxCount();
+	
 	public Object clone() {
 		try {
 			return super.clone();
@@ -18,6 +15,7 @@ public abstract class HCTerm implements Cloneable {
 		}
 		return null;
 	}
-	abstract public void setInstanceNumber(int num);
+	
+	abstract public void setInstanceNumber(int num, HCChannelSenseController sig);
 	
 }

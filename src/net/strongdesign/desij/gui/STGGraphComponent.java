@@ -20,19 +20,34 @@
 package net.strongdesign.desij.gui;
 
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+
+import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
+import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 
+import com.mxgraph.examples.swing.editor.BasicGraphEditor;
+import com.mxgraph.examples.swing.editor.EditorPopupMenu;
 import com.mxgraph.layout.mxCircleLayout;
 import com.mxgraph.layout.mxCompactTreeLayout;
 import com.mxgraph.layout.mxGraphLayout;
@@ -53,18 +68,146 @@ import com.mxgraph.view.mxPerimeter;
 import com.mxgraph.view.mxStylesheet;
 
 public class STGGraphComponent extends mxGraphComponent {
+	
+	class STGGraphComponentPopupMenu extends JPopupMenu implements ActionListener {
+		private static final long serialVersionUID = 1908959334150872792L;
+		STGGraphComponent component;
+		
+		public JMenuItem contractTransition = new JMenuItem("Contract selected transition"); 
+		public JMenuItem makeSignalDummy = new JMenuItem("Dummify selected signal");
+		
+		public JMenuItem fireTransition = new JMenuItem("Fire selected transition"); 
+		public JMenuItem unFireTransition = new JMenuItem("Unfire selected transition");
+		public JMenuItem renameSignal = new JMenuItem("Rename signal");
+		
+		public List<Transition> toProcess = new LinkedList<Transition>();
+		
+		public STGGraphComponentPopupMenu(STGGraphComponent component) {
+			super();
+			this.component = component;
+			
+			add(contractTransition);
+			add(makeSignalDummy);
+			add(fireTransition);
+			add(unFireTransition);
+			add(renameSignal);
+			
+			contractTransition.addActionListener(this);
+			makeSignalDummy.addActionListener(this);
+			fireTransition.addActionListener(this);
+			unFireTransition.addActionListener(this);
+			renameSignal.addActionListener(this);
+		}
 
-	/**
-	 * 
-	 */
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			
+			if (e.getSource()==contractTransition) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				try {
+					
+					BasicDecomposition deco = new BasicDecomposition("basic", activeSTG);
+					deco.contract(activeSTG, toProcess);
+					
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+				component.frame.refreshSTGInfo();
+			}
+			
+			if (e.getSource()==makeSignalDummy) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				Transition t = toProcess.get(0);
+				component.activeSTG.setSignature(t.getLabel().getSignal(), Signature.DUMMY);
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+				component.frame.refreshSTGInfo();
+			}
+			
+			if (e.getSource()==fireTransition) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				Transition t = toProcess.get(0);
+				component.activeSTG.fireTransition(t);
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+			}
+			
+			if (e.getSource()==unFireTransition) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				Transition t = toProcess.get(0);
+				component.activeSTG.unFireTransition(t);
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+			}
+			
+			
+			if (e.getSource()==renameSignal) {
+				
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				Transition t = toProcess.get(0);
+				String oldName = activeSTG.getSignalName(t.getLabel().getSignal());
+				
+				String newName = JOptionPane.showInputDialog(null, "Change signal name: ", oldName);
+				if (newName!=null) newName = newName.trim();
+				
+				if (newName!=null&&newName!="") {
+					HashMap<String,String> signalRenaming = new HashMap<String,String>();
+					
+					signalRenaming.put(oldName, newName);
+					try {
+						activeSTG.renameSignals(signalRenaming);
+					} catch (STGException e1) {
+						e1.printStackTrace();
+					}
+				}
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+			}
+			
+		}
+	}
+	
+	private void showGraphPopupMenu(MouseEvent e) {
+		
+		boolean transitionSelected = (getGraph().getSelectionCell() instanceof TransitionCell);
+
+		if (transitionSelected) {
+			TransitionCell tc = (TransitionCell)getGraph().getSelectionCell();
+			Transition t = (Transition)cell2Node.get(tc);
+			
+			Point pt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
+			
+			STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this);
+			
+			menu.toProcess.add(t);
+			
+			
+			menu.show(this, pt.x, pt.y);
+
+			e.consume();
+		}
+	}
+	
 	private static final long serialVersionUID = 7755698755334362626L;
 	
 	/** The current graph, representing the current STG. */
 	private mxIGraphModel model;
 	private final mxGraph graph;
 	protected mxRubberband rubberband;
-	HashMap<mxCell, Node> cell2Node;
+	protected STG activeSTG; 
 	
+	HashMap<mxCell, Node> cell2Node;
+	Map<Node, mxCell> node2Cell;
+	Map<Integer, mxCell> id2Cell;
+	
+	private STGEditorFrame frame;
 	
 	public boolean isVertexIgnored(Object vertex) {
 		return !graph.getModel().isVertex(vertex)
@@ -142,6 +285,12 @@ public class STGGraphComponent extends mxGraphComponent {
 		}
 	}
 	
+	public void setNodeLocationById(Integer id, int x, int y) {
+		Object o = id2Cell.get(id);
+		if (o!=null) {
+			setVertexLocation(o, x, y);
+		}
+	}
 	
 	public void storeCoordinates(STGCoordinates coordinates) {
 		
@@ -182,11 +331,12 @@ public class STGGraphComponent extends mxGraphComponent {
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
 		
-		
-		
 		try {
-			Map<Node, mxCell> nc = new HashMap<Node, mxCell>();
 			cell2Node.clear();
+			node2Cell.clear();
+			id2Cell.clear();
+			
+			activeSTG = stg; // remember the STG being shown 
 			
 			if (stg==null) return;
 			
@@ -200,37 +350,20 @@ public class STGGraphComponent extends mxGraphComponent {
 					
 					if (isShorthand&&isShorthandedPlace((Place)node, null)) continue;
 					
-					cell = new PlaceCell((Place)node);
-//					cell = (mxCell) graph.insertVertex(parent, null,
-//							((Place) node).getMarking(), 50, 50, 25, 25,
-//							"shape=ellipse;perimeter=ellipsePerimeter");
+					cell = new PlaceCell((Place)node);			
 					
 				} else if (node instanceof Transition) {
-					// decide whether to add this cell
 					cell = new TransitionCell((Transition)node, stg);
-					
-//					int signalID = ((Transition) node).getLabel().getSignal();
-//					String style = "fontColor=black";
-//					if (stg.getSignature(signalID) == Signature.INPUT)
-//						style = "fontColor=red";
-//					if (stg.getSignature(signalID) == Signature.OUTPUT)
-//						style = "fontColor=blue";
-//					if (stg.getSignature(signalID) == Signature.INTERNAL)
-//						style = "fontColor=green";
-//					if (stg.getSignature(signalID) == Signature.ANY)
-//						style = "fontColor=black;fillColor=yellow";
-//
-//					cell = (mxCell) graph.insertVertex(parent, null,
-//							((Transition) node).getString(Transition.UNIQUE),
-//							50, 50, 40, 20, style);
+				
 				}
 				cell2Node.put(cell, node);
-				nc.put(node, cell);
+				node2Cell.put(node, cell);
+				id2Cell.put(node.getIdentifier(), cell);
 				graph.addCell(cell, parent);
 			}
 
 			for (Node node : stg.getNodes()) {
-				mxCell source = nc.get(node);
+				mxCell source = node2Cell.get(node);
 				if (source==null) continue;
 				
 				if (coordinates!=null) {
@@ -278,13 +411,13 @@ public class STGGraphComponent extends mxGraphComponent {
 						
 						if (isShorthand) {
 							if (isShorthandedPlace((Place)child, frto)) {
-								mxCell target = nc.get(frto[1]);
+								mxCell target = node2Cell.get(frto[1]);
 								graph.insertEdge(parent, null, null, source, target);
 							}
 						}
 					}
 					
-					mxCell target = nc.get(child);
+					mxCell target = node2Cell.get(child);
 					if (source!=null&&target!=null)
 						graph.insertEdge(parent, null, null, source, target);
 				}
@@ -292,8 +425,13 @@ public class STGGraphComponent extends mxGraphComponent {
 			
 			// do default layout, if coordinates are not given
 			if (coordinates==null||coordinates.size()==0) {
-				mxGraphLayout cl = new mxOrganicLayout(graph);
-				cl.execute(parent);
+				
+				// only start the layout if there are not too many transitions
+				if (stg.getNumberOfTransitions()<1000) {
+					mxGraphLayout cl = new mxOrganicLayout(graph);
+					cl.execute(parent);
+				}
+				
 				shiftModel();
 				
 				coordinates = new STGCoordinates();
@@ -349,36 +487,42 @@ public class STGGraphComponent extends mxGraphComponent {
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
 		try {
-			mxGraphLayout gl;
-			if (type == 1)
-				gl = new mxOrganicLayout(graph);
-			else if (type == 2)
-				gl = new mxCircleLayout(graph);
-			else if (type == 3)
-				gl = new mxCompactTreeLayout(graph, false, false);
-			else if (type == 4)
-				gl = new mxParallelEdgeLayout(graph, 30);
-			else if (type == 5)
-				gl = new mxPartitionLayout(graph, false, 30);
-			else if (type == 6)
-				gl = new mxStackLayout(graph, false, 30);
-			else
-				gl = new mxOrganicLayout(graph);
+			
+			if (type<7) {
+				mxGraphLayout gl;
+				if (type == 1)
+					gl = new mxOrganicLayout(graph);
+				else if (type == 2)
+					gl = new mxCircleLayout(graph);
+				else if (type == 3)
+					gl = new mxCompactTreeLayout(graph, false, false);
+				else if (type == 4)
+					gl = new mxParallelEdgeLayout(graph, 30);
+				else if (type == 5)
+					gl = new mxPartitionLayout(graph, false, 30);
+				else if (type == 6)
+					gl = new mxStackLayout(graph, false, 30);
+				else
+					gl = new mxOrganicLayout(graph);
 
-			gl.execute(parent);
+				gl.execute(parent);
+			} else {
+				STGDotLayout.doLayout(activeSTG, this);
+			}
+			
 			shiftModel();
 		} finally {
 			graph.getModel().endUpdate();
 		}
 	}
 	
-	
-	public STGGraphComponent() {
+	public STGGraphComponent(STGEditorFrame frame) {
 		super(new mxGraph(new mxGraphModel()));
 
+		this.frame = frame;
 		graph = getGraph();
 		model = getGraph().getModel();
-			
+		
 		setupStyles(graph);
 
 		graph.setAutoSizeCells(false);
@@ -397,8 +541,26 @@ public class STGGraphComponent extends mxGraphComponent {
 		this.setConnectable(false);
 		rubberband = new mxRubberband(this);
 		cell2Node = new HashMap <mxCell, Node>();
+		node2Cell = new HashMap<Node, mxCell>();
+		id2Cell = new HashMap<Integer, mxCell>();
 		
+		this.getGraphControl().addMouseListener(new MouseAdapter()
+		{
+			public void mousePressed(MouseEvent e)
+			{
+				mouseReleased(e);
+			}
+
+			public void mouseReleased(MouseEvent e)
+			{
+				if (e.isPopupTrigger())
+				{
+					showGraphPopupMenu(e);
+				}
+			}
+
+		});
 	}
-	
+
 	
 }

@@ -1,5 +1,7 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
+import java.util.LinkedList;
+
 import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
@@ -7,20 +9,44 @@ import net.strongdesign.stg.STG;
 public class HCExpansionTerm extends HCTerm {
 	public Operation operation;
 	public HCTerm component;
-	public HCChannelCountController countController;
 	
-	public HCExpansionTerm(HCChannelCountController c) {
-		countController = c;
-	}
 	
 	@Override
-	public HCTerm expand(ExpansionType type) throws Exception {
+	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) throws Exception {
 		
-		int len = getMaxCount();
+		int len = scale;
 		
 		if (operation==HCInfixOperator.Operation.ENCLOSE) {
-			// for now only support the infix operator
-			return null;
+			
+			LinkedList<HCTerm> l = new LinkedList<HCTerm>();
+			
+			for (int i=0;i<len;i++) {
+				HCTerm t = (HCTerm)component.clone();
+				t.setInstanceNumber(i, sig);
+				l.add(t);
+			}
+			
+			if (len==0) return null;
+			
+			if (len==1) return component.expand(type, scale, sig, oldChoice);
+			
+			HCEnclosureTerm enc = new HCEnclosureTerm();
+			HCEnclosureTerm encp = enc;
+			
+			for (int i=0;i<len-1;i++) {
+				encp.channel = (HCChannelTerm)l.get(i);
+				
+				if (i==len-2) {
+					encp.component = l.get(i+1);
+				} else {
+					encp.component = new HCEnclosureTerm();
+					encp = (HCEnclosureTerm)encp.component;
+				}
+
+			}
+			
+			return enc.expand(type, scale, sig, oldChoice);
+			
 		} else {
 			HCInfixOperator inf=new HCInfixOperator();
 			inf.operation = operation;
@@ -28,13 +54,13 @@ public class HCExpansionTerm extends HCTerm {
 			// first, expand the repetition
 			for (int i=0;i<len;i++) {
 				HCTerm t = (HCTerm)component.clone();
-				t.setInstanceNumber(i);
+				t.setInstanceNumber(i, sig);
 				
 				inf.components.add(t);
 			}
 			
 			// now return the expansion of the generated expression
-			return inf.expand(type);
+			return inf.expand(type, scale, sig, oldChoice);
 			
 		}
 	}
@@ -48,13 +74,9 @@ public class HCExpansionTerm extends HCTerm {
 	}
 
 	
-	@Override
-	public int getMaxCount() {
-		return component.getMaxCount();
-	}
 
 	@Override
-	public void setInstanceNumber(int num) {
+	public void setInstanceNumber(int num, HCChannelSenseController sig) {
 		// empty, shouldn't be called
 		try {
 			throw new Exception("Requesting instance number from the expansion term");
@@ -66,8 +88,11 @@ public class HCExpansionTerm extends HCTerm {
 	
 	@Override
 	public Object clone() {
-		// expansion cannot be cloned 
-		System.out.println("ERROR!");
+		try {
+			throw new Exception("Expansion cannot be cloned!");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return null;
 	}
 

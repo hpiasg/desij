@@ -25,15 +25,35 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.nio.CharBuffer;
+import java.util.LinkedList;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 
+import net.strongdesign.balsa.breezefile.ComponentSTGExpressions;
+import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
+import net.strongdesign.desij.CLW;
+import net.strongdesign.desij.DesiJException;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.STGFile;
+import net.strongdesign.stg.parser.ParseException;
+import net.strongdesign.util.FileSupport;
+import net.strongdesign.util.HelperApplications;
+import net.strongdesign.util.Pair;
+import net.strongdesign.util.StreamGobbler;
 
 //import org.jgraph.JGraph;
 //import org.jgraph.event.GraphSelectionEvent;
@@ -55,6 +75,9 @@ import net.strongdesign.stg.STG;
 public class STGEditorNavigation extends JTree implements
 		TreeSelectionListener, ActionListener, KeyListener, MouseListener {
 
+	public final STGEditorAction DELETE_SELECTED = new STGEditorAction("Delete selected nodes", 0 , null, 0, this);
+	public final STGEditorAction PARALLEL_COMPOSITION = new STGEditorAction("Parallel composition", 0 , null, 0, this);
+	
 	/**
 	 * 
 	 */
@@ -249,7 +272,6 @@ public class STGEditorNavigation extends JTree implements
 			setSelectionPath(new TreePath(node.getPath()));
 			expandPath(new TreePath(node.getPath()));
 			frame.setTitle(node.getLabel());
-			
 		}
 	}
 
@@ -265,21 +287,45 @@ public class STGEditorNavigation extends JTree implements
 	}
 
 	public void actionPerformed(ActionEvent e) {
-		String cmd = e.getActionCommand();
-
-		if (cmd.equals("Delete selected nodes"))
-			deleteSelectedNodes();
+		Object source = e.getSource();
+		if (source == DELETE_SELECTED) deleteSelectedNodes();
+		
+		if (source == PARALLEL_COMPOSITION) parallelComposition();
+		
 	}
 
+	public void parallelComposition() {
+		
+		int len = getSelectionPaths().length;
+		LinkedList<STG> stgs = new LinkedList<STG>();
+		
+		for (int i=0;i<len;i++) {
+			TreePath path = getSelectionPaths()[i]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			stgs.add(node.getSTG());
+		}
+		
+		STG stg= ComponentSTGFactory.parallelComposition(stgs, null);
+		
+		if (stg!=null) {
+			frame.addSTG(stg, "Composed");
+		}
+		
+	}
+	
 	public void deleteSelectedNodes() {
 		// find some parent node to show next
 		STGEditorTreeNode next =  getSelectedNode().getParent();
-		((DefaultTreeModel)getModel()).removeNodeFromParent(getSelectedNode());
+		
+//		getSelectionPaths();
+		
+	//	((DefaultTreeModel)getModel()).removeNodeFromParent(getSelectedNode());
 
-		/*for (TreePath path : getSelectionPaths()) {
+		for (TreePath path : getSelectionPaths()) {
 			((DefaultTreeModel)getModel()).removeNodeFromParent(
-					(DefaultMutableTreeNode) path.getLastPathComponent());
-		}*/
+					(MutableTreeNode) path.getLastPathComponent());
+			
+		}
 		
 		if (next==root) {
 			if (root.getChildCount()>0) {

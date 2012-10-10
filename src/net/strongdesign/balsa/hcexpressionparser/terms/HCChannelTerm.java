@@ -6,30 +6,45 @@ import net.strongdesign.stg.STG;
 
 public class HCChannelTerm extends HCTerm {
 	public String channel;
-	public HCChannelCountController countController;
 	
 	public int instanceNumber=0;
 
-	public HCChannelTerm(HCChannelCountController c) {
-		countController = c;
+	public HCChannelTerm() {
+	}
+	
+	/**
+	 * This function should either return channel name with instance 
+	 * or the corresponding channel number from a breeze file, 
+	 * now only the first part is implemented
+	 * 
+	 * @return
+	 */
+	
+	public String getChannelName() {
+		String cnt="";
+		if (instanceNumber>0) {
+			cnt=""+instanceNumber;
+		}
+		return channel+cnt;
 	}
 	
 	@Override
-	public HCTerm expand(ExpansionType type) {
+	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) {
 		HCInfixOperator ret = new HCInfixOperator();
 		ret.operation = Operation.SEQUENCE;
 		
 		
-		HCTransitionTerm t1 = new HCTransitionTerm(countController);
+		HCTransitionTerm t1 = new HCTransitionTerm();
 		t1.channel = channel;
 		String dir = "+";
 		if (type==ExpansionType.DOWN) dir = "-";
+		
 		t1.instanceNumber = instanceNumber;
 		t1.direction = dir;
 		t1.wire = "r";
 		
 
-		HCTransitionTerm t2 = new HCTransitionTerm(countController);
+		HCTransitionTerm t2 = new HCTransitionTerm();
 		t2.channel = channel;
 		t2.instanceNumber = instanceNumber;
 		t2.direction = dir;
@@ -53,14 +68,11 @@ public class HCChannelTerm extends HCTerm {
 	}
 
 	@Override
-	public int getMaxCount() {
-		return countController.getCount(channel);
-	}
-
-	@Override
-	public void setInstanceNumber(int num) {
-		int tmp = num%countController.getCount(channel);
-		instanceNumber = tmp;
+	public void setInstanceNumber(int num, HCChannelSenseController sig) {
+		if (sig.isScaled(channel))
+			instanceNumber = num;
+		else
+			instanceNumber = 0;
 	}
 
 	

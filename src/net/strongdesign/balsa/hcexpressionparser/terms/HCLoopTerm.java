@@ -1,18 +1,25 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation;
+import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.SignalEdge;
+import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.Transition;
 
 public class HCLoopTerm extends HCTerm implements HCSTGGenerator {
 	public HCTerm component;
 
 	@Override
-	public HCTerm expand(ExpansionType type) throws Exception  {
+	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) throws Exception  {
 		if (type==ExpansionType.UP) {
 			HCInfixOperator ret = new HCInfixOperator();
-			HCTerm up = component.expand(ExpansionType.UP);
-			HCTerm down = component.expand(ExpansionType.DOWN);
+			HCTerm up = component.expand(ExpansionType.UP, scale, sig, oldChoice);
+			HCTerm down = component.expand(ExpansionType.DOWN, scale, sig, oldChoice);
 			if (up!=null) ret.components.add(up);
 			if (down!=null) ret.components.add(down);
 			
@@ -34,13 +41,8 @@ public class HCLoopTerm extends HCTerm implements HCSTGGenerator {
 	}
 
 	@Override
-	public int getMaxCount() {
-		return component.getMaxCount();
-	}
-
-	@Override
-	public void setInstanceNumber(int num) {
-		component.setInstanceNumber(num);
+	public void setInstanceNumber(int num, HCChannelSenseController sig) {
+		component.setInstanceNumber(num, sig);
 	}
 
 	@Override
@@ -51,11 +53,44 @@ public class HCLoopTerm extends HCTerm implements HCSTGGenerator {
 	}
 
 	@Override
-	public void generateSTG(STG stg, HCChannelSenseController sig, Place inPlace, Place outPlace) {
+	public void generateSTGold(STG stg, HCChannelSenseController sig, Place inPlace, Place outPlace) {
 		
 		HCSTGGenerator hc = (HCSTGGenerator)component;
-		hc.generateSTG(stg, sig, inPlace, inPlace);
+		
+		Place p = stg.addPlace("p", 0);
+		
+		int num=stg.getSignalNumber("loop");
+		
+		Transition t1 = stg.addTransition(
+				new SignalEdge(
+						num, 
+						EdgeDirection.DONT_CARE
+						)
+				);
+		
+		inPlace.setChildValue(t1, 1);
+		t1.setChildValue(p, 1);
+		
+		stg.setSignature(num, Signature.DUMMY);
+		
+		
+		
+		hc.generateSTGold(stg, sig, p, p);
 	}
 	
+	@Override
+	public void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces) {
+		
+		HCSTGGenerator hc = (HCSTGGenerator)component;
+		
+		
+		Set<Place> inP = new HashSet<Place>();
+		Set<Place> outP = new HashSet<Place>();
+		
+		hc.generateSTG(stg, sig, inP, outP);
+		
+		inPlaces.addAll(STG.cartesianProductBinding(stg, inP, outP));
+		// the outPlaces will remain empty
+	}
 }
 

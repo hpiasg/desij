@@ -24,6 +24,7 @@
 package net.strongdesign.stg;
 
 import java.awt.Point;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.Date;
@@ -158,10 +159,16 @@ public abstract class STGFile {
 	 * @throws ParseException
 	 * @throws STGException 
 	 */
-	
 	public static STG convertToSTG(String file, boolean withCoordinates) throws  ParseException, STGException {
 		GParser parser = new GParser(new StringReader(file));
 		
+		STG result = parser.STG();//
+		result.clearUndoStack();
+		return result;
+	}
+	
+	public static STG readerToSTG(Reader reader) throws  ParseException, STGException {
+		GParser parser = new GParser(reader);
 		STG result = parser.STG();//
 		result.clearUndoStack();
 		return result;

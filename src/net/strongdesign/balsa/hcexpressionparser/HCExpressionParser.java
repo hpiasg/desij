@@ -4,28 +4,13 @@ package net.strongdesign.balsa.hcexpressionparser;
 
 import net.strongdesign.balsa.hcexpressionparser.terms.*;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm.ExpansionType;
-import java.util.HashMap;
 import java.util.HashSet;
 
-import java.io.OutputStream;
+public class HCExpressionParser implements HCChannelSenseController, HCExpressionParserConstants {
 
+        public int scale = 1;
 
-public class HCExpressionParser implements HCChannelCountController, HCChannelSenseController, HCExpressionParserConstants {
-
-/*	int counter;	public void setCounter(int c) {		counter=c;	}		public int getCounter() {		return counter;	}*/
-
-        public HashMap<String, Integer> counts = new HashMap<String,Integer>();
-
-        public void setCount(String s, int i) {
-                counts.put(s, i);
-        }
-
-        public int getCount(String s) {
-                if (counts.containsKey(s)) return counts.get(s);
-                return 1;
-        }
-
-
+        private HashSet<String> scaled = new HashSet<String>();
     private HashSet<String> acts = new HashSet<String>();
 
     public boolean isActive(String name) {
@@ -38,6 +23,19 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
                 acts.add(name);
         } else {
                 acts.remove(name);
+        }
+    }
+
+    public boolean isScaled(String name) {
+        return scaled.contains(name);
+    }
+
+    public void setScaled(String name, boolean act) {
+
+        if (act) {
+                scaled.add(name);
+        } else {
+                scaled.remove(name);
         }
     }
 
@@ -58,8 +56,8 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
             if (t==null) {
                 System.out.println("NULL term returned");
             } else {
-                        HCTerm up   = t.expand(ExpansionType.UP);
-                        HCTerm down = t.expand(ExpansionType.DOWN);
+                        HCTerm up   = t.expand(ExpansionType.UP, parser.scale, parser, false);
+                        HCTerm down = t.expand(ExpansionType.DOWN, parser.scale, parser, false);
 
                         if (up!=null) System.out.println("UP: "+up.toString());
                         else System.out.println("UP: null");
@@ -92,6 +90,7 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         Token c;
         String chan;
         Token tk;
+        scaled.clear();
     label_1:
     while (true) {
       if (jj_2_1(3)) {
@@ -99,30 +98,65 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
       } else {
         break label_1;
       }
-      jj_consume_token(17);
-      c = jj_consume_token(CHANNEL);
-                                      chan = c.image;
-      if (jj_2_2(3)) {
-        jj_consume_token(18);
-        tk = jj_consume_token(CHANNEL);
-        jj_consume_token(19);
-                                                                  setCount(chan, Integer.valueOf(tk.image));
-      } else if (jj_2_3(3)) {
+      if (jj_2_5(3)) {
         jj_consume_token(20);
-        jj_consume_token(19);
-                                                   setActive(chan, true);
-      } else if (jj_2_4(3)) {
+      } else if (jj_2_6(3)) {
         jj_consume_token(21);
-        jj_consume_token(19);
-                                                   setActive(chan, false);
+        c = jj_consume_token(CHANNEL);
+                                                        setActive(c.image, true);
+        label_2:
+        while (true) {
+          if (jj_2_2(3)) {
+            ;
+          } else {
+            break label_2;
+          }
+          jj_consume_token(COMMA);
+          c = jj_consume_token(CHANNEL);
+                                                                    setActive(c.image, true);
+        }
+      } else if (jj_2_7(3)) {
+        jj_consume_token(22);
+        c = jj_consume_token(CHANNEL);
+                                                        setActive(c.image, false);
+        label_3:
+        while (true) {
+          if (jj_2_3(3)) {
+            ;
+          } else {
+            break label_3;
+          }
+          jj_consume_token(COMMA);
+          c = jj_consume_token(CHANNEL);
+                                                                    setActive(c.image, false);
+        }
+      } else if (jj_2_8(3)) {
+        jj_consume_token(23);
+        c = jj_consume_token(CHANNEL);
+                                                        scale = Integer.valueOf(c.image);
+      } else if (jj_2_9(3)) {
+        jj_consume_token(24);
+        c = jj_consume_token(CHANNEL);
+                                                        setScaled(c.image, true);
+        label_4:
+        while (true) {
+          if (jj_2_4(3)) {
+            ;
+          } else {
+            break label_4;
+          }
+          jj_consume_token(COMMA);
+          c = jj_consume_token(CHANNEL);
+                                                                    setScaled(c.image, true);
+        }
       } else {
         jj_consume_token(-1);
         throw new ParseException();
       }
     }
     t = hcChoice();
-    if (jj_2_5(3)) {
-      jj_consume_token(19);
+    if (jj_2_10(3)) {
+      jj_consume_token(20);
     } else {
       ;
     }
@@ -136,12 +170,12 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         HCTerm t;
     t = hcConcur();
                               io.components.add(t);
-    label_2:
+    label_5:
     while (true) {
-      if (jj_2_6(3)) {
+      if (jj_2_11(3)) {
         ;
       } else {
-        break label_2;
+        break label_5;
       }
       jj_consume_token(CHOICE);
       t = hcConcur();
@@ -158,12 +192,12 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         HCTerm t;
     t = hcSequence();
                                 io.components.add(t);
-    label_3:
+    label_6:
     while (true) {
-      if (jj_2_7(3)) {
+      if (jj_2_12(3)) {
         ;
       } else {
-        break label_3;
+        break label_6;
       }
       jj_consume_token(CONCUR);
       t = hcSequence();
@@ -178,18 +212,40 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         HCInfixOperator io = new HCInfixOperator();
         io.operation = HCInfixOperator.Operation.SEQUENCE;
         HCTerm t;
-    t = hcSync();
-                            io.components.add(t);
-    label_4:
+    t = hcFollow();
+                              io.components.add(t);
+    label_7:
     while (true) {
-      if (jj_2_8(3)) {
+      if (jj_2_13(3)) {
         ;
       } else {
-        break label_4;
+        break label_7;
       }
       jj_consume_token(SEQUENCE);
+      t = hcFollow();
+                                                                               io.components.add(t);
+    }
+                if (io.components.size()==1) {if (true) return t;}
+                {if (true) return io;}
+    throw new Error("Missing return statement in function");
+  }
+
+  final public HCTerm hcFollow() throws ParseException {
+        HCInfixOperator io = new HCInfixOperator();
+        io.operation = HCInfixOperator.Operation.FOLLOW;
+        HCTerm t;
+    t = hcSync();
+                            io.components.add(t);
+    label_8:
+    while (true) {
+      if (jj_2_14(3)) {
+        ;
+      } else {
+        break label_8;
+      }
+      jj_consume_token(DOT);
       t = hcSync();
-                                                                           io.components.add(t);
+                                                                      io.components.add(t);
     }
                 if (io.components.size()==1) {if (true) return t;}
                 {if (true) return io;}
@@ -202,12 +258,12 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         HCTerm t;
     t = hcLoop();
                             io.components.add(t);
-    label_5:
+    label_9:
     while (true) {
-      if (jj_2_9(3)) {
+      if (jj_2_15(3)) {
         ;
       } else {
-        break label_5;
+        break label_9;
       }
       jj_consume_token(COMMA);
       t = hcLoop();
@@ -221,11 +277,11 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
   final public HCTerm hcLoop() throws ParseException {
         HCLoopTerm lt = new HCLoopTerm();
         HCTerm t;
-    if (jj_2_10(3)) {
+    if (jj_2_16(3)) {
       jj_consume_token(SHARP);
       t = hcBrackets();
                                         lt.component = t; {if (true) return lt;}
-    } else if (jj_2_11(3)) {
+    } else if (jj_2_17(3)) {
       t = hcBrackets();
                                 {if (true) return t;}
     } else {
@@ -239,16 +295,29 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         HCTerm t;
         Token tok;
         HCTerm ret;
-    if (jj_2_12(3)) {
+        HCPhaseTerm p;
+    if (jj_2_18(3)) {
       jj_consume_token(OPEN_B);
       t = hcChoice();
       jj_consume_token(CLOSE_B);
-    } else if (jj_2_13(3)) {
+    } else if (jj_2_19(3)) {
+      jj_consume_token(UP);
+      jj_consume_token(OPEN_B);
+      t = hcChoice();
+      jj_consume_token(CLOSE_B);
+                                                         p = new HCPhaseTerm(); p.phase = ExpansionType.UP;   p.component=t; {if (true) return p;}
+    } else if (jj_2_20(3)) {
+      jj_consume_token(DOWN);
+      jj_consume_token(OPEN_B);
+      t = hcChoice();
+      jj_consume_token(CLOSE_B);
+                                                         p = new HCPhaseTerm(); p.phase = ExpansionType.DOWN; p.component=t; {if (true) return p;}
+    } else if (jj_2_21(3)) {
       t = hcChannel();
-    } else if (jj_2_14(3)) {
+    } else if (jj_2_22(3)) {
       tok = jj_consume_token(EXPANSION);
       t = hcBrackets();
-                                ret = new HCExpansionTerm(this);
+                                ret = new HCExpansionTerm();
                                 ((HCExpansionTerm)ret).operation = HCInfixOperator.Operation.fromString(tok.image.substring(1));
                                 ((HCExpansionTerm)ret).component = t;
                                 {if (true) return ret;}
@@ -265,42 +334,42 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         HCTerm ret;
         HCTerm tmp;
         HCTerm comp;
-    if (jj_2_20(3)) {
+    if (jj_2_28(3)) {
       t = jj_consume_token(CHANNEL);
-                                ret = new HCChannelTerm(this);
+                                ret = new HCChannelTerm();
                                 ((HCChannelTerm)ret).channel=t.image;
-      if (jj_2_15(3)) {
+      if (jj_2_23(3)) {
         jj_consume_token(ENCLOSE);
         comp = hcBrackets();
                                 tmp = ret;
-                                ret = new HCEnclosureTerm(this);
+                                ret = new HCEnclosureTerm();
                                 ((HCEnclosureTerm)ret).channel = (HCChannelTerm)tmp;
                                 ((HCEnclosureTerm)ret).component = comp;
       } else {
         ;
       }
-    } else if (jj_2_21(3)) {
+    } else if (jj_2_29(3)) {
       t = jj_consume_token(REQ);
-                                ret = new HCTransitionTerm(this);
-                                ((HCTransitionTerm)ret).channel = ""+t.image.charAt(0);
+                                ret = new HCTransitionTerm();
+                                ((HCTransitionTerm)ret).channel = ""+t.image.charAt(1);
                                 ((HCTransitionTerm)ret).wire = "r";
-      if (jj_2_16(3)) {
+      if (jj_2_24(3)) {
         t = jj_consume_token(PLUS);
-      } else if (jj_2_17(3)) {
+      } else if (jj_2_25(3)) {
         t = jj_consume_token(MINUS);
       } else {
         jj_consume_token(-1);
         throw new ParseException();
       }
                                 ((HCTransitionTerm)ret).direction=t.image;
-    } else if (jj_2_22(3)) {
+    } else if (jj_2_30(3)) {
       t = jj_consume_token(ACK);
-                                ret = new HCTransitionTerm(this);
-                                ((HCTransitionTerm)ret).channel = ""+t.image.charAt(0);
+                                ret = new HCTransitionTerm();
+                                ((HCTransitionTerm)ret).channel = ""+t.image.charAt(1);
                                 ((HCTransitionTerm)ret).wire = "a";
-      if (jj_2_18(3)) {
+      if (jj_2_26(3)) {
         t = jj_consume_token(PLUS);
-      } else if (jj_2_19(3)) {
+      } else if (jj_2_27(3)) {
         t = jj_consume_token(MINUS);
       } else {
         jj_consume_token(-1);
@@ -469,59 +538,231 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
     finally { jj_save(21, xla); }
   }
 
-  private boolean jj_3_7() {
-    if (jj_scan_token(CONCUR)) return true;
-    if (jj_3R_7()) return true;
-    return false;
+  private boolean jj_2_23(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_23(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(22, xla); }
   }
 
-  private boolean jj_3R_6() {
-    if (jj_3R_7()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3_7()) { jj_scanpos = xsp; break; }
-    }
-    return false;
+  private boolean jj_2_24(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_24(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(23, xla); }
   }
 
-  private boolean jj_3R_9() {
+  private boolean jj_2_25(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_25(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(24, xla); }
+  }
+
+  private boolean jj_2_26(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_26(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(25, xla); }
+  }
+
+  private boolean jj_2_27(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_27(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(26, xla); }
+  }
+
+  private boolean jj_2_28(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_28(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(27, xla); }
+  }
+
+  private boolean jj_2_29(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_29(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(28, xla); }
+  }
+
+  private boolean jj_2_30(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_30(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(29, xla); }
+  }
+
+  private boolean jj_3_30() {
+    if (jj_scan_token(ACK)) return true;
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3_10()) {
+    if (jj_3_26()) {
     jj_scanpos = xsp;
-    if (jj_3_11()) return true;
+    if (jj_3_27()) return true;
     }
     return false;
   }
 
-  private boolean jj_3_20() {
-    if (jj_scan_token(CHANNEL)) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3_15()) jj_scanpos = xsp;
-    return false;
-  }
-
-  private boolean jj_3_19() {
-    if (jj_scan_token(MINUS)) return true;
-    return false;
-  }
-
-  private boolean jj_3_5() {
-    if (jj_scan_token(19)) return true;
-    return false;
-  }
-
-  private boolean jj_3_4() {
-    if (jj_scan_token(21)) return true;
-    if (jj_scan_token(19)) return true;
+  private boolean jj_3_11() {
+    if (jj_scan_token(CHOICE)) return true;
+    if (jj_3R_10()) return true;
     return false;
   }
 
   private boolean jj_3R_12() {
+    if (jj_3R_13()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_14()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_23() {
+    if (jj_scan_token(ENCLOSE)) return true;
+    if (jj_3R_15()) return true;
+    return false;
+  }
+
+  private boolean jj_3_29() {
+    if (jj_scan_token(REQ)) return true;
     Token xsp;
     xsp = jj_scanpos;
+    if (jj_3_24()) {
+    jj_scanpos = xsp;
+    if (jj_3_25()) return true;
+    }
+    return false;
+  }
+
+  private boolean jj_3R_11() {
+    if (jj_3R_12()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_13()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_28() {
+    if (jj_scan_token(CHANNEL)) return true;
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3_23()) jj_scanpos = xsp;
+    return false;
+  }
+
+  private boolean jj_3_4() {
+    if (jj_scan_token(COMMA)) return true;
+    if (jj_scan_token(CHANNEL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_17() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3_28()) {
+    jj_scanpos = xsp;
+    if (jj_3_29()) {
+    jj_scanpos = xsp;
+    if (jj_3_30()) return true;
+    }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_10() {
+    if (jj_3R_11()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_12()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_15() {
+    if (jj_scan_token(COMMA)) return true;
+    if (jj_3R_14()) return true;
+    return false;
+  }
+
+  private boolean jj_3_10() {
+    if (jj_scan_token(20)) return true;
+    return false;
+  }
+
+  private boolean jj_3_3() {
+    if (jj_scan_token(COMMA)) return true;
+    if (jj_scan_token(CHANNEL)) return true;
+    return false;
+  }
+
+  private boolean jj_3_22() {
+    if (jj_scan_token(EXPANSION)) return true;
+    if (jj_3R_15()) return true;
+    return false;
+  }
+
+  private boolean jj_3_21() {
+    if (jj_3R_17()) return true;
+    return false;
+  }
+
+  private boolean jj_3_20() {
+    if (jj_scan_token(DOWN)) return true;
+    if (jj_scan_token(OPEN_B)) return true;
+    if (jj_3R_16()) return true;
+    return false;
+  }
+
+  private boolean jj_3_19() {
+    if (jj_scan_token(UP)) return true;
+    if (jj_scan_token(OPEN_B)) return true;
+    if (jj_3R_16()) return true;
+    return false;
+  }
+
+  private boolean jj_3_18() {
+    if (jj_scan_token(OPEN_B)) return true;
+    if (jj_3R_16()) return true;
+    if (jj_scan_token(CLOSE_B)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_16() {
+    if (jj_3R_10()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_11()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_2() {
+    if (jj_scan_token(COMMA)) return true;
+    if (jj_scan_token(CHANNEL)) return true;
+    return false;
+  }
+
+  private boolean jj_3_14() {
+    if (jj_scan_token(DOT)) return true;
+    if (jj_3R_13()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_15() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3_18()) {
+    jj_scanpos = xsp;
+    if (jj_3_19()) {
+    jj_scanpos = xsp;
     if (jj_3_20()) {
     jj_scanpos = xsp;
     if (jj_3_21()) {
@@ -529,150 +770,46 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
     if (jj_3_22()) return true;
     }
     }
-    return false;
-  }
-
-  private boolean jj_3_3() {
-    if (jj_scan_token(20)) return true;
-    if (jj_scan_token(19)) return true;
-    return false;
-  }
-
-  private boolean jj_3_17() {
-    if (jj_scan_token(MINUS)) return true;
-    return false;
-  }
-
-  private boolean jj_3_18() {
-    if (jj_scan_token(PLUS)) return true;
-    return false;
-  }
-
-  private boolean jj_3_6() {
-    if (jj_scan_token(CHOICE)) return true;
-    if (jj_3R_6()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_11() {
-    if (jj_3R_6()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3_6()) { jj_scanpos = xsp; break; }
     }
-    return false;
-  }
-
-  private boolean jj_3R_8() {
-    if (jj_3R_9()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3_9()) { jj_scanpos = xsp; break; }
     }
-    return false;
-  }
-
-  private boolean jj_3_2() {
-    if (jj_scan_token(18)) return true;
-    if (jj_scan_token(CHANNEL)) return true;
-    if (jj_scan_token(19)) return true;
     return false;
   }
 
   private boolean jj_3_9() {
-    if (jj_scan_token(COMMA)) return true;
-    if (jj_3R_9()) return true;
-    return false;
-  }
-
-  private boolean jj_3_16() {
-    if (jj_scan_token(PLUS)) return true;
-    return false;
-  }
-
-  private boolean jj_3_14() {
-    if (jj_scan_token(EXPANSION)) return true;
-    if (jj_3R_10()) return true;
-    return false;
-  }
-
-  private boolean jj_3_13() {
-    if (jj_3R_12()) return true;
-    return false;
-  }
-
-  private boolean jj_3_12() {
-    if (jj_scan_token(OPEN_B)) return true;
-    if (jj_3R_11()) return true;
-    if (jj_scan_token(CLOSE_B)) return true;
-    return false;
-  }
-
-  private boolean jj_3_22() {
-    if (jj_scan_token(ACK)) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3_18()) {
-    jj_scanpos = xsp;
-    if (jj_3_19()) return true;
-    }
-    return false;
-  }
-
-  private boolean jj_3R_7() {
-    if (jj_3R_8()) return true;
+    if (jj_scan_token(24)) return true;
+    if (jj_scan_token(CHANNEL)) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3_8()) { jj_scanpos = xsp; break; }
+      if (jj_3_4()) { jj_scanpos = xsp; break; }
     }
+    return false;
+  }
+
+  private boolean jj_3_17() {
+    if (jj_3R_15()) return true;
     return false;
   }
 
   private boolean jj_3_8() {
-    if (jj_scan_token(SEQUENCE)) return true;
-    if (jj_3R_8()) return true;
-    return false;
-  }
-
-  private boolean jj_3_1() {
-    if (jj_scan_token(17)) return true;
+    if (jj_scan_token(23)) return true;
     if (jj_scan_token(CHANNEL)) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3_2()) {
-    jj_scanpos = xsp;
-    if (jj_3_3()) {
-    jj_scanpos = xsp;
-    if (jj_3_4()) return true;
-    }
-    }
     return false;
   }
 
-  private boolean jj_3_15() {
-    if (jj_scan_token(ENCLOSE)) return true;
-    if (jj_3R_10()) return true;
+  private boolean jj_3_16() {
+    if (jj_scan_token(SHARP)) return true;
+    if (jj_3R_15()) return true;
     return false;
   }
 
-  private boolean jj_3R_10() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3_12()) {
-    jj_scanpos = xsp;
-    if (jj_3_13()) {
-    jj_scanpos = xsp;
-    if (jj_3_14()) return true;
-    }
-    }
+  private boolean jj_3_13() {
+    if (jj_scan_token(SEQUENCE)) return true;
+    if (jj_3R_12()) return true;
     return false;
   }
 
-  private boolean jj_3_21() {
-    if (jj_scan_token(REQ)) return true;
+  private boolean jj_3R_14() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_16()) {
@@ -682,14 +819,85 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
     return false;
   }
 
-  private boolean jj_3_11() {
-    if (jj_3R_10()) return true;
+  private boolean jj_3_7() {
+    if (jj_scan_token(22)) return true;
+    if (jj_scan_token(CHANNEL)) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_3()) { jj_scanpos = xsp; break; }
+    }
     return false;
   }
 
-  private boolean jj_3_10() {
-    if (jj_scan_token(SHARP)) return true;
-    if (jj_3R_10()) return true;
+  private boolean jj_3_27() {
+    if (jj_scan_token(MINUS)) return true;
+    return false;
+  }
+
+  private boolean jj_3_12() {
+    if (jj_scan_token(CONCUR)) return true;
+    if (jj_3R_11()) return true;
+    return false;
+  }
+
+  private boolean jj_3_25() {
+    if (jj_scan_token(MINUS)) return true;
+    return false;
+  }
+
+  private boolean jj_3_26() {
+    if (jj_scan_token(PLUS)) return true;
+    return false;
+  }
+
+  private boolean jj_3_6() {
+    if (jj_scan_token(21)) return true;
+    if (jj_scan_token(CHANNEL)) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_2()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_1() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3_5()) {
+    jj_scanpos = xsp;
+    if (jj_3_6()) {
+    jj_scanpos = xsp;
+    if (jj_3_7()) {
+    jj_scanpos = xsp;
+    if (jj_3_8()) {
+    jj_scanpos = xsp;
+    if (jj_3_9()) return true;
+    }
+    }
+    }
+    }
+    return false;
+  }
+
+  private boolean jj_3_5() {
+    if (jj_scan_token(20)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_13() {
+    if (jj_3R_14()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_15()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3_24() {
+    if (jj_scan_token(PLUS)) return true;
     return false;
   }
 
@@ -712,7 +920,7 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
    private static void jj_la1_init_0() {
       jj_la1_0 = new int[] {};
    }
-  final private JJCalls[] jj_2_rtns = new JJCalls[22];
+  final private JJCalls[] jj_2_rtns = new JJCalls[30];
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
@@ -896,7 +1104,7 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[22];
+    boolean[] la1tokens = new boolean[25];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -910,7 +1118,7 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
         }
       }
     }
-    for (int i = 0; i < 22; i++) {
+    for (int i = 0; i < 25; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
@@ -937,7 +1145,7 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
 
   private void jj_rescan_token() {
     jj_rescan = true;
-    for (int i = 0; i < 22; i++) {
+    for (int i = 0; i < 30; i++) {
     try {
       JJCalls p = jj_2_rtns[i];
       do {
@@ -966,6 +1174,14 @@ public class HCExpressionParser implements HCChannelCountController, HCChannelSe
             case 19: jj_3_20(); break;
             case 20: jj_3_21(); break;
             case 21: jj_3_22(); break;
+            case 22: jj_3_23(); break;
+            case 23: jj_3_24(); break;
+            case 24: jj_3_25(); break;
+            case 25: jj_3_26(); break;
+            case 26: jj_3_27(); break;
+            case 27: jj_3_28(); break;
+            case 28: jj_3_29(); break;
+            case 29: jj_3_30(); break;
           }
         }
         p = p.next;

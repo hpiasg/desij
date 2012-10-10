@@ -27,17 +27,23 @@ public interface HCExpressionParserConstants {
   /** RegularExpression Id. */
   int COMMA = 10;
   /** RegularExpression Id. */
-  int OPEN_B = 11;
+  int DOT = 11;
   /** RegularExpression Id. */
-  int CLOSE_B = 12;
+  int UP = 12;
   /** RegularExpression Id. */
-  int EXPANSION = 13;
+  int DOWN = 13;
   /** RegularExpression Id. */
-  int SHARP = 14;
+  int OPEN_B = 14;
   /** RegularExpression Id. */
-  int PLUS = 15;
+  int CLOSE_B = 15;
   /** RegularExpression Id. */
-  int MINUS = 16;
+  int EXPANSION = 16;
+  /** RegularExpression Id. */
+  int SHARP = 17;
+  /** RegularExpression Id. */
+  int PLUS = 18;
+  /** RegularExpression Id. */
+  int MINUS = 19;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -55,17 +61,20 @@ public interface HCExpressionParserConstants {
     "\";\"",
     "\":\"",
     "\",\"",
+    "\".\"",
+    "\"up\"",
+    "\"down\"",
     "<OPEN_B>",
     "<CLOSE_B>",
     "<EXPANSION>",
     "\"#\"",
     "\"+\"",
     "\"-\"",
-    "\"set\"",
-    "\"=\"",
     "\"\\n\"",
-    "\"!\"",
-    "\"?\"",
+    "\"active\"",
+    "\"passive\"",
+    "\"scale\"",
+    "\"scaled\"",
   };
 
 }

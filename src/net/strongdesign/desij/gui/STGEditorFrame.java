@@ -141,6 +141,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction LAYOUT4 = new STGEditorAction("Parallel Edge",	KeyEvent.VK_4, '4', 0, this);
 	public final STGEditorAction LAYOUT5 = new STGEditorAction("Partition",		KeyEvent.VK_5, '5', 0, this);
 	public final STGEditorAction LAYOUT6 = new STGEditorAction("Stack",			KeyEvent.VK_6, '6', 0, this);
+	public final STGEditorAction LAYOUT7 = new STGEditorAction("DOT layout",    KeyEvent.VK_7, '7', 0, this);
 
 	public final static Font STANDARD_FONT = new Font("Arial", Font.PLAIN, 16);
 	public final static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 12);
@@ -172,7 +173,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	//private String label;
 
-	private boolean useShorthand;
+	private boolean useShorthand = true;
 	
 	public JFileChooser getFileChooser() {
 		return fileChooser;
@@ -181,10 +182,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	/**
 	 * Constructs an instance.
 	 * 
-	 * @param windowLabel
-	 *            The label of the window.
-	 * @param stg
-	 *            The initial STG.
 	 */
 	public STGEditorFrame() {
 
@@ -205,7 +202,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 		// graph = new mxGraph(model, cache);
 
-		graphComponent = new STGGraphComponent();
+		graphComponent = new STGGraphComponent(this);
 		
 		graphOutline = new mxGraphOutline(graphComponent);
 
@@ -231,6 +228,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		menuBar = new STGEditorMenuBar(this);// , cache);
 
 		setJMenuBar(menuBar);
+		
+		IS_SHORTHAND.setSelected(true); // it is selected by default
 		IS_SHORTHAND.addItemListener(this);
 		
 	}
@@ -243,41 +242,19 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 	}
 
-	// public STGEditorFrame(String fileName) {
-	// FileSupport.loadFileFromDisk(fileName);
-	//
-	//
-	// }
-
-	// public void run() {
-	// if (backgroundMethod.equals("reduce")) {
-	// try {
-	// reduce();
-	// }
-	// catch (OutOfMemoryError e) {
-	// JOptionPane.showMessageDialog(this, "Out of memory error while reducing",
-	// "JDesi - Error", JOptionPane.ERROR_MESSAGE);
-	// return;
-	// }
-	// JOptionPane.showMessageDialog(this, "Finished reduction", "JDesi",
-	// JOptionPane.INFORMATION_MESSAGE);
-	// }
-	// }
-	//
-	
-	//public void setNav(STGEditorNavigation nav) {
-		// navigation = nav;
-		// // navModel = navigation.getModel();
-		// currentNode = (STGEditorTreeNode)navModel.getRoot();
-	//}
-
 	public String getFileName() {
+		
 		return navigationView.getSelectedNode().getFileName();
 	}
-
+	
 	public void setFileName(String fileName) {
 		navigationView.getSelectedNode().setFileName(fileName);
 		navigationView.getSelectedNode().setLabel(fileName);
+		navigationView.updateUI();
+	}
+	
+	public void refreshSTGInfo() {
+		navigationView.getSelectedNode().setLabel(navigationView.getSelectedNode().getLabel());
 		navigationView.updateUI();
 	}
 
@@ -472,7 +449,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		else
 			return;
 		
-		
 		for (STG s : Partition.splitByPartition(curSTG, projectNode.partition)) {
 
 			StringBuilder signalNames = new StringBuilder();
@@ -485,8 +461,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 					signalNames.toString(), s, true);
 			
 			nn.getSTG().copyCoordinates(projectNode.getSTG().getCoordinates());
-			
-			
 			
 			initComponents.add(nn);
 			//navigationView.addNode(nn, signalNames.toString());
@@ -529,17 +503,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// return null;
 	//
 	// }
-	//
-	//
-	//
-	// public void springLayout() {
-	// // //SPRING_LAYOUT.setEnabled(false);
-	// // for (int t=0; t<=10 ; ++t)
-	// // STGEditorLayout.applySpringLayout(editor.getAllCoordinates(), 2);
-	// // editor.repaint();
-	// // //SPRING_LAYOUT.setEnabled(true);
-	// }
-	//
 	//
 	//
 	//
@@ -608,23 +571,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			
 			addSTG(stg, fileName);
 			
-			// STGEditorCoordinates coordinates =
-			// STGEditorFile.convertToCoordinates(file);
 
-			// navigationView = new STGEditorNavigation(stg, this);
-			// The initial model and layout cache
-
-//			model = new mxGraphModel();
-			// cache = new STGLayoutCache(stg, model);
-
-			// Build up the graph corresponding to the STG
-			// cache.init();
-
-			// String file = FileSupport.loadFileFromDisk(fileName);
-			// STG stg = STGFile.convertToSTG(file);
-			// STGEditorCoordinates coordinates =
-			// STGEditorFile.convertToCoordinates(file);
-			// new STGEditorFrame(fileName, stg, coordinates).setVisible(true);
 		} catch (ParseException e) {
 			JOptionPane.showMessageDialog(this, "Could not parse file: "
 					+ fileName+"\n"+ e.getMessage(), "JDesi Error", JOptionPane.ERROR_MESSAGE);
@@ -732,17 +679,20 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			} else if (source == ABOUT) {
 				new STGEditorAbout(this).setVisible(true);
 			}
-			else if (source == LAYOUT1)	graphComponent.setLayout(1);
-			else if (source == LAYOUT2)	graphComponent.setLayout(2);
-			else if (source == LAYOUT3)	graphComponent.setLayout(3);
-			else if (source == LAYOUT4)	graphComponent.setLayout(4);
-			else if (source == LAYOUT5)	graphComponent.setLayout(5);
-			else if (source == LAYOUT6)	graphComponent.setLayout(6);
+			else if (source == LAYOUT1)	setLayout(1);
+			else if (source == LAYOUT2)	setLayout(2);
+			else if (source == LAYOUT3)	setLayout(3);
+			else if (source == LAYOUT4)	setLayout(4);
+			else if (source == LAYOUT5)	setLayout(5);
+			else if (source == LAYOUT6)	setLayout(6);
+			else if (source == LAYOUT7)	setLayout(7); // dot layout
 
 		} catch (Exception ee) {
 			ee.printStackTrace();
 		}
 	}
+
+	public void setLayout(int i) {	graphComponent.setLayout(i); }
 
 	//
 	//
@@ -840,6 +790,13 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	private void reduce() {
 		
 		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
+		
+		if (currentNode==null) {
+			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
+			JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
 		graphComponent.storeCoordinates(currentNode.getSTG().getCoordinates());
 
 		if (!currentNode.isSTG()) {
@@ -850,40 +807,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		if (!currentNode.isSTG()) return;
 		
-//		class Deco extends BasicDecomposition {
-//			private STGEditorTreeNode parent;
-//			public Deco(STGEditorTreeNode parent) {
-//				super("basic");
-//				this.parent = parent;
-//			}
-//			
-///*			 public void logging(DecompositionParameter decoPara, DecompositionEvent
-//			 event, Object affectedNodes) {
-//				 
-//				 if (affectedNodes != null && affectedNodes instanceof Collection &&
-//						 ((Collection)affectedNodes).size()==0)
-//					 return;
-//				 //
-//				
-//				 if (event == DecompositionEvent.BACKTRACKING) {
-//					 // navigation.getModel().insertNodeInto(new
-//					 STGEditorTreeNode("Added signal: "+affectedNodes), parent,
-//					 parent.getChildCount());
-//				
-//				 }
-//			 }*/
-//			 
-//		 }
-		 
-		
-		 //setSTG(currentNode);
-		
 //		
-//		 currentNode.setProcreative();
+//		currentNode.setProcreative();
 //		
-//		 DecompositionParameter decoPara = new DecompositionParameter();
-//		 decoPara.stg = currentNode.getSTG().clone();
-//		 DesiJ.risky = false;
+//		DecompositionParameter decoPara = new DecompositionParameter();
+//		decoPara.stg = currentNode.getSTG().clone();
+//		DesiJ.risky = false;
 //		
 		
 		// 1. make a copy of current node, write it to the parameter
@@ -896,7 +825,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 		try {
 			
-			BasicDecomposition deco = new BasicDecomposition("basic");
+			BasicDecomposition deco = new BasicDecomposition("basic", stg);
 			deco.reduce(componentParameter);
 			
 			STGEditorTreeNode nn = new STGEditorTreeNode("reduced", stg, true);
@@ -910,6 +839,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			e.printStackTrace();
 		}
 	}
+	
+	
 	
 	private void decompose(Object source) {
 		 

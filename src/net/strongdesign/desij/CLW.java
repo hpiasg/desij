@@ -100,9 +100,11 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- clone:" +
 			"\n\t- reddel: Removed redundant places and save the result as <filename>.red.g" +	
 			"\n\t- create: Create a predefined STG model. When using this the model parameter is mandantory." +	
-			"\n\t- show: Converts the STG to a ps File and automatically displays it.")
+			"\n\t- show: Converts the STG to a ps File and automatically displays it." +
+			"\n\t- breeze: Convert given Breeze file *.breeze to a cluster STG")
+			
 	public  CommandLineParameter OPERATION = 
-		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show", "decompose", false);
+		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show,breeze", "decompose", false);
 	
 	// *******************************************************************
 	
@@ -122,10 +124,6 @@ public class CLW extends CommandLineWrapper {
 			"contraction. This makes the result more readable and accelarates the computations.")
 	public  CommandLineOption PRODUCTIVE = 
 		new CommandLineOption('v', "productive", true);
-	
-
-	
-	
 	
 	
 	// *******************************************************************
@@ -459,7 +457,8 @@ public class CLW extends CommandLineWrapper {
 	public  CommandLineParameter HIDDEN_SIGNALS = 
 			new CommandLineParameter("hide", "", "", false);
 
-	@Help("When the operation is create, this parameter defines the model. Available models are: art,seq,par,multipar")
+	@Help("When the operation is create, this parameter defines the model. Available models are: art,seq,par,multipar"+
+			"\n\t- for producing Breeze handshake component STGs, use appropriate component names: BRZCall, BRZFetch, ...")
 	public CommandLineParameter MODEL = 
 		new CommandLineParameter("model", "", "", false);
 	
@@ -483,7 +482,6 @@ public class CLW extends CommandLineWrapper {
 			" are not restricted to integers (ILP).")
 	public CommandLineOption NOILP = 
 		new CommandLineOption('Q', "noilp", true);
-	
 	
 	
 	// *******************************************************************
@@ -563,13 +561,11 @@ public class CLW extends CommandLineWrapper {
 		new CommandLineParameter("predef", "original,advanced", "", false);
 	
 	
-	
-
-
-	
+	// *******************************************************************
 	
 	protected Collection<CommandLineOption> guiOptions = new LinkedList<CommandLineOption>();
 	protected Collection<CommandLineParameter> guiParameters = new LinkedList<CommandLineParameter>();
+
 
 	/**
 	 * The singleton global instance
@@ -620,7 +616,7 @@ public class CLW extends CommandLineWrapper {
 			
 		
 		if (! REMOVE_REDUNDANT_PLACES.isEnabled())
-			System.err.println("Warning: It is not recommanded to disable deletion of redundant places. The results will" +
+			System.err.println("Warning: It is not recommended to disable deletion of redundant places. The results will" +
 					"probably be very bad.");
 		
 		if (WRITE_INTERMEDIATE_RESULTS.isEnabled())

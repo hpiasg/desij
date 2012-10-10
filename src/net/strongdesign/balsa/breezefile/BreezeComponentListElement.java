@@ -6,8 +6,13 @@ import java.util.TreeMap;
 
 public class BreezeComponentListElement extends AbstractBreezeElement {
 
+	private static final long serialVersionUID = 7202441788468576382L;
 	TreeMap<Integer, BreezeComponentElement> components = new TreeMap<Integer, BreezeComponentElement>(); 
 	
+	public TreeMap<Integer, BreezeComponentElement> getComponents() {
+		return components;
+	}
+
 	@SuppressWarnings("unchecked")
 	public BreezeComponentListElement(LinkedList<Object> list) {
 		Iterator<Object> it = list.iterator();

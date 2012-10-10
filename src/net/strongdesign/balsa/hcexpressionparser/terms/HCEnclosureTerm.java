@@ -7,15 +7,10 @@ import net.strongdesign.stg.STG;
 public class HCEnclosureTerm extends HCTerm {
 	public HCChannelTerm channel;
 	public HCTerm component;
-	public HCChannelCountController countController;
 	
-	
-	public HCEnclosureTerm(HCChannelCountController c) {
-		countController = c;
-	}
 	
 	@Override
-	public HCTerm expand(ExpansionType type) throws Exception {
+	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) throws Exception {
 		
 		HCInfixOperator ret = new HCInfixOperator();
 		ret.operation = Operation.SEQUENCE;
@@ -23,18 +18,18 @@ public class HCEnclosureTerm extends HCTerm {
 		String dir = "+";
 		if (type==ExpansionType.DOWN) dir = "-";
 		
-		HCTransitionTerm t1 = new HCTransitionTerm(countController);
+		HCTransitionTerm t1 = new HCTransitionTerm();
 		t1.channel = channel.toString();
 		t1.direction = dir;
 		t1.wire = "r";
 		
-
-		HCTransitionTerm t2 = new HCTransitionTerm(countController);
+		
+		HCTransitionTerm t2 = new HCTransitionTerm();
 		t2.channel = channel.toString();
 		t2.direction = dir;
 		t2.wire = "a";
 		
-		HCTerm tmp = component.expand(type);
+		HCTerm tmp = component.expand(type, scale, sig, oldChoice);
 		
 		ret.components.add(t1);
 		
@@ -63,14 +58,9 @@ public class HCEnclosureTerm extends HCTerm {
 	}
 
 	@Override
-	public int getMaxCount() {
-		return Math.max(channel.getMaxCount(), component.getMaxCount());
-	}
-
-	@Override
-	public void setInstanceNumber(int num) {
-		channel.setInstanceNumber(num);
-		component.setInstanceNumber(num);
+	public void setInstanceNumber(int num, HCChannelSenseController sig) {
+		channel.setInstanceNumber(num, sig);
+		component.setInstanceNumber(num, sig);
 	}
 
 }

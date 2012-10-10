@@ -79,6 +79,7 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		layouts.add(frame.LAYOUT4);
 		layouts.add(frame.LAYOUT5);
 		layouts.add(frame.LAYOUT6);
+		layouts.add(frame.LAYOUT7);
 
 	//	edit.add(editor.SELECT_ALL);
 	//	edit.add(editor.SHRINK);

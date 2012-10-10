@@ -5,13 +5,16 @@ import java.util.LinkedList;
 
 public class BreezeComponentElement extends AbstractBreezeElement implements NamedBreezeElement {
 
+	
+	private static final long serialVersionUID = -1344287802409223810L;
 	boolean isDeclared = true;
 	String symbol;
 	String name;
 	
-	LinkedList<Object> parameters = null;
-	LinkedList<Object> channels = null;
+	public LinkedList<Object> parameters = null;
+	public LinkedList<Object> channels = null;
 	
+	@SuppressWarnings("unchecked")
 	public BreezeComponentElement(LinkedList<Object> value) {
 		
 		Iterator<Object> it = value.iterator();

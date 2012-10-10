@@ -221,7 +221,7 @@ public abstract class AbstractDecomposition   {
 	 * TODO optimise handling of selftriggering inducing contractions, such transitions cannot be contracted
 	 *         
 	 */
-	protected Pair<List<Transition>, List<Transition>> contract (STG stg, List<Transition> contract) 
+	public Pair<List<Transition>, List<Transition>> contract (STG stg, List<Transition> contract) 
 	throws STGException {
 		boolean back = false;
 		boolean fault;

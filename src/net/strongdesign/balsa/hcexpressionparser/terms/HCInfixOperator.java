@@ -1,6 +1,8 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Place;
@@ -13,13 +15,14 @@ import net.strongdesign.stg.Transition;
 
 public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 
-	public enum Operation {CHOICE, CONCUR, SEQUENCE, SYNC, ENCLOSE, UNKNOWN;
+	public enum Operation {CHOICE, CONCUR, SEQUENCE, FOLLOW, SYNC, ENCLOSE, UNKNOWN;
 	
 			static public Operation fromString(String s) {
 				if (s.equals("|")||s.equals("[]")) return CHOICE;
 				if (s.equals("||")) return CONCUR;
 				if (s.equals(";")) return SEQUENCE;
 				if (s.equals(",")) return SYNC;
+				if (s.equals(".")) return FOLLOW;
 				if (s.equals(":")) return ENCLOSE;
 				
 				return UNKNOWN;
@@ -29,6 +32,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				if (op==CHOICE) return "[]";
 				if (op==CONCUR) return "||";
 				if (op==SEQUENCE) return ";";
+				if (op==FOLLOW) return ".";
 				if (op==SYNC) return ",";
 				if (op==ENCLOSE) return ":";
 				
@@ -41,10 +45,12 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	
 	
 	@Override
-	public HCTerm expand(ExpansionType type) throws Exception {
+	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) throws Exception {
 		HCInfixOperator ret = new HCInfixOperator();
 		ret.operation = operation;
+		
 		if (ret.operation==Operation.SYNC) ret.operation = Operation.CONCUR;
+		if (ret.operation==Operation.FOLLOW) ret.operation = Operation.SEQUENCE;
 		if (ret.operation==Operation.ENCLOSE) ret.operation = Operation.SEQUENCE;
 		
 		
@@ -52,8 +58,8 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			
 			if (type==ExpansionType.UP) {
 				for (HCTerm t: components) {
-					HCTerm expUp   = t.expand(ExpansionType.UP);
-					HCTerm expDown = t.expand(ExpansionType.DOWN);
+					HCTerm expUp   = t.expand(ExpansionType.UP, scale, sig, oldChoice);
+					HCTerm expDown = t.expand(ExpansionType.DOWN, scale, sig, oldChoice);
 					
 					if (expUp!=null&&expDown!=null) {
 						HCInfixOperator in = new HCInfixOperator();
@@ -64,12 +70,12 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 					} else if (expUp!=null) {
 						ret.components.add(expUp);
 					} else {
-						throw new Exception("Unacceptable condition for expanding Concur or Choice");
+						throw new Exception("Unacceptable condition for expanding Concur");
 					}
 				}
 				
 				if (ret.components.size()==0) {
-					throw new Exception("Error, Concur or Choice expansion with 0 components");
+					throw new Exception("Error, Concur expansion with 0 components");
 				}
 				
 			} else return null; // empty expansion
@@ -82,7 +88,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				
 				for (int i=0;i<len;i++) {
 					HCTerm t = components.get(i);
-					HCTerm expUp = t.expand(ExpansionType.UP);
+					HCTerm expUp = t.expand(ExpansionType.UP, scale, sig, oldChoice);
 					
 					if (expUp!=null) {
 						ret.components.add(expUp);
@@ -90,7 +96,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 					
 					if (i!=len-1) {
 						// add the down-phase as well
-						HCTerm expDown = t.expand(ExpansionType.DOWN);
+						HCTerm expDown = t.expand(ExpansionType.DOWN, scale, sig, oldChoice);
 						if (expDown!=null) {
 							ret.components.add(expDown);
 						}
@@ -102,10 +108,23 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 					return null;
 				}
 				
-			} else { 
-				return components.get(components.size()-1).expand(type);
+			} else {
+				return components.get(components.size()-1).expand(type, scale, sig, oldChoice);
 			}
 			
+		} else if (operation==Operation.FOLLOW) {
+			
+			int len = components.size();
+			for (int i=0;i<len;i++) {
+				HCTerm t = components.get(i);
+				
+				HCTerm exp = t.expand(type, scale, sig, oldChoice);
+				
+				if (exp!=null) {
+					ret.components.add(exp);
+				}
+				
+			}
 		} else if (operation==Operation.SYNC) {
 			
 			
@@ -113,26 +132,54 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			for (int i=0;i<len;i++) {
 				HCTerm t = components.get(i);
 				
-				HCTerm exp = t.expand(type);
+				HCTerm exp = t.expand(type, scale, sig, oldChoice);
 				
 				if (exp!=null) {
 					ret.components.add(exp);
 				}
 				
 			}
-			
-			
 		} else if (operation==Operation.CHOICE) {
-			
-			int len = components.size();
-			for (int i=0;i<len;i++) {
-				HCTerm t = components.get(i);
-				
-				HCTerm exp = t.expand(type);
-				
-				if (exp!=null) {
-					ret.components.add(exp);
+			if (oldChoice) {
+				// old type of expanding choice
+				int len = components.size();
+				for (int i=0;i<len;i++) {
+					HCTerm t = components.get(i);
+					
+					HCTerm exp = t.expand(type, scale, sig, oldChoice);
+					
+					if (exp!=null) {
+						ret.components.add(exp);
+					}
+					
 				}
+				
+			} else {
+				// new type of expanding choice
+				
+				if (type==ExpansionType.UP) {
+					for (HCTerm t: components) {
+						HCTerm expUp   = t.expand(ExpansionType.UP, scale, sig, oldChoice);
+						HCTerm expDown = t.expand(ExpansionType.DOWN, scale, sig, oldChoice);
+						
+						if (expUp!=null&&expDown!=null) {
+							HCInfixOperator in = new HCInfixOperator();
+							in.operation = Operation.SEQUENCE;
+							in.components.add(expUp);
+							in.components.add(expDown);
+							ret.components.add(in);
+						} else if (expUp!=null) {
+							ret.components.add(expUp);
+						} else {
+							throw new Exception("Unacceptable condition for expanding Choice");
+						}
+					}
+					
+					if (ret.components.size()==0) {
+						throw new Exception("Error, Choice expansion with 0 components");
+					}
+					
+				} else return null; // empty expansion
 				
 			}
 			
@@ -165,20 +212,10 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	}
 
 	@Override
-	public int getMaxCount() {
-		int mx = 0;
-		for (HCTerm tt: components) {
-			mx=Math.max(mx, tt.getMaxCount());
-		}
-		return mx;
-	}
-
-
-	@Override
-	public void setInstanceNumber(int num) {
+	public void setInstanceNumber(int num, HCChannelSenseController sig) {
 		
 		for (HCTerm tt: components) {
-			tt.setInstanceNumber(num);
+			tt.setInstanceNumber(num, sig);
 		}
 	}
 	
@@ -193,7 +230,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	}
 
 	@Override
-	public void generateSTG(STG stg, HCChannelSenseController sig, Place inPlace, Place outPlace) {
+	public void generateSTGold(STG stg, HCChannelSenseController sig, Place inPlace, Place outPlace) {
 		// all of the components at this stage have to be the STG generators
 		int len=components.size();
 		
@@ -207,7 +244,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				}
 				
 				HCSTGGenerator hc = (HCSTGGenerator)components.get(i);
-				hc.generateSTG(stg, sig, p1, p2);
+				hc.generateSTGold(stg, sig, p1, p2);
 				
 				p1=p2;
 			}
@@ -246,7 +283,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				p2 = stg.addPlace("p", 0);
 				t1.setChildValue(p1, 1);
 				p2.setChildValue(t2, 1);
-				hc.generateSTG(stg, sig, p1, p2);
+				hc.generateSTGold(stg, sig, p1, p2);
 			}
 			
 		} else if (operation == Operation.CHOICE) {
@@ -261,7 +298,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				
 				
 				num=stg.getHighestSignalNumber()+1;
-				num=stg.getSignalNumber("con"+num);
+				num=stg.getSignalNumber("choice");
 				t1 = stg.addTransition(
 						new SignalEdge(
 								num, 
@@ -273,7 +310,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				inPlace.setChildValue(t1, 1);
 				
 				num=stg.getHighestSignalNumber()+1;
-				num=stg.getSignalNumber("con"+num);
+				num=stg.getSignalNumber("choice");
 				
 				t2 = stg.addTransition(
 						new SignalEdge(
@@ -291,7 +328,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				p2 = stg.addPlace("p", 0);
 				t1.setChildValue(p1, 1);
 				p2.setChildValue(t2, 1);
-				hc.generateSTG(stg, sig, p1, p2);
+				hc.generateSTGold(stg, sig, p1, p2);
 			}
 			
 		} else {
@@ -302,4 +339,98 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 		
 	}
 	
+	@Override
+	public void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces) {
+		// all of the components at this stage have to be the STG generators
+		
+		int len=components.size();
+		LinkedList< Set<Place> > fromSets = new LinkedList< Set<Place> >();
+		LinkedList< Set<Place> > toSets = new LinkedList< Set<Place> >();
+		
+		for (int i=0;i<len;i++) {
+			fromSets.add(new HashSet<Place>());
+			toSets.add(new HashSet<Place>());
+		}
+		
+		/* generate all the separate components */
+		for (int i=0;i<len;i++) {
+			HCSTGGenerator hc = (HCSTGGenerator)components.get(i);
+			hc.generateSTG(stg, sig, fromSets.get(i), toSets.get(i));
+		}
+		
+		if (operation == Operation.SEQUENCE) {
+			
+			inPlaces.addAll(fromSets.get(0));
+			
+			for (int i=0;i<len-1;i++) {
+				STG.cartesianProductBinding(stg, toSets.get(i), fromSets.get(i+1));
+			}
+			
+			outPlaces.addAll(toSets.get(len-1));
+			
+			/* combine the sets sequentially */
+			
+		} else if (operation == Operation.CONCUR) {
+			
+			for (int i=0;i<len;i++) {
+				inPlaces.addAll(fromSets.get(i));
+				outPlaces.addAll(toSets.get(i));
+			}
+			
+		} else if (operation == Operation.CHOICE) {
+			
+			for (int i=0;i<len;i++) {
+				HCSTGGenerator hc = (HCSTGGenerator)components.get(i);
+				
+				// for each loop component create an additional dummy transition
+				if (hc instanceof HCLoopTerm) {
+					
+					int num;
+					Transition t;
+					Place np;
+					
+					num=stg.getHighestSignalNumber()+1;
+					num=stg.getSignalNumber("choice_loop");
+					t = stg.addTransition(
+							new SignalEdge(
+									num, 
+									EdgeDirection.DONT_CARE
+									)
+							);
+					
+					stg.setSignature(num, Signature.DUMMY);
+					np = stg.addPlace("p", 0);
+					
+					np.setChildValue(t, 1);
+					// transition outputs into each of the loop's input places
+					for (Place p: fromSets.get(i)) {
+						t.setChildValue(p, 1);
+					}
+					
+					// set the new place as the from place 
+					fromSets.get(i).clear();
+					fromSets.get(i).add(np);
+				}
+			}
+			
+			// now to find the final inPlaces and outPlaces, perform the Cartesian products
+			Set<Place> cart=fromSets.get(0);
+			for (int i=1;i<len;i++) {
+				cart=STG.cartesianProductBinding(stg, cart, fromSets.get(i));
+			}
+			inPlaces.addAll(cart);
+			
+			cart=toSets.get(0);
+			for (int i=1;i<len;i++) {
+				cart=STG.cartesianProductBinding(stg, cart, toSets.get(i));
+			}
+			outPlaces.addAll(cart);
+			
+		} else {
+			// unsupported component
+			// TODO: throw something?
+			return;
+		}
+		
+	}
 }

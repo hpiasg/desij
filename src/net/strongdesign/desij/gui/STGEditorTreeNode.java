@@ -32,24 +32,23 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 //	private STGCoordinates coordinates;
 	
     private String label;
+    private String stgInfo;
     private String fileName; // related file name (if it exists)
 	private boolean procreative;
 	private boolean isSTG;
 	public Partition partition;
     
-	private String fullName(String label) {
-		if (stg==null) return label;
-		
-		return label+" T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces();
-	}
-	
 	public STGEditorTreeNode(String label, STG stg, boolean procreative) {
 		super(label);
 		
         this.stg = stg;
         this.procreative = procreative;
-		this.label = fullName(label);
-
+        this.label = label;
+        
+        stgInfo = "";
+        if (stg!=null)
+        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces();
+        
 		isSTG = true;
 	}
 	
@@ -66,6 +65,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 		this.stg = null;
 		this.procreative = true;
 		this.label = label;
+		stgInfo = "";
 		isSTG = false;
 	}
 	
@@ -83,7 +83,10 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
     
     
 	public void setLabel(String label) {
-		this.label = fullName(label);
+		this.label = label;
+		stgInfo = "";
+        if (stg!=null)
+        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces();
 	}
 	
 	public String getLabel() {
@@ -103,7 +106,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 	}
 	
 	public String toString() {
-		return label;
+		return label+stgInfo;
 	}
 	
 /*

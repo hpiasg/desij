@@ -14,6 +14,11 @@ public class BreezePartElement extends AbstractBreezeElement implements NamedBre
 	BreezeChannelListElement channels = null;
 	BreezeComponentListElement components = null;
 	
+	
+	public BreezeComponentListElement getComponentList() {
+		return components;
+	}
+	
 	LinkedList<Object> call_contexts = new LinkedList<Object>();
 	
 	@SuppressWarnings("unchecked")
