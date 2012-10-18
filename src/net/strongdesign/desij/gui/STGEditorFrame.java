@@ -142,6 +142,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction LAYOUT5 = new STGEditorAction("Partition",		KeyEvent.VK_5, '5', 0, this);
 	public final STGEditorAction LAYOUT6 = new STGEditorAction("Stack",			KeyEvent.VK_6, '6', 0, this);
 	public final STGEditorAction LAYOUT7 = new STGEditorAction("DOT layout",    KeyEvent.VK_7, '7', 0, this);
+	
+	public final STGEditorAction LAYOUT8 = new STGEditorAction("Alternative tree",    KeyEvent.VK_8, '8', 0, this);
 
 	public final static Font STANDARD_FONT = new Font("Arial", Font.PLAIN, 16);
 	public final static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 12);
@@ -686,6 +688,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			else if (source == LAYOUT5)	setLayout(5);
 			else if (source == LAYOUT6)	setLayout(6);
 			else if (source == LAYOUT7)	setLayout(7); // dot layout
+			else if (source == LAYOUT8)	setLayout(8);
 
 		} catch (Exception ee) {
 			ee.printStackTrace();

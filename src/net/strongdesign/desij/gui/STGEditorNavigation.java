@@ -25,13 +25,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.nio.CharBuffer;
 import java.util.LinkedList;
 
 import javax.swing.JPopupMenu;
@@ -42,18 +35,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 
-import net.strongdesign.balsa.breezefile.ComponentSTGExpressions;
 import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
-import net.strongdesign.desij.CLW;
-import net.strongdesign.desij.DesiJException;
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.STGException;
-import net.strongdesign.stg.STGFile;
-import net.strongdesign.stg.parser.ParseException;
-import net.strongdesign.util.FileSupport;
-import net.strongdesign.util.HelperApplications;
-import net.strongdesign.util.Pair;
-import net.strongdesign.util.StreamGobbler;
 
 //import org.jgraph.JGraph;
 //import org.jgraph.event.GraphSelectionEvent;
@@ -305,7 +288,7 @@ public class STGEditorNavigation extends JTree implements
 			stgs.add(node.getSTG());
 		}
 		
-		STG stg= ComponentSTGFactory.parallelComposition(stgs, null);
+		STG stg= ComponentSTGFactory.parallelComposition(stgs, null, true);
 		
 		if (stg!=null) {
 			frame.addSTG(stg, "Composed");

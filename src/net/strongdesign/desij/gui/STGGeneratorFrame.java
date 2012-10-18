@@ -21,33 +21,27 @@ package net.strongdesign.desij.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Font;
-import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.StringReader;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
-import javax.swing.UIManager;
 
 import net.strongdesign.balsa.breezefile.ComponentSTGExpressions;
-import net.strongdesign.balsa.hcexpressionparser.ParseException;
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
+import net.strongdesign.balsa.hcexpressionparser.ParseException;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCLoopTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCSTGGenerator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
@@ -56,7 +50,6 @@ import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.STGCoordinates;
 
 public class STGGeneratorFrame extends JFrame implements ActionListener {
 
@@ -146,6 +139,13 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		add(spane, BorderLayout.CENTER);
 
 		add(bottomPanel, BorderLayout.SOUTH);
+		
+		generateButton.addActionListener(this);
+		bottomPanel.add(generateButton);
+
+		cancelButton.addActionListener(this);
+		bottomPanel.add(cancelButton);
+		
 
 		topPanel.add(inputText);
 
@@ -164,11 +164,6 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		useCartesianProduct.setSelected(true);
 		bottomPanel.add(useCartesianProduct);
 
-		generateButton.addActionListener(this);
-		bottomPanel.add(generateButton);
-
-		cancelButton.addActionListener(this);
-		bottomPanel.add(cancelButton);
 		outputText.setEditable(false);
 
 		Font fnt = new Font("Monospaced", Font.PLAIN, 14);

@@ -6,15 +6,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
-
-import javax.swing.tree.TreePath;
 
 import net.strongdesign.balsa.breezeparser.BreezeParser;
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
@@ -24,14 +20,12 @@ import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm.ExpansionType;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJException;
-import net.strongdesign.desij.gui.STGEditorTreeNode;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
-import net.strongdesign.util.Log;
 import net.strongdesign.util.StreamGobbler;
 
 public class ComponentSTGFactory {
@@ -129,7 +123,7 @@ public class ComponentSTGFactory {
 
 	
 	
-	static public STG parallelComposition(LinkedList <STG> stgs, LinkedList<String> names) {
+	static public STG parallelComposition(LinkedList <STG> stgs, LinkedList<String> names, boolean removeImplicitPlaces) {
 		// using the external pcomp tool
 		
 		try {
@@ -156,8 +150,9 @@ public class ComponentSTGFactory {
 				FileSupport.saveToDisk(STGFile.convertToG(stgs.get(i)), files[i]);
 			}
 			
-			
-			Process pcomp = HelperApplications.startExternalTool(HelperApplications.PCOMP, fnames);
+			String options=" -d ";
+			if (removeImplicitPlaces) options+="-p ";
+			Process pcomp = HelperApplications.startExternalTool(HelperApplications.PCOMP, options+fnames);
 			
 			
 			BufferedReader bin = new BufferedReader(new InputStreamReader(pcomp.getInputStream()));
@@ -184,6 +179,10 @@ public class ComponentSTGFactory {
 			pcomp.getErrorStream().close();
 			pcomp.getInputStream().close();
 			
+			// delete all the created files
+			for (int i=0;i<len;i++) {
+				(new File(files[i])).delete();
+			}
 			
 			return stg;
 		
@@ -231,7 +230,7 @@ public class ComponentSTGFactory {
 							
 						}
 					}
-					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
+					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names, true);
 					return mainSTG;
 				}
 			}

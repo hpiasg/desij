@@ -7,7 +7,6 @@ import java.util.Set;
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
-import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;

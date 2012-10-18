@@ -30,7 +30,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -40,22 +39,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
 
-import net.strongdesign.balsa.BreezeNet;
-import net.strongdesign.balsa.breezefile.AbstractBreezeElement;
-import net.strongdesign.balsa.breezefile.BreezeComponentElement;
-import net.strongdesign.balsa.breezefile.BreezeElementFactory;
-import net.strongdesign.balsa.breezefile.BreezePartElement;
 import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
-import net.strongdesign.balsa.breezeparser.BreezeParser;
-import net.strongdesign.balsa.components.HSComponent;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
@@ -63,15 +52,14 @@ import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
-import net.strongdesign.desij.gui.STGEditorFile;
 import net.strongdesign.desij.gui.STGEditorFrame;
 import net.strongdesign.desij.net.DecompositionStatistics;
 import net.strongdesign.statesystem.StateSystem;
 import net.strongdesign.statesystem.decorator.Cache;
 import net.strongdesign.statesystem.decorator.StateEnumerator;
 import net.strongdesign.statesystem.simulation.RelationElement;
-import net.strongdesign.statesystem.simulation.Simulation;
 import net.strongdesign.statesystem.simulation.RelationPropagator.PropagationException;
+import net.strongdesign.statesystem.simulation.Simulation;
 import net.strongdesign.stg.Marking;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Partition;
@@ -97,8 +85,8 @@ import net.strongdesign.util.Pair;
 import net.strongdesign.util.ParsingException;
 
 import org.apache.log4j.FileAppender;
-import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Level;
+import org.apache.log4j.PatternLayout;
 
 /**
  * @author Mark Schaefer

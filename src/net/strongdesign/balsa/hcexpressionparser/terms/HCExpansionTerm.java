@@ -3,8 +3,6 @@ package net.strongdesign.balsa.hcexpressionparser.terms;
 import java.util.LinkedList;
 
 import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation;
-import net.strongdesign.stg.Place;
-import net.strongdesign.stg.STG;
 
 public class HCExpansionTerm extends HCTerm {
 	public Operation operation;

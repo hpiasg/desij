@@ -1,8 +1,6 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
 import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation;
-import net.strongdesign.stg.Place;
-import net.strongdesign.stg.STG;
 
 public class HCChannelTerm extends HCTerm {
 	public String channel;

@@ -1,17 +1,11 @@
 package net.strongdesign.desij.gui;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Set;
-
-import com.mxgraph.model.mxCell;
 
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.STG;

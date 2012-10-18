@@ -19,9 +19,8 @@
 
 package net.strongdesign.desij.gui;
 
-import java.awt.event.ActionListener;
-
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JPopupMenu;
 
 public class STGEditorNavigationPopUp extends JPopupMenu {
 	private static final long serialVersionUID = 2993881479268447533L;

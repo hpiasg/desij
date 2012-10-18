@@ -46,8 +46,6 @@ import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 
-import com.mxgraph.examples.swing.editor.BasicGraphEditor;
-import com.mxgraph.examples.swing.editor.EditorPopupMenu;
 import com.mxgraph.layout.mxCircleLayout;
 import com.mxgraph.layout.mxCompactTreeLayout;
 import com.mxgraph.layout.mxGraphLayout;
@@ -301,7 +299,7 @@ public class STGGraphComponent extends mxGraphComponent {
 		}
 	}
 	
-	boolean isShorthandedPlace(Place node, Node []frto) {
+	public static boolean isShorthandPlace(Node node, Node []frto) {
 		
 		if (!(node instanceof Place)) return false;
 		if (((Place)node).getMarking()!=0) return false;
@@ -348,7 +346,7 @@ public class STGGraphComponent extends mxGraphComponent {
 
 				if (node instanceof Place) {
 					
-					if (isShorthand&&isShorthandedPlace((Place)node, null)) continue;
+					if (isShorthand&&isShorthandPlace((Place)node, null)) continue;
 					
 					cell = new PlaceCell((Place)node);			
 					
@@ -410,7 +408,7 @@ public class STGGraphComponent extends mxGraphComponent {
 						Node []frto=new Node[2];
 						
 						if (isShorthand) {
-							if (isShorthandedPlace((Place)child, frto)) {
+							if (isShorthandPlace((Place)child, frto)) {
 								mxCell target = node2Cell.get(frto[1]);
 								graph.insertEdge(parent, null, null, source, target);
 							}
@@ -434,6 +432,7 @@ public class STGGraphComponent extends mxGraphComponent {
 				
 				shiftModel();
 				
+				/*
 				coordinates = new STGCoordinates();
 				// store new coordinates for the STG
 				for (Object ob: graph.getChildCells(parent, true, false)) {
@@ -446,7 +445,9 @@ public class STGGraphComponent extends mxGraphComponent {
 						}
 					}
 				}
+				*/
 			}
+			
 		} finally {
 			graph.getModel().endUpdate();
 		}
@@ -484,6 +485,11 @@ public class STGGraphComponent extends mxGraphComponent {
 
 	public void setLayout(int type) {
 
+		if (type==8) {
+			STGTreeLayout.doLayout(activeSTG, frame.isShorthand());
+			initSTG(activeSTG, frame.isShorthand());
+		}
+		
 		Object parent = graph.getDefaultParent();
 		graph.getModel().beginUpdate();
 		try {
@@ -506,7 +512,7 @@ public class STGGraphComponent extends mxGraphComponent {
 					gl = new mxOrganicLayout(graph);
 
 				gl.execute(parent);
-			} else {
+			} else if (type==7) {
 				STGDotLayout.doLayout(activeSTG, this);
 			}
 			
@@ -514,6 +520,7 @@ public class STGGraphComponent extends mxGraphComponent {
 		} finally {
 			graph.getModel().endUpdate();
 		}
+		
 	}
 	
 	public STGGraphComponent(STGEditorFrame frame) {
