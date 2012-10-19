@@ -230,6 +230,7 @@ public class ComponentSTGFactory {
 							
 						}
 					}
+					
 					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names, true);
 					return mainSTG;
 				}

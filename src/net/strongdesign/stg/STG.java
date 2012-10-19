@@ -496,7 +496,20 @@ public final class STG implements Cloneable {
 		return transitions.size();
 	}
 
-
+	/**
+	 * Returns the number of dummies
+	 * (not very efficient)
+	 */
+	public int getNumberOfDummies() {
+		int ret=0;
+		for (Transition t: transitions) {
+			if (getSignature(t.getLabel().getSignal())==Signature.DUMMY) {
+				ret++;
+			}
+		}
+		
+		return ret;
+	}
 
 
 	// *******************************************************************

@@ -47,7 +47,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
         
         stgInfo = "";
         if (stg!=null)
-        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces();
+        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces()+" D:"+stg.getNumberOfDummies();
         
 		isSTG = true;
 	}
@@ -86,7 +86,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 		this.label = label;
 		stgInfo = "";
         if (stg!=null)
-        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces();
+        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces()+" D:"+stg.getNumberOfDummies();
 	}
 	
 	public String getLabel() {

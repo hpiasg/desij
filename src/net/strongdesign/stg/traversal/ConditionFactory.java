@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -470,6 +471,48 @@ public abstract class ConditionFactory {
 				return true;
 				
 			}
+			
+			
+			// the primitive case of the shared shortcut place
+			if (place.getMarking()==0) {
+				Set<Node> parents = new HashSet<Node>();
+				parents.addAll(place.getParents());
+				Set<Node> children= new HashSet<Node>();
+				children.addAll(place.getChildren());
+				
+				Set<Node> test = new HashSet<Node>();
+				test.addAll(parents);
+				test.addAll(children);
+				
+				// if the place does not have self-loops and its parent and child counts are equal,
+				// then it might be a shared shortcut place
+				if (parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
+					
+					for (Node t1: place.getParents()) {
+						if (t1.getChildren().size()!=2) break;
+						if (t1.getChildValue(place)!=1) break;
+						
+						Iterator<Node> it = t1.getChildren().iterator();
+						Place p = (Place) it.next();
+						if (p==place) p = (Place) it.next();
+						
+						// for now only very primitive cases are considered
+						if (p.getMarking()>0) break;
+						
+						if (!MARKED_GRAPH_PLACE.fulfilled(p)) break;
+						
+						Transition t2 = (Transition) p.getChildren().iterator().next();
+						if (place.getChildValue(t2)!=1) break;
+						
+						parents.remove(t1);
+						children.remove(t2);
+					}
+				}
+				
+				// if all parents and children were matched, then it is a redundant place
+				if (parents.size()==0&&children.size()==0) return true;
+			}
+			
 			
 			// ******************* 
 			// the advanced cases
