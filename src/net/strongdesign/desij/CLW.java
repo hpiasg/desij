@@ -257,6 +257,7 @@ public class CLW extends CommandLineWrapper {
 	@Help("Perform only safeness preserving contractions.")
 	public CommandLineOption SAFE_CONTRACTIONS =
 		new CommandLineOption('f', "safe-contractions", true);
+
 	
 	// *******************************************************************
 
@@ -264,6 +265,24 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineOption SAFE_CONTRACTIONS_UNFOLDING =
 		new CommandLineOption('x', "safe-contractions-unfolding", false);
 	
+	
+	// *******************************************************************
+	
+	@Help("Use shared shortcut place optimization")
+	public CommandLineOption SHARED_SHORTCUT_PLACE =
+		new CommandLineOption('B', "shared-shortcut-place", true);
+	
+	// *******************************************************************
+	
+	@Help("Enforce injective labelling, when generating breeze components")
+	public CommandLineOption ENFORCE_INJECTIVE_LABELLING =
+		new CommandLineOption('j', "injective-labelling", false);
+	
+	// *******************************************************************
+	
+	@Help("Use optimized parallel composition")
+	public CommandLineOption OPTIMIZED_PCOMP =
+		new CommandLineOption('M', "optimized-pcomp", true);
 	
 	// *******************************************************************
 	

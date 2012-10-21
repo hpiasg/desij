@@ -46,10 +46,12 @@ import net.strongdesign.balsa.hcexpressionparser.terms.HCLoopTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCSTGGenerator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm.ExpansionType;
+import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGUtil;
 
 public class STGGeneratorFrame extends JFrame implements ActionListener {
 
@@ -74,6 +76,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 	JCheckBox reduceSTG = new JCheckBox();
 	JCheckBox originalChoiceExp = new JCheckBox();
 	JCheckBox useCartesianProduct = new JCheckBox();
+	JCheckBox enforceInjectiveLabelling = new JCheckBox();
 
 	STGEditorFrame frame;
 
@@ -118,7 +121,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		presetList = new JComboBox(mp.keySet().toArray());
 		presetList.addActionListener(this);
 
-		setBounds(new Rectangle(150, 150, 500, 400));
+		setBounds(new Rectangle(150, 150, 850, 400));
 		setDefaultCloseOperation(HIDE_ON_CLOSE);
 
 		JPanel topPanel = new JPanel();
@@ -163,6 +166,10 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		useCartesianProduct.setText("Use place sets");
 		useCartesianProduct.setSelected(true);
 		bottomPanel.add(useCartesianProduct);
+		
+		enforceInjectiveLabelling.setText("Injective labelling");
+		enforceInjectiveLabelling.setSelected(CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled());
+		bottomPanel.add(enforceInjectiveLabelling);
 
 		outputText.setEditable(false);
 
@@ -280,6 +287,10 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 
 						((HCSTGGenerator) up).generateSTGold(stg, parser, p, p2);
 
+					}
+					
+					if (enforceInjectiveLabelling.isSelected()) {
+						STGUtil.enforceInjectiveLabelling(stg);
 					}
 
 					if (reduceSTG.isSelected()) {

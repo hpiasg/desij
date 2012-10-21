@@ -144,10 +144,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction LAYOUT7 = new STGEditorAction("DOT layout",    KeyEvent.VK_7, '7', 0, this);
 	
 	public final STGEditorAction LAYOUT8 = new STGEditorAction("Alternative tree",    KeyEvent.VK_8, '8', 0, this);
-
+	
 	public final static Font STANDARD_FONT = new Font("Arial", Font.PLAIN, 16);
 	public final static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 12);
-
+	
 	public final static Color INPUT = new Color(255, 200, 200);
 	public final static Color OUTPUT = new Color(200, 200, 255);
 	public final static Color INTERNAL = new Color(200, 255, 200);

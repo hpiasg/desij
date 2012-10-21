@@ -38,7 +38,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 				
 		stg.setSignature(signal, sg);
 		
-		EdgeDirection ed = EdgeDirection.DONT_CARE;
+		EdgeDirection ed = EdgeDirection.UNKNOWN;
 		if (direction.equals("+")) ed=EdgeDirection.UP;
 		if (direction.equals("-")) ed=EdgeDirection.DOWN;
 		
@@ -65,7 +65,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 				
 		stg.setSignature(signal, sg);
 		
-		EdgeDirection ed = EdgeDirection.DONT_CARE;
+		EdgeDirection ed = EdgeDirection.UNKNOWN;
 		if (direction.equals("+")) ed=EdgeDirection.UP;
 		if (direction.equals("-")) ed=EdgeDirection.DOWN;
 		

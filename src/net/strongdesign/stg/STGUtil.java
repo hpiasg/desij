@@ -21,11 +21,13 @@ package net.strongdesign.stg;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 
@@ -455,7 +457,7 @@ public abstract class STGUtil {
 					toDoStates.add(newState);
 					knownStates.add(newState);
 				}
-			}   
+			}
 		}
 
 		return result;
@@ -465,8 +467,193 @@ public abstract class STGUtil {
 	public static STG parallelComposition() {
 		return null;
 	}
+	
+	/**
+	 * Checks if transitions have the same signals and directions 
+	 * @param t1
+	 * @param t2
+	 * @return
+	 */
+	public static boolean sameTransitions(Transition t1, Transition t2) {
+		if (t1.getSTG().getSignature(t1.getLabel().getSignal())==Signature.DUMMY) return false;
+		if (t2.getSTG().getSignature(t2.getLabel().getSignal())==Signature.DUMMY) return false;
+		
+		return (t1.getLabel().getSignal()==t2.getLabel().getSignal()&&
+				t1.getLabel().getDirection()==t2.getLabel().getDirection());
+	}
+	
+	/**
+	 * For a given transition it tries to merge all transitions 
+	 * with the same signal direction into one instance
+	 * It transforms the stg passed as an argument 
+	 * @param stg, tran
+	 * @return
+	 */
+	public static void enforceInjectiveLabelling(STG stg, Transition tran) {
+		
+		LinkedList<Transition> merge = new LinkedList<Transition>();
+		
+		// collect all transitions that are to be merged, but ignore transitions with self-loops
+		Collection<Transition> allt = stg.getTransitions(ConditionFactory.ALL_TRANSITIONS);
+		
+		for (Transition t: allt) {
+			if (sameTransitions(tran, t)) {
+				merge.add(t);
+			}
+		}
+		
+		if (merge.size()<2) return;
+		
+		// there should be exactly one pre-place and one post-place for each of the transitions
+		// with no tokens, those must be MG places
+		for (Transition t: merge) {
+			
+			if (t.getParents().size()!=1) 
+				return;
+			
+			if (t.getChildren().size()!=1) 
+				return;
+			
+			Place p1 = (Place)t.getParents().iterator().next();
+			Place p2 = (Place)t.getChildren().iterator().next();
+			
+			if (p1.getMarking()!=0) 
+				return;
+			
+			if (p2.getMarking()!=0) 
+				return;
+			
+			if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p1))
+				return;
+			if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p2)) 
+				return;
+		}
+		
+		LinkedList<Place> pfrom = new LinkedList<Place>();
+		LinkedList<Place> pto   = new LinkedList<Place>();
+		
+		// create place pairs
+		for (Transition t: merge) {
+			pfrom.add((Place)t.getParents().iterator().next());
+			pto.add((Place)t.getChildren().iterator().next());
+		}
+		
+		// try expand up
+		boolean success = true;
+		while (success) {
+			Transition mt = (Transition)pfrom.get(0).getParents().iterator().next();
+			// check if can move up
+			for (Place p: pfrom) {
+				Transition t = (Transition)p.getParents().iterator().next();
+				if (!sameTransitions(mt, t))  success=false;
+				if (t.getParents().size()!=1) success=false;
+				
+				Place pp = (Place)t.getParents().iterator().next();
+				if (pto.contains(pp))   success=false;
+				if (pp.getMarking()!=0) success=false;
+				if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(pp)) success=false;
+			}
+			// move up
+			if (success) {
+				LinkedList<Place> np = new LinkedList<Place>();
+				for (Place p: pfrom)
+					np.add((Place)p.getParents().iterator().next().getParents().iterator().next());
+				
+				pfrom=np;
+			}
+		}
+		
+		// try expand down
+		success = true;
+		while (success) {
+			Transition mt = (Transition)pto.get(0).getChildren().iterator().next();
+			// check if can move down
+			for (Place p: pto) {
+				Transition t = (Transition)p.getChildren().iterator().next();
+				if (!sameTransitions(mt, t))   success=false;
+				if (t.getChildren().size()!=1) success=false;
+				
+				Place pp = (Place)t.getChildren().iterator().next();
+				if (pfrom.contains(pp)) success=false;
+				if (pp.getMarking()!=0) success=false;
+				if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(pp)) success=false;
+			}
+			
+			// move down
+			if (success) {
+				LinkedList<Place> np = new LinkedList<Place>();
+				for (Place p: pto)
+					np.add((Place)p.getChildren().iterator().next().getChildren().iterator().next());
+				
+				pto=np;
+			}
+		}
+		
+		// create arcs from presets to postsets
+		for (int i=0;i<pfrom.size();i++) {
+			Transition t1 = (Transition)pfrom.get(i).getParents().iterator().next();
+			Transition t2 = (Transition)pto.get(i).getChildren().iterator().next();
+			Place p = stg.addPlace("p", 0);
+			t1.setChildValue(p, 1);
+			p.setChildValue(t2, 1);
+		}
+		
+		// all connect to the main places (indexed 0)
+		for (int i=1;i<pfrom.size();i++) {
+			Transition t1 = (Transition)pfrom.get(i).getParents().iterator().next();
+			Transition t2 = (Transition)pto.get(i).getChildren().iterator().next();
+			
+			Place p = pfrom.get(0);
+			t1.setChildValue(p, 1);
+			
+			p = pto.get(0);
+			p.setChildValue(t2, 1);
+		}
+		
+		
+		// remove all merged nodes, appart from the ones indexed 0
+		for (int i=1;i<pfrom.size();i++) {
+			Node n = pfrom.get(i);
+			Node n2= pto.get(i);
+			while (n!=n2) {
+				n=n.getChildren().iterator().next();
+				stg.removeNode(n.getParents().iterator().next());
+			}
+			stg.removeNode(n2);
+		}
+		
+		
+	}
+	
+	/**
+	 * Tries to enforce injective labelling to all transitions
+	 * @param stg
+	 */
+	public static void enforceInjectiveLabelling(STG stg) {
+		// first, find all transitions that we want to try to enforce
+		HashSet< Entry<Integer, EdgeDirection> > entries = new HashSet< Entry<Integer, EdgeDirection> >();
+		HashSet<Transition> enforce = new HashSet<Transition>();
+		
+		Collection<Transition> ct = stg.getTransitions(ConditionFactory.ALL_TRANSITIONS);
+		for (Transition t: ct) {
+			Entry<Integer, EdgeDirection> en = 
+				new AbstractMap.SimpleEntry<Integer, EdgeDirection>(t.getLabel().getSignal(), t.getLabel().getDirection());
+			
+			if (entries.contains(en) ) {
+				enforce.add(t);
+			} else {
+				entries.add(en);
+			}
+			
+		}
+		
+		for (Transition t: enforce) {
+			enforceInjectiveLabelling(stg, t);
+		}
+		
+	}
 
-
+	
 	// method overloading because of NodeRemover idea
 	
 	public static Collection<Place> removeRedundantPlaces(STG stg) {

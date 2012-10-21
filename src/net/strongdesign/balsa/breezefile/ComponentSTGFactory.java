@@ -24,6 +24,7 @@ import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
+import net.strongdesign.stg.STGUtil;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
 import net.strongdesign.util.StreamGobbler;
@@ -79,6 +80,8 @@ public class ComponentSTGFactory {
 					p.setMarking(1);
 				}
 				
+				if (CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled()) STGUtil.enforceInjectiveLabelling(stg);
+				
 				TreeMap<String, String> renaming = new TreeMap<String, String>();
 				
 				// do the renaming to the actual channel names
@@ -123,7 +126,7 @@ public class ComponentSTGFactory {
 
 	
 	
-	static public STG parallelComposition(LinkedList <STG> stgs, LinkedList<String> names, boolean removeImplicitPlaces) {
+	static public STG parallelComposition(LinkedList <STG> stgs, LinkedList<String> names) {
 		// using the external pcomp tool
 		
 		try {
@@ -151,7 +154,7 @@ public class ComponentSTGFactory {
 			}
 			
 			String options=" -d ";
-			if (removeImplicitPlaces) options+="-p ";
+			if (CLW.instance.OPTIMIZED_PCOMP.isEnabled()) options+="-p ";
 			Process pcomp = HelperApplications.startExternalTool(HelperApplications.PCOMP, options+fnames);
 			
 			
@@ -231,7 +234,7 @@ public class ComponentSTGFactory {
 						}
 					}
 					
-					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names, true);
+					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
 					return mainSTG;
 				}
 			}

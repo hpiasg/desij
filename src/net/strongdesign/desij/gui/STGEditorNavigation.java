@@ -288,7 +288,7 @@ public class STGEditorNavigation extends JTree implements
 			stgs.add(node.getSTG());
 		}
 		
-		STG stg= ComponentSTGFactory.parallelComposition(stgs, null, true);
+		STG stg= ComponentSTGFactory.parallelComposition(stgs, null);
 		
 		if (stg!=null) {
 			frame.addSTG(stg, "Composed");

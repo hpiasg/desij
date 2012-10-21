@@ -43,6 +43,7 @@ import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 
@@ -78,6 +79,9 @@ public class STGGraphComponent extends mxGraphComponent {
 		public JMenuItem unFireTransition = new JMenuItem("Unfire selected transition");
 		public JMenuItem renameSignal = new JMenuItem("Rename signal");
 		
+		public JMenuItem injectiveLabelling = new JMenuItem("Apply injective labelling"); 
+		
+		
 		public List<Transition> toProcess = new LinkedList<Transition>();
 		
 		public STGGraphComponentPopupMenu(STGGraphComponent component) {
@@ -89,16 +93,27 @@ public class STGGraphComponent extends mxGraphComponent {
 			add(fireTransition);
 			add(unFireTransition);
 			add(renameSignal);
+			add(injectiveLabelling);
 			
 			contractTransition.addActionListener(this);
 			makeSignalDummy.addActionListener(this);
 			fireTransition.addActionListener(this);
 			unFireTransition.addActionListener(this);
 			renameSignal.addActionListener(this);
+			injectiveLabelling.addActionListener(this);
 		}
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
+			
+			if (e.getSource()==injectiveLabelling) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				STGUtil.enforceInjectiveLabelling(component.activeSTG, toProcess.get(0));
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+				component.frame.refreshSTGInfo();
+			}
 			
 			if (e.getSource()==contractTransition) {
 				storeCoordinates(component.activeSTG.getCoordinates());

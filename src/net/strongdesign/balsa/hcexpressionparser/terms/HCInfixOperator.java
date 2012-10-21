@@ -253,7 +253,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			Transition t1 = stg.addTransition(
 					new SignalEdge(
 							num, 
-							EdgeDirection.DONT_CARE
+							EdgeDirection.UNKNOWN
 							)
 					);
 			
@@ -265,7 +265,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			Transition t2 = stg.addTransition(
 					new SignalEdge(
 							num, 
-							EdgeDirection.DONT_CARE
+							EdgeDirection.UNKNOWN
 							)
 					);
 			
@@ -301,7 +301,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				t1 = stg.addTransition(
 						new SignalEdge(
 								num, 
-								EdgeDirection.DONT_CARE
+								EdgeDirection.UNKNOWN
 								)
 						);
 				
@@ -314,7 +314,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				t2 = stg.addTransition(
 						new SignalEdge(
 								num, 
-								EdgeDirection.DONT_CARE
+								EdgeDirection.UNKNOWN
 								)
 						);
 				
@@ -393,7 +393,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 					t = stg.addTransition(
 							new SignalEdge(
 									num, 
-									EdgeDirection.DONT_CARE
+									EdgeDirection.UNKNOWN
 									)
 							);
 					

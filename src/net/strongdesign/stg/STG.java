@@ -744,6 +744,23 @@ public final class STG implements Cloneable {
 		
 	}
 	
+	/**
+	 * Creates a dummy transition
+	 * @param name
+	 * @return
+	 */
+	public Transition addDummy(String name) {
+		int num=getSignalNumber(name);
+		setSignature(num, Signature.DUMMY);
+		
+		Transition ret = addTransition(
+				new SignalEdge(
+						num, 
+						EdgeDirection.UNKNOWN
+						)
+				);
+		return ret;
+	}
 	
 	/**
 	 * Adds a new transition to the net, instead of giving a ready made transition the relevant external information
