@@ -138,6 +138,7 @@ public class STGTreeLayout {
 	
 	static public void doLayout(STG stg, boolean isShortHand) {
 		STGTreeLayout.isShortHand = isShortHand;
+		
 		mainColumns.clear();
 		node2col.clear();
 		

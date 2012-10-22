@@ -31,6 +31,7 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -60,6 +61,7 @@ import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.traversal.CollectorFactory;
 import net.strongdesign.stg.traversal.ConditionFactory;
@@ -85,6 +87,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			KeyEvent.VK_S, 'S', 0, this);
 	public final STGEditorAction SAVE_AS = new STGEditorAction("Save as",
 			KeyEvent.VK_A, null, 0, this);
+	
+	public final STGEditorAction SAVE_AS_SVG = new STGEditorAction("SVG export",
+			KeyEvent.VK_V, null, 0, this);
+	
 	public final STGEditorAction EXIT = new STGEditorAction("Exit",
 			KeyEvent.VK_X, null, 0, this);
 
@@ -596,16 +602,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		if (name == null) {
 			fileChooser.setMultiSelectionEnabled(false);
 			
-/*			JFileChooser fileChooser = null;
-			try {
-				fileChooser = new JFileChooser(new File(".").getCanonicalPath());
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}*/
-			
-/*			fileChooser.setSelectedFile(new File(selectedNode.toString().replaceAll(" ", "_").replaceAll(":", "")
-					+ ".g"));*/
-			
 			fileChooser.setFileFilter(STGFileFilter.STANDARD);
 			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
@@ -619,6 +615,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	}
 
 	private void saveAs() throws IOException {
+		
+		STGEditorTreeNode selectedNode = navigationView.getSelectedNode();
+		graphComponent.storeCoordinates(selectedNode.getSTG().getCoordinates());
+		
 		String name = null;
 
 		JFileChooser fileChooser = new JFileChooser();
@@ -637,6 +637,27 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 				STGFile.convertToG(navigationView.getSelectedNode().getSTG()), name);
 	}
 
+	private void saveAsSvg() throws IOException {
+		STGEditorTreeNode selectedNode = navigationView.getSelectedNode();
+		graphComponent.storeCoordinates(selectedNode.getSTG().getCoordinates());
+		
+		String name = null;
+
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setFileFilter(STGFileFilter.SVGFILTER);
+		
+		fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+			return;
+		name = fileChooser.getSelectedFile().getAbsolutePath();
+		if (name == null) return;
+
+		String svg = SVGExport.export(navigationView.getSelectedNode().getSTG());
+
+		FileSupport.saveToDisk(svg, name);
+			
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		
@@ -648,6 +669,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 				save();
 			else if (source == SAVE_AS)
 				saveAs();
+			else if (source == SAVE_AS_SVG)
+				saveAsSvg();
 			else if (source == EXIT)
 				exit();
 			// else if (source == RG) rg();

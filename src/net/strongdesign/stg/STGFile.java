@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -44,12 +44,7 @@ import net.strongdesign.stg.traversal.Condition;
 import net.strongdesign.stg.traversal.ConditionFactory;
 
 /**
- * This class is for saving and loading STGs. Until now only the .g format is
- * supported as used e.g. by Petrify
- * 
- * check for parsing of freaky files
- * 
- * @author Mark Schaefer
+ * This class is for saving and loading STGs into various formats
  *  
  */
 
@@ -438,11 +433,7 @@ public abstract class STGFile {
 			result.append(" \n.coordinates_end\n");
 		}
 		return result.toString();
-		
-		
 	}
-	
-	
 	
 }
 

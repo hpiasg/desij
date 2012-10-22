@@ -52,7 +52,9 @@ import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
+import net.strongdesign.desij.gui.STGDotLayout;
 import net.strongdesign.desij.gui.STGEditorFrame;
+import net.strongdesign.desij.gui.STGTreeLayout;
 import net.strongdesign.desij.net.DecompositionStatistics;
 import net.strongdesign.statesystem.StateSystem;
 import net.strongdesign.statesystem.decorator.Cache;
@@ -71,6 +73,7 @@ import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.parser.TokenMgrError;
 import net.strongdesign.stg.synthesis.StateGraph;
@@ -176,7 +179,7 @@ public class DesiJ {
 			}
 
 
-			if (! CLW.instance.SILENT.isEnabled())
+			if (!CLW.instance.SILENT.isEnabled())
 				System.out.println(
 						"DesiJ - An STG Decomposer dedicated to the Synthesis of SI Circuits\n" + 
 						"(c) 2004-2007 by Mark Schaefer, University of Augsburg, mark.schaefer@informatik.uni-augsburg.de\n"+
@@ -287,7 +290,7 @@ public class DesiJ {
 				if (CLW.instance.WRITE_LOGFILE.isEnabled()) {
 					try {
 						// logFile.close();
-						smallLogFile.close();
+						if (smallLogFile!=null) smallLogFile.close();
 					} catch (IOException e) {
 						System.err.println("IO-Error: " + e.getMessage());
 						exitCode = 255;
@@ -688,6 +691,16 @@ public class DesiJ {
 				if (fileToDelete.exists() && fileToDelete.isFile()) fileToDelete.delete();
 				//Runtime.getRuntime().exec(HelperApplications.getApplicationPath("dot") + " -Tps "+CLW.instance.OUTFILE.getValue()+".tmp -o "+CLW.instance.OUTFILE.getValue()).waitFor();
 				//Runtime.getRuntime().exec("rm " + CLW.instance.OUTFILE.getValue()+".tmp").waitFor();
+			}
+			else if (CLW.instance.FORMAT.getValue().equals("svg")) {
+				if (stg.getCoordinates().size()==0) {
+					STGTreeLayout.doLayout(stg, true);
+					if (stg.getPlaces().size()<1000) {
+						STGDotLayout.doLayout(stg);
+					}
+				}
+				String svg = SVGExport.export(stg);
+				FileSupport.saveToDisk(svg,  CLW.instance.OUTFILE.getValue());
 			}
 			else if (CLW.instance.FORMAT.getValue().equals("g")) {
 				FileSupport.saveToDisk(STGFile.convertToG(stg), CLW.instance.OUTFILE.getValue());

@@ -539,7 +539,7 @@ public class CLW extends CommandLineWrapper {
 
 	@Help("Fileformat of the written STGs.")
 	public  CommandLineParameter FORMAT = 
-		new CommandLineParameter("format", "g,ps,dot", "g", false);
+		new CommandLineParameter("format", "g,ps,dot,svg", "g", false);
 	
 	// *******************************************************************
 	

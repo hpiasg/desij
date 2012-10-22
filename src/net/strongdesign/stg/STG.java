@@ -1774,6 +1774,22 @@ public final class STG implements Cloneable {
 	}
 	
 	/**
+	 * Returns the node with the given identifier
+	 * @param identifier
+	 * @return Node or null if no node was found
+	 */
+	public Node getNode(int identifier) {
+		for (Transition trans: transitions)
+			if (trans.getIdentifier() == identifier) return trans;
+		
+		for (Place place: places)
+			if (place.getIdentifier() == identifier) return place;
+		
+		return null;
+	}
+	
+	
+	/**
 	 * Returns the transition with the given identifier
 	 * @param identifier
 	 * @return trans or null if no transition was found
@@ -1783,6 +1799,7 @@ public final class STG implements Cloneable {
 			if (trans.getIdentifier() == identifier) return trans;
 		return null;
 	}
+	
 	
 	/**
 	 * Returns the maxNodeNumber in order to generate unique Names for Nodes

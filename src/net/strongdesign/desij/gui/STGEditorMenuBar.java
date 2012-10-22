@@ -68,6 +68,8 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		file.add(frame.OPEN);
 		file.add(frame.SAVE);
 		file.add(frame.SAVE_AS);
+		file.add(frame.SAVE_AS_SVG);
+		
 		file.add(new JSeparator());
 	//	file.add(editor.PRINT);
 	//	file.add(editor.PRINT_VISIBLE);
