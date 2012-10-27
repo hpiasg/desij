@@ -17,33 +17,39 @@ public interface HCExpressionParserConstants {
   /** RegularExpression Id. */
   int ACK = 5;
   /** RegularExpression Id. */
-  int CONCUR = 6;
+  int INP = 6;
   /** RegularExpression Id. */
-  int CHOICE = 7;
+  int OUTP = 7;
   /** RegularExpression Id. */
-  int SEQUENCE = 8;
+  int CONCUR = 8;
   /** RegularExpression Id. */
-  int ENCLOSE = 9;
+  int CHOICE = 9;
   /** RegularExpression Id. */
-  int COMMA = 10;
+  int SEQUENCE = 10;
   /** RegularExpression Id. */
-  int DOT = 11;
+  int ENCLOSE = 11;
   /** RegularExpression Id. */
-  int UP = 12;
+  int COMMA = 12;
   /** RegularExpression Id. */
-  int DOWN = 13;
+  int DOT = 13;
   /** RegularExpression Id. */
-  int OPEN_B = 14;
+  int SYNCPROD = 14;
   /** RegularExpression Id. */
-  int CLOSE_B = 15;
+  int UP = 15;
   /** RegularExpression Id. */
-  int EXPANSION = 16;
+  int DOWN = 16;
   /** RegularExpression Id. */
-  int SHARP = 17;
+  int OPEN_B = 17;
   /** RegularExpression Id. */
-  int PLUS = 18;
+  int CLOSE_B = 18;
   /** RegularExpression Id. */
-  int MINUS = 19;
+  int EXPANSION = 19;
+  /** RegularExpression Id. */
+  int SHARP = 20;
+  /** RegularExpression Id. */
+  int PLUS = 21;
+  /** RegularExpression Id. */
+  int MINUS = 22;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -56,12 +62,15 @@ public interface HCExpressionParserConstants {
     "<CHANNEL>",
     "<REQ>",
     "<ACK>",
+    "<INP>",
+    "<OUTP>",
     "\"||\"",
-    "<CHOICE>",
+    "\"|\"",
     "\";\"",
     "\":\"",
     "\",\"",
     "\".\"",
+    "\"**\"",
     "\"up\"",
     "\"down\"",
     "<OPEN_B>",

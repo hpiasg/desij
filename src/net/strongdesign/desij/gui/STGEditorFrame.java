@@ -126,7 +126,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	
 	public final STGEditorAction RESOLVE_INTERNAL = new STGEditorAction("Resolve internal signals", 0, null, 0, this);
 	
-	
+	 
 	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction(
 			"Change signal types", KeyEvent.VK_C, null, 0, this);
 	
@@ -621,7 +621,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		String name = null;
 
-		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(STGFileFilter.STANDARD);
 		
 //		if (name != null)
@@ -643,7 +642,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		String name = null;
 
-		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileFilter(STGFileFilter.SVGFILTER);
 		
 		fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);

@@ -7,6 +7,7 @@ import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
@@ -89,7 +90,7 @@ public class HCLoopTerm extends HCTerm implements HCSTGGenerator {
 		
 		hc.generateSTG(stg, sig, inP, outP);
 		
-		inPlaces.addAll(STG.cartesianProductBinding(stg, inP, outP));
+		inPlaces.addAll(STGUtil.cartesianProductBinding(stg, inP, outP));
 		// the outPlaces will remain empty
 	}
 }

@@ -37,6 +37,7 @@ import javax.swing.tree.TreePath;
 
 import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGUtil;
 
 //import org.jgraph.JGraph;
 //import org.jgraph.event.GraphSelectionEvent;
@@ -60,6 +61,7 @@ public class STGEditorNavigation extends JTree implements
 
 	public final STGEditorAction DELETE_SELECTED = new STGEditorAction("Delete selected nodes", 0 , null, 0, this);
 	public final STGEditorAction PARALLEL_COMPOSITION = new STGEditorAction("Parallel composition", 0 , null, 0, this);
+	public final STGEditorAction SYNCHRONOUS_PRODUCT = new STGEditorAction("Synchronous product (same signature on both STGs)", 0 , null, 0, this);
 	
 	/**
 	 * 
@@ -275,6 +277,7 @@ public class STGEditorNavigation extends JTree implements
 		
 		if (source == PARALLEL_COMPOSITION) parallelComposition();
 		
+		if (source == SYNCHRONOUS_PRODUCT) synchronousProduct();
 	}
 
 	public void parallelComposition() {
@@ -292,6 +295,27 @@ public class STGEditorNavigation extends JTree implements
 		
 		if (stg!=null) {
 			frame.addSTG(stg, "Composed");
+		}
+		
+	}
+	
+	public void synchronousProduct() {
+		
+		int len = getSelectionPaths().length;
+		LinkedList<STG> stgs = new LinkedList<STG>();
+		
+		for (int i=0;i<len;i++) {
+			TreePath path = getSelectionPaths()[i]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			stgs.add(node.getSTG());
+		}
+		
+		if (stgs.size()!=2) return;
+		
+		STG stg= STGUtil.synchronousProduct(stgs.get(0), stgs.get(1), true);
+		
+		if (stg!=null) {
+			frame.addSTG(stg, "Product");
 		}
 		
 	}

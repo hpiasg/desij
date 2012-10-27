@@ -17,12 +17,13 @@ import net.strongdesign.desij.Messages;
 import net.strongdesign.desij.gui.STGGraphComponent;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.traversal.ConditionFactory;
 
 public class SVGExport {
 
-	static final String dummyStyle = "stroke:none;fill:black;font-style:oblique;";
+	static final String dummyStyle = "stroke:none;fill:black;font-family:Serif";//font-style:oblique
 	static final String inputStyle = "stroke:none;fill:red";
 	static final String outputStyle = "stroke:none;fill:blue;";
 	static final String internalStyle = "stroke:none;fill:green;";
@@ -83,8 +84,12 @@ public class SVGExport {
 			style = otherStyle;
 			break;
 		}
-
-		text.appendChild(doc.createTextNode(t.getString(0)));
+		
+		if (stg.getSignature(t.getLabel().getSignal())==Signature.DUMMY) {
+			text.appendChild(doc.createTextNode("\u03bb"));
+		} else {
+			text.appendChild(doc.createTextNode(t.getString(0)));
+		}
 
 		text.setAttribute("style", style);
 
@@ -338,15 +343,21 @@ public class SVGExport {
 			// create string from xml tree
 			TransformerFactory transfac = TransformerFactory.newInstance();
 			Transformer trans = transfac.newTransformer();
-			trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+			trans.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+			trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
 			trans.setOutputProperty(OutputKeys.INDENT, "yes");
 
 			StringWriter sw = new StringWriter();
 			StreamResult result = new StreamResult(sw);
 			DOMSource source = new DOMSource(doc);
 			trans.transform(source, result);
-
-			return sw.toString();
+			
+			String ret = sw.toString();
+			
+			// dirty hack, TODO: find a decent way to output UTF-8 characters...
+			ret = ret.replaceAll("\u03bb", "&#x3bb;");
+			
+			return ret;
 
 		} catch (ParserConfigurationException pce) {
 			pce.printStackTrace();

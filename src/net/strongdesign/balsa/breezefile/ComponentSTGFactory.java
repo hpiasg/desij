@@ -15,6 +15,7 @@ import java.util.TreeMap;
 import net.strongdesign.balsa.breezeparser.BreezeParser;
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
 import net.strongdesign.balsa.hcexpressionparser.ParseException;
+import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCSTGGenerator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm.ExpansionType;
@@ -25,6 +26,7 @@ import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.STGUtil;
+import net.strongdesign.stg.parser.GParser;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
 import net.strongdesign.util.StreamGobbler;
@@ -33,7 +35,7 @@ public class ComponentSTGFactory {
 	
 //	static public HashMap<String, String> componentMap;
 	
-	//  operation=breeze C:\RA\Documents\presentation\wc2\BalsaPlugin\bin\org\workcraft\testing\parsers\breeze\data\HU.breeze
+	//  -G operation=breeze C:\RA\Documents\presentation\wc2\BalsaPlugin\bin\org\workcraft\testing\parsers\breeze\data\HU.breeze
 	@SuppressWarnings("unchecked")
 	static public int getScale(LinkedList<Object> channels) {
 		if (channels==null) return 4;
@@ -49,79 +51,102 @@ public class ComponentSTGFactory {
 		return ret;
 	}
 	
+	
 	static public STG createSTGComponent(String compName, LinkedList<Object> parameters, LinkedList<Object> channels) {
 		if (compName.startsWith("\"")) compName = compName.split("\"")[1];
 		
-		STG ret = new STG();
 		int scale = ComponentSTGFactory.getScale(channels);
 		
 		String expression = ComponentSTGExpressions.getExpression(compName);
+		
 		if (expression==null) return null;
 		
-		HCExpressionParser parser = new HCExpressionParser(new StringReader(expression));
+		STG stg = null;
+		
+		if (expression.startsWith(".")) {
+			
+			// consider the input to be an STG in .g format
+			try {
+				GParser parser = new GParser(new StringReader(expression));
+				stg = parser.STG();
+			} catch (net.strongdesign.stg.parser.ParseException e) {
+				e.printStackTrace();
+			} catch (STGException e) {
+				e.printStackTrace();
+			}
+			
+		} else {
+			
+			HCExpressionParser parser = new HCExpressionParser(new StringReader(expression));
+			stg = null;
+			
+			try {
+				HCTerm t = parser.HCParser();
+				
+	            if (t==null) {
+	            	return null;
+	            } else {
+	    			HCTerm up   = t.expand(ExpansionType.UP, scale, parser, false);
+	    			
+	    			stg = HCInfixOperator.generateComposedSTG(true, up, parser);
+	    		}
+				
+			} catch (ParseException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		if (stg==null) return null;
+		
+		if (CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled()) STGUtil.enforceInjectiveLabelling(stg);
+		
+		TreeMap<String, String> renaming = new TreeMap<String, String>();
+		
+		// do the renaming to the actual channel names
+		byte cnt=0;
+		for (Object o : channels) {
+			if ( o instanceof LinkedList<?>) {
+				// rename scalable channel
+				@SuppressWarnings("unchecked")
+				LinkedList<Integer> cl = (LinkedList<Integer>)o;
+				for (int i=0;i<cl.size();i++) {
+					
+					String rFrom = ("r"+(char)('A'+cnt));
+					if (i>0) rFrom += i;
+					String aFrom = ("a"+(char)('A'+cnt));
+					if (i>0) aFrom += i;
+					
+					String input = ("i"+(char)('A'+cnt));
+					if (i>0) input += i;
+					String output = ("o"+(char)('A'+cnt));
+					if (i>0) output += i;
+					
+					renaming.put(rFrom, "r"+cl.get(i));
+					renaming.put(aFrom, "a"+cl.get(i));
+					renaming.put(input, "i"+cl.get(i));
+					renaming.put(output, "o"+cl.get(i));
+				}
+			} else if (o instanceof Integer) {
+				// rename non-scalable channel
+				renaming.put("r"+(char)('A'+cnt), "r"+(Integer)o);
+				renaming.put("a"+(char)('A'+cnt), "a"+(Integer)o);
+				renaming.put("i"+(char)('A'+cnt), "i"+(Integer)o);
+				renaming.put("o"+(char)('A'+cnt), "o"+(Integer)o);
+			}
+			cnt++;
+		}
 		
 		try {
-			HCTerm t = parser.HCParser();
-			
-            if (t==null) {
-            	return null;
-            } else {
-    			HCTerm up   = t.expand(ExpansionType.UP, scale, parser, false);
-    			
-				STG stg = new STG();
-				
-				Set<Place> listIn = new HashSet<Place>();
-				Set<Place> listOut = new HashSet<Place>();
-				
-				((HCSTGGenerator)up).generateSTG(stg, parser, listIn, listOut);
-				
-				// add the initial token
-				for (Place p: listIn) {
-					p.setMarking(1);
-				}
-				
-				if (CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled()) STGUtil.enforceInjectiveLabelling(stg);
-				
-				TreeMap<String, String> renaming = new TreeMap<String, String>();
-				
-				// do the renaming to the actual channel names
-				byte cnt=0;
-				for (Object o : channels) {
-					if ( o instanceof LinkedList<?>) {
-						// rename scalable channel
-						@SuppressWarnings("unchecked")
-						LinkedList<Integer> cl = (LinkedList<Integer>)o;
-						for (int i=0;i<cl.size();i++) {
-							
-							String rFrom = ("r"+(char)('A'+cnt));
-							if (i>0) rFrom += i;
-							String aFrom = ("a"+(char)('A'+cnt));
-							if (i>0) aFrom += i;
-							
-							renaming.put(rFrom, "r"+cl.get(i));
-							renaming.put(aFrom, "a"+cl.get(i));
-						}
-					} else if (o instanceof Integer) {
-						// rename non-scalable channel
-						String a = "r"+(char)('A'+cnt);
-						String b = "r"+(Integer)o;
-						renaming.put(a, b);
-						renaming.put("a"+(char)('A'+cnt), "a"+(Integer)o);
-					}
-					cnt++;
-				}
-				stg.renameSignals(renaming);
-				
-				return stg;
-    		}
-			
-		} catch (ParseException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
+			stg.renameSignals(renaming);
+		} catch (STGException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		return ret;
+		return stg;
+		
 	}
 
 	

@@ -31,6 +31,7 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 		
 		add(listener.DELETE_SELECTED);
 		add(listener.PARALLEL_COMPOSITION);
+		add(listener.SYNCHRONOUS_PRODUCT);
 
 	}
 	

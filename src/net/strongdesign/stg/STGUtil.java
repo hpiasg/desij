@@ -425,12 +425,8 @@ public abstract class STGUtil {
 				}   
 			}
 		}
-
-
 		return result;
 	}
-
-
 
 	public static int sizeOfReachabilityGraph(STG stg)   {
 		Set<Marking> knownStates 				= new HashSet<Marking>();
@@ -462,11 +458,6 @@ public abstract class STGUtil {
 
 		return result;
 	}
-
-
-	public static STG parallelComposition() {
-		return null;
-	}
 	
 	/**
 	 * Checks if transitions have the same signals and directions 
@@ -478,8 +469,20 @@ public abstract class STGUtil {
 		if (t1.getSTG().getSignature(t1.getLabel().getSignal())==Signature.DUMMY) return false;
 		if (t2.getSTG().getSignature(t2.getLabel().getSignal())==Signature.DUMMY) return false;
 		
-		return (t1.getLabel().getSignal()==t2.getLabel().getSignal()&&
-				t1.getLabel().getDirection()==t2.getLabel().getDirection());
+		STG stg1 = t1.getSTG();
+		STG stg2 = t2.getSTG();
+		
+		if (stg1==stg2) {
+			return (t1.getLabel().getSignal()==t2.getLabel().getSignal()&&
+					t1.getLabel().getDirection()==t2.getLabel().getDirection());
+		} else {
+			return (stg1.getSignalName(t1.getLabel().getSignal()).equals(
+					stg2.getSignalName(t2.getLabel().getSignal()))
+					&&
+					t1.getLabel().getDirection()==t2.getLabel().getDirection());
+		}
+		
+		
 	}
 	
 	/**
@@ -590,10 +593,13 @@ public abstract class STGUtil {
 		}
 		
 		// create arcs from presets to postsets
+		LinkedList<Place> checkRedun  = new LinkedList<Place>();
 		for (int i=0;i<pfrom.size();i++) {
 			Transition t1 = (Transition)pfrom.get(i).getParents().iterator().next();
 			Transition t2 = (Transition)pto.get(i).getChildren().iterator().next();
 			Place p = stg.addPlace("p", 0);
+			checkRedun.add(p);
+			
 			t1.setChildValue(p, 1);
 			p.setChildValue(t2, 1);
 		}
@@ -611,7 +617,7 @@ public abstract class STGUtil {
 		}
 		
 		
-		// remove all merged nodes, appart from the ones indexed 0
+		// remove all merged nodes, apart from the ones indexed 0
 		for (int i=1;i<pfrom.size();i++) {
 			Node n = pfrom.get(i);
 			Node n2= pto.get(i);
@@ -622,7 +628,13 @@ public abstract class STGUtil {
 			stg.removeNode(n2);
 		}
 		
-		
+
+		// remove redundant places among the created ones
+		Condition<Place> redPlace = ConditionFactory.getRedundantPlaceCondition(stg);
+		for (Place p: checkRedun) {
+			if (redPlace.fulfilled(p))
+				stg.removePlace(p);
+		}
 	}
 	
 	/**
@@ -653,6 +665,146 @@ public abstract class STGUtil {
 		
 	}
 
+	/**
+	 * This function merges two STGs (same as the standard parallel composition),
+	 * but it only works with signals of the same signature
+	 * @return
+	 */
+	public static STG synchronousProduct(STG stg1, STG stg2, boolean removeRedPlaces) {
+		
+		if (stg1==null) return stg2;
+		if (stg2==null) return stg1;
+		if (stg1==stg2) return stg1;
+		
+		STG stg = new STG();
+		
+		
+		Map<Place, Place> old2new1 = new HashMap<Place,Place>();
+		Map<Place, Place> old2new2 = new HashMap<Place,Place>();
+		
+		Map<Transition, Transition> new2old1 = new HashMap<Transition,Transition>();
+		Map<Transition, Transition> new2old2 = new HashMap<Transition,Transition>();
+		
+		Set<SignalEdge> occurs1 = new HashSet<SignalEdge>();
+		Set<SignalEdge> occurs2 = new HashSet<SignalEdge>();
+		
+		// add transition combinations
+		for (Transition t1: stg1.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			for (Transition t2: stg2.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+				if (STGUtil.sameTransitions(t1, t2)) {
+					
+					// create the transition
+					String name = stg1.getSignalName(t1.getLabel().getSignal());
+					
+					Integer newNum = stg.getSignalNumber(name); // get or create the signal
+					
+					Signature s1 = stg1.getSignature(t1.getLabel().getSignal());
+					Signature s2 = stg2.getSignature(t2.getLabel().getSignal());
+					
+					if (s1!=s2) return null;
+					
+					stg.setSignature(newNum, s1);
+					
+					SignalEdge se = new SignalEdge(newNum, t1.getLabel().getDirection());
+					
+					Transition newTransition = stg.addTransition(se);
+					
+					
+					new2old1.put(newTransition,t1);
+					new2old2.put(newTransition,t2);
+					
+					
+					occurs1.add(t1.getLabel());
+					occurs2.add(t2.getLabel());
+				}
+			}
+		}
+		
+		// now add transitions that do not occur in both STGs 
+		for (Transition t1: stg1.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			if (!occurs1.contains(t1.getLabel())) {
+				// create the transition
+				String name = stg1.getSignalName(t1.getLabel().getSignal());
+				Integer newNum = stg.getSignalNumber(name); // get or create the signal
+				Signature s1 = stg1.getSignature(t1.getLabel().getSignal());
+				stg.setSignature(newNum, s1);
+				SignalEdge se = new SignalEdge(newNum, t1.getLabel().getDirection());
+				
+				Transition newTransition = stg.addTransition(se);
+				
+				new2old1.put(newTransition, t1);
+			}
+		}
+
+		for (Transition t2: stg2.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			if (!occurs2.contains(t2.getLabel())) {
+				// create the transition
+				String name = stg2.getSignalName(t2.getLabel().getSignal());
+				Integer newNum = stg.getSignalNumber(name); // get or create the signal
+				Signature s2 = stg2.getSignature(t2.getLabel().getSignal());
+				stg.setSignature(newNum, s2);
+				SignalEdge se = new SignalEdge(newNum, t2.getLabel().getDirection());
+				
+				Transition newTransition = stg.addTransition(se);
+				
+				new2old2.put(newTransition, t2);
+			}
+		}
+		
+		// copy all places
+		for (Place p: stg1.getPlaces()) {
+			Place np = stg.addPlace(p.getLabel(), p.getMarking());
+			old2new1.put(p, np);
+		}
+		
+		for (Place p: stg2.getPlaces()) {
+			Place np = stg.addPlace(p.getLabel(), p.getMarking());
+			old2new2.put(p, np);
+		}
+		
+		// finally, set the weights
+		for (Transition tr: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			
+			Transition t1 = new2old1.get(tr);
+			if(t1!=null) {
+				for (Node p1: t1.getParents()) {
+					Place p = old2new1.get(p1);
+					tr.setParentValue(p, t1.getParentValue(p1));
+				}
+				for (Node p1: t1.getChildren()) {
+					Place p = old2new1.get(p1);
+					tr.setChildValue(p, t1.getChildValue(p1));
+				}
+			}
+			
+			Transition t2 = new2old2.get(tr);
+			if (t2!=null) {
+				for (Node p2: t2.getParents()) {
+					Place p = old2new2.get(p2);
+					tr.setParentValue(p, t2.getParentValue(p2));
+				}
+				for (Node p2: t2.getChildren()) {
+					Place p = old2new2.get(p2);
+					tr.setChildValue(p, t2.getChildValue(p2));
+				}
+			}
+		}
+		
+		if (removeRedPlaces)
+			removeRedundantPlaces(stg);
+		
+		return stg;
+	}
+	
+	
+	public static STG synchronousProduct(LinkedList<STG> stgs, boolean removeRedPlaces) {
+		STG ret = null;
+		if (stgs.size()==1) return stgs.get(0);
+		for (STG stg: stgs) {
+			ret = synchronousProduct(ret, stg, removeRedPlaces);
+		}
+		return ret;
+	}
 	
 	// method overloading because of NodeRemover idea
 	
@@ -724,4 +876,53 @@ public abstract class STGUtil {
 						
 		return returnValue;
 	}
+	
+	/*
+	 * 1. creates the Cartesian product of the given two sets of places,
+	 * 2. creates appropriate transition arcs
+	 * 3. sets appropriate token counts
+	 * 4. removes old arcs and old places form the STG
+	 */
+	static public Set<Place> cartesianProductBinding(STG stg, Set<Place> inPlaces, Set<Place> outPlaces) {
+		
+		Place newPlace;
+		
+		Set<Place> toDelete = new HashSet<Place>();
+		Set<Place> toReturn = new HashSet<Place>();
+		
+		for (Place p1 : inPlaces) {
+			for (Place p2: outPlaces) {
+				int m1 = p1.getMarking(); 
+				int m2 = p2.getMarking();
+				newPlace = stg.addPlace("p", m1+m2);
+				toReturn.add(newPlace);
+
+				// now copy arcs
+				for (Node n : p1.getParents()) {
+					newPlace.setParentValue(n, p1.getParentValue(n));
+				}
+				for (Node n : p1.getChildren()) {
+					newPlace.setChildValue(n, p1.getChildValue(n));
+				}
+				for (Node n : p2.getParents()) {
+					newPlace.setParentValue(n, p2.getParentValue(n));
+				}
+				for (Node n : p2.getChildren()) {
+					newPlace.setChildValue(n, p2.getChildValue(n));
+				}
+				
+				// mark places, which will be removed from the STG
+				toDelete.add(p1);
+				toDelete.add(p2);
+			}
+		}
+		
+		// now remove all the marked places
+		for (Place p: toDelete) {
+			stg.removePlace(p);
+		}
+		
+		return toReturn;
+	}
+	
 }

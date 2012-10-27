@@ -4,9 +4,11 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
@@ -14,11 +16,14 @@ import net.strongdesign.stg.Transition;
 
 public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 
-	public enum Operation {CHOICE, CONCUR, SEQUENCE, FOLLOW, SYNC, ENCLOSE, UNKNOWN;
+	public enum Operation {SYNCPROD, CHOICE, CONCUR, SEQUENCE, FOLLOW, SYNC, ENCLOSE, UNKNOWN;
 	
 			static public Operation fromString(String s) {
-				if (s.equals("|")||s.equals("[]")) return CHOICE;
+				if (s.equals("|")) return CHOICE;
 				if (s.equals("||")) return CONCUR;
+				
+				if (s.equals("**")) return SYNCPROD;
+				
 				if (s.equals(";")) return SEQUENCE;
 				if (s.equals(",")) return SYNC;
 				if (s.equals(".")) return FOLLOW;
@@ -28,7 +33,9 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			}
 			
 			static public String toString(Operation op) {
-				if (op==CHOICE) return "[]";
+				if (op==CHOICE) return "|";
+				if (op==SYNCPROD) return "\n**";
+				
 				if (op==CONCUR) return "||";
 				if (op==SEQUENCE) return ";";
 				if (op==FOLLOW) return ".";
@@ -78,6 +85,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				}
 				
 			} else return null; // empty expansion
+			
 		} else if (operation==Operation.SEQUENCE) {
 			int len = components.size();
 			if (len==0) return null;
@@ -182,12 +190,37 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				
 			}
 			
+		} else if (operation==Operation.SYNCPROD) {
+			
+			if (type==ExpansionType.UP) {
+				
+				for (HCTerm t: components) {
+					HCTerm expUp   = t.expand(ExpansionType.UP, scale, sig, oldChoice);
+					HCTerm expDown = t.expand(ExpansionType.DOWN, scale, sig, oldChoice);
+					
+					if (expUp!=null&&expDown!=null) {
+						HCInfixOperator in = new HCInfixOperator();
+						in.operation = Operation.SEQUENCE;
+						in.components.add(expUp);
+						in.components.add(expDown);
+						ret.components.add(in);
+					} else if (expUp!=null) {
+						ret.components.add(expUp);
+					} else {
+						return null;
+					}
+				}
+				
+			} else return null; // empty expansion
+			
 		} else {
 			throw new Exception("Unimplemented expansion");
 		}
 		
-		if (ret.components.size()==1) ret.components.get(0); 
-		if (ret.components.size()==0) return null; 
+		if (ret.components.size()==1) return ret.components.get(0);
+		
+		if (ret.components.size()==0) return null;
+		
 		return ret;
 	}
 
@@ -338,6 +371,54 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 		
 	}
 	
+	
+	// for now, the synchronous product is only defined at the top level of expression
+	public static STG generateComposedSTG(boolean useCartesianProduct, HCTerm exp, HCExpressionParser parser) {
+		
+		if (exp instanceof HCInfixOperator && ((HCInfixOperator)exp).operation == Operation.SYNCPROD) {
+			HCInfixOperator io = (HCInfixOperator)exp;
+			LinkedList<STG> stgs = new LinkedList<STG>();
+			
+			for (HCTerm term : io.components) {
+				stgs.add(generateComposedSTG(useCartesianProduct, term, parser));
+			}
+			
+			return STGUtil.synchronousProduct(stgs, true);
+			
+		} else {
+			
+			STG stg = new STG();
+
+			if (useCartesianProduct) {
+				// do it the new way
+				Set<Place> listIn = new HashSet<Place>();
+				Set<Place> listOut = new HashSet<Place>();
+
+				((HCSTGGenerator) exp).generateSTG(stg, parser, listIn,
+						listOut);
+
+				// add the initial token
+				for (Place p : listIn) {
+					p.setMarking(1);
+				}
+
+			} else {
+				// do it the old way
+				Place p = stg.addPlace("init", 1);
+				Place p2 = p;
+
+				if (!(exp instanceof HCLoopTerm)) p2 = stg.addPlace("finish", 0);
+
+				((HCSTGGenerator) exp).generateSTGold(stg, parser, p, p2);
+			}
+			
+			
+			return stg;
+		}
+		
+	}
+	
+	
 	@Override
 	public void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces) {
 		// all of the components at this stage have to be the STG generators
@@ -362,7 +443,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			inPlaces.addAll(fromSets.get(0));
 			
 			for (int i=0;i<len-1;i++) {
-				STG.cartesianProductBinding(stg, toSets.get(i), fromSets.get(i+1));
+				STGUtil.cartesianProductBinding(stg, toSets.get(i), fromSets.get(i+1));
 			}
 			
 			outPlaces.addAll(toSets.get(len-1));
@@ -415,13 +496,13 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			// now to find the final inPlaces and outPlaces, perform the Cartesian products
 			Set<Place> cart=fromSets.get(0);
 			for (int i=1;i<len;i++) {
-				cart=STG.cartesianProductBinding(stg, cart, fromSets.get(i));
+				cart=STGUtil.cartesianProductBinding(stg, cart, fromSets.get(i));
 			}
 			inPlaces.addAll(cart);
 			
 			cart=toSets.get(0);
 			for (int i=1;i<len;i++) {
-				cart=STG.cartesianProductBinding(stg, cart, toSets.get(i));
+				cart=STGUtil.cartesianProductBinding(stg, cart, toSets.get(i));
 			}
 			outPlaces.addAll(cart);
 			

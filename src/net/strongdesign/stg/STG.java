@@ -184,7 +184,6 @@ public final class STG implements Cloneable {
 		
 		return result;
 	}
-
 	
 	/**
 	 * Turns the current STG into a copy of the given STG. The undo stack is not copied.
@@ -1963,54 +1962,6 @@ public final class STG implements Cloneable {
 		}
 	}
 	
-	
-	/*
-	 * 1. creates the Cartesian product of the given two sets of places,
-	 * 2. creates appropriate transition arcs
-	 * 3. sets appropriate token counts
-	 * 4. removes old arcs and old places form the STG
-	 */
-	static public Set<Place> cartesianProductBinding(STG stg, Set<Place> inPlaces, Set<Place> outPlaces) {
-		
-		Place newPlace;
-		
-		Set<Place> toDelete = new HashSet<Place>();
-		Set<Place> toReturn = new HashSet<Place>();
-		
-		for (Place p1 : inPlaces) {
-			for (Place p2: outPlaces) {
-				int m1 = p1.getMarking(); 
-				int m2 = p2.getMarking();
-				newPlace = stg.addPlace("p", m1+m2);
-				toReturn.add(newPlace);
-
-				// now copy arcs
-				for (Node n : p1.getParents()) {
-					newPlace.setParentValue(n, p1.getParentValue(n));
-				}
-				for (Node n : p1.getChildren()) {
-					newPlace.setChildValue(n, p1.getChildValue(n));
-				}
-				for (Node n : p2.getParents()) {
-					newPlace.setParentValue(n, p2.getParentValue(n));
-				}
-				for (Node n : p2.getChildren()) {
-					newPlace.setChildValue(n, p2.getChildValue(n));
-				}
-				
-				// mark places, which will be removed from the STG
-				toDelete.add(p1);
-				toDelete.add(p2);
-			}
-		}
-		
-		// now remove all the marked places
-		for (Place p: toDelete) {
-			stg.removePlace(p);
-		}
-		
-		return toReturn;
-	}
 }
 
 

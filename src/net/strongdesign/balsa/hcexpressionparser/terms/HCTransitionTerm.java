@@ -31,11 +31,12 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 		Signature sg = Signature.INPUT;
 		
 		if (wire.equals("r")&&sig.isActive(channel)||
-			wire.equals("a")&&!sig.isActive(channel)
-				) {
+			wire.equals("a")&&!sig.isActive(channel))
 			sg = Signature.OUTPUT;
-		}
-				
+		
+		if (wire.equals("o")) sg  = Signature.OUTPUT;
+		if (wire.endsWith("i")) sg = Signature.INPUT;
+		
 		stg.setSignature(signal, sg);
 		
 		EdgeDirection ed = EdgeDirection.UNKNOWN;
@@ -58,11 +59,12 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 		Signature sg = Signature.INPUT;
 		
 		if (wire.equals("r")&&sig.isActive(channel)||
-			wire.equals("a")&&!sig.isActive(channel)
-				) {
+			wire.equals("a")&&!sig.isActive(channel))
 			sg = Signature.OUTPUT;
-		}
-				
+		
+		if (wire.equals("o")) sg  = Signature.OUTPUT;
+		if (wire.endsWith("i")) sg = Signature.INPUT;
+		
 		stg.setSignature(signal, sg);
 		
 		EdgeDirection ed = EdgeDirection.UNKNOWN;

@@ -42,6 +42,7 @@ import javax.swing.JTextArea;
 import net.strongdesign.balsa.breezefile.ComponentSTGExpressions;
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
 import net.strongdesign.balsa.hcexpressionparser.ParseException;
+import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCLoopTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCSTGGenerator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
@@ -51,7 +52,9 @@ import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGUtil;
+import net.strongdesign.stg.parser.GParser;
 
 public class STGGeneratorFrame extends JFrame implements ActionListener {
 
@@ -189,9 +192,12 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 			String name = (String) cb.getSelectedItem();
 			inputText.setText(mp.get(name));
 		}
+		
+		String input = inputText.getText();
+		boolean dotGInput = input.startsWith(".");
 
 		//
-		if (source == expandButton) {
+		if (source == expandButton && ! dotGInput) {
 
 			// launch the parser routine
 			HCExpressionParser parser = new HCExpressionParser(
@@ -235,86 +241,89 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		}
 
 		if (source == generateButton) {
-			// launch the parser routine
-			HCExpressionParser parser = new HCExpressionParser(
-					new StringReader(inputText.getText()));
+			
+			STG stg = null;
+			
+			if (!dotGInput) {
+				
+				// launch the parser routine
+				HCExpressionParser parser = new HCExpressionParser(
+						new StringReader(inputText.getText()));
+				
+				try {
+					// parser.
+					outputText.setText("");
+					HCTerm t = parser.HCParser();
+					String s;
 
-			try {
-				// parser.
-				outputText.setText("");
-				HCTerm t = parser.HCParser();
-				String s;
-
-				if (t == null) {
-					s = "NULL term returned";
-				} else {
-					HCTerm up = t
-							.expand(ExpansionType.UP, parser.scale, parser, originalChoiceExp.isSelected());
-					HCTerm down = t.expand(ExpansionType.DOWN, parser.scale,
-							parser, originalChoiceExp.isSelected());
-
-					if (up != null)
-						s = "UP: " + up.toString() + "\n";
-					else
-						s = "UP: null\n";
-
-					if (down != null)
-						s += "DOWN (ignored in STG): " + down.toString();
-					else
-						s += "DOWN: null";
-
-					STG stg = new STG();
-
-					if (useCartesianProduct.isSelected()) {
-						// do it the new way
-						Set<Place> listIn = new HashSet<Place>();
-						Set<Place> listOut = new HashSet<Place>();
-
-						((HCSTGGenerator) up).generateSTG(stg, parser, listIn,
-								listOut);
-
-						// add the initial token
-						for (Place p : listIn) {
-							p.setMarking(1);
-						}
-
+					if (t == null) {
+						s = "NULL term returned";
 					} else {
-						// do it the old way
-						Place p = stg.addPlace("init", 1);
-						Place p2 = p;
+						
+						
+						HCTerm up = t
+								.expand(ExpansionType.UP, parser.scale, parser, originalChoiceExp.isSelected());
+						HCTerm down = t.expand(ExpansionType.DOWN, parser.scale,
+								parser, originalChoiceExp.isSelected());
 
-						if (!(up instanceof HCLoopTerm)) p2 = stg.addPlace("finish", 0);
+						if (up != null)
+							s = "UP: " + up.toString() + "\n";
+						else
+							s = "UP: null\n";
 
-						((HCSTGGenerator) up).generateSTGold(stg, parser, p, p2);
-
+						if (down != null)
+							s += "DOWN (ignored in STG): " + down.toString();
+						else
+							s += "DOWN: null";
+						
+						stg = HCInfixOperator.generateComposedSTG(useCartesianProduct.isSelected(), up, parser);
+						
 					}
-					
-					if (enforceInjectiveLabelling.isSelected()) {
-						STGUtil.enforceInjectiveLabelling(stg);
-					}
 
-					if (reduceSTG.isSelected()) {
-						STGInOutParameter componentParameter = new STGInOutParameter(
-								stg);
-						BasicDecomposition deco = new BasicDecomposition(
-								"basic", stg);
-						deco.reduce(componentParameter);
-					}
+					outputText.setText(s);
 
-					frame.addSTG(stg, "generated");
-					frame.setLayout(3);
+				} catch (ParseException e) {
+					String s = outputText.getText();
+					s += "\n" + e.getMessage();
+					e.printStackTrace();
+				} catch (Exception e) {
+					String s = outputText.getText();
+					s += "\n" + e.getMessage();
+					e.printStackTrace();
+				}
+			} else {
+				// try to parse as an STG file
+				try {
+					GParser parser = new GParser(new StringReader(inputText.getText()));
+					stg = parser.STG();
+				} catch (net.strongdesign.stg.parser.ParseException e) {
+					e.printStackTrace();
+				} catch (STGException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+			if (stg!=null) {
+				if (enforceInjectiveLabelling.isSelected()) {
+					STGUtil.enforceInjectiveLabelling(stg);
 				}
 
-				outputText.setText(s);
+				if (reduceSTG.isSelected()) {
+					STGInOutParameter componentParameter = new STGInOutParameter(
+							stg);
+					BasicDecomposition deco = new BasicDecomposition(
+							"basic", stg);
+					
+					try {
+						deco.reduce(componentParameter);
+					} catch (STGException e) {
+						e.printStackTrace();
+					}
+				}
 
-			} catch (ParseException e) {
-				String s = outputText.getText();
-				s += "\n" + e.getMessage();
-				e.printStackTrace();
-			} catch (Exception e) {
-				String s = outputText.getText();
-				s += "\n" + e.getMessage();
-				e.printStackTrace();
+				frame.addSTG(stg, "generated");
+				frame.setLayout(3);
 			}
 
 			setVisible(false);
