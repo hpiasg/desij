@@ -21,6 +21,7 @@ package net.strongdesign.stg.synthesis;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -157,10 +158,18 @@ public class Unfolding {
 					HelperApplications.SECTION_START+tmpUNF.getCanonicalPath()+HelperApplications.SECTION_END + 
 					" " + 
 					HelperApplications.SECTION_START+tmpSTG.getCanonicalPath()+HelperApplications.SECTION_END );
+			
+			OutputStream os = null;
+			OutputStream es = null;
+			
 			if (CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) {
-				StreamGobbler.createGobbler(punf.getInputStream(), "punf", System.out);
-				StreamGobbler.createGobbler(punf.getErrorStream(), "punf", System.err);
+				os = System.out;
+				es = System.err;
 			}
+			
+			StreamGobbler.createGobbler(punf.getInputStream(), "punf", os);
+			StreamGobbler.createGobbler(punf.getErrorStream(), "punf-er", es);
+			
 			punf.waitFor();
 			punf.getErrorStream().close();
 			punf.getInputStream().close();
@@ -172,10 +181,11 @@ public class Unfolding {
 					HelperApplications.SECTION_START+tmpUNF.getCanonicalPath()+HelperApplications.SECTION_END + 
 					" " + 
 					HelperApplications.SECTION_START+tmpCONF.getCanonicalPath()+HelperApplications.SECTION_END );
-			if (CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) {
-				StreamGobbler.createGobbler(mpsat.getInputStream(), "mpsat", System.out);
-				StreamGobbler.createGobbler(mpsat.getErrorStream(), "mpsat", System.err);
-			}
+			
+			
+			StreamGobbler.createGobbler(mpsat.getInputStream(), "mpsat", os);
+			StreamGobbler.createGobbler(mpsat.getErrorStream(), "mpsat-er", es);
+			
 			mpsat.waitFor();
 			mpsat.getErrorStream().close();
 			mpsat.getInputStream().close();

@@ -21,6 +21,7 @@ package net.strongdesign.stg.traversal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
+import net.strongdesign.stg.SharedPlaceSolver;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
@@ -289,6 +291,14 @@ public abstract class ConditionFactory {
 		}
 	}
 	
+	protected static class AllDummy<T extends Transition> extends AbstractCondition<T> {
+		public boolean fulfilled(T transition) {
+			if (transition.getSTG().getSignature(transition.getLabel().getSignal()) != Signature.DUMMY) return false;
+			return true;
+		}
+	}
+	
+	
 	protected static class MarkedPlace<P extends Place> extends AbstractCondition<P> {
 		public boolean fulfilled(P place) {
 			if (place.getChildren().size() != 1
@@ -408,17 +418,6 @@ public abstract class ConditionFactory {
 			// the easy cases
 			// ****************
 			
-			// no children, does not affect firing of any transition -> definitely redundant
-			if (place.getChildren().size() == 0)
-				return true;
-			
-			//is the single parent of a transition -> definitely not redundant
-			boolean singleParent = false;
-			for (Node children : place.getChildren()) {
-				singleParent = singleParent || children.getParents().size() == 1;
-			}
-			
-			if (singleParent) return false;
 			
 			
 			// Is a loop-only place
@@ -434,12 +433,12 @@ public abstract class ConditionFactory {
 				}
 			}
 			
-			
 			for (Node node : place.getChildren()) {
 				for (Node sibbling : node.getParents()) {
 					sibblings.add( (Place) sibbling);
 				}
 			}
+			
 			sibblings.remove(place);
 			
 			
@@ -473,48 +472,54 @@ public abstract class ConditionFactory {
 			}
 			
 			
-			// the primitive case of the shared shortcut place
-			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
-				if (place.getMarking()==0) {
-					Set<Node> parents = new HashSet<Node>();
-					parents.addAll(place.getParents());
-					Set<Node> children= new HashSet<Node>();
-					children.addAll(place.getChildren());
-					
-					Set<Node> test = new HashSet<Node>();
-					test.addAll(parents);
-					test.addAll(children);
-					
-					// if the place does not have self-loops and its parent and child counts are equal,
-					// then it might be a shared shortcut place
-					if (parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
-						
-						for (Node t1: place.getParents()) {
-							if (t1.getChildren().size()!=2) break;
-							if (t1.getChildValue(place)!=1) break;
-							
-							Iterator<Node> it = t1.getChildren().iterator();
-							Place p = (Place) it.next();
-							if (p==place) p = (Place) it.next();
-							
-							// for now only very primitive cases are considered
-							if (p.getMarking()>0) break;
-							
-							if (!MARKED_GRAPH_PLACE.fulfilled(p)) break;
-							
-							Transition t2 = (Transition) p.getChildren().iterator().next();
-							if (place.getChildValue(t2)!=1) break;
-							
-							parents.remove(t1);
-							children.remove(t2);
-						}
-					}
-					
-					// if all parents and children were matched, then it is a redundant place
-					if (parents.size()==0&&children.size()==0) return true;
-				}
-			}
+			// the primitive case of the shared place
+//			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
+//				if (place.getMarking()==0) {
+//					Set<Node> parents = new HashSet<Node>();
+//					parents.addAll(place.getParents());
+//					Set<Node> children= new HashSet<Node>();
+//					children.addAll(place.getChildren());
+//					
+//					Set<Node> test = new HashSet<Node>();
+//					test.addAll(parents);
+//					test.addAll(children);
+//					
+//					// if the place does not have self-loops and its parent and child counts are equal,
+//					// then it might be a shared shortcut place
+//					if (parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
+//						
+//						for (Node t1: place.getParents()) {
+//							if (t1.getChildren().size()!=2) break;
+//							if (t1.getChildValue(place)!=1) break;
+//							
+//							Iterator<Node> it = t1.getChildren().iterator();
+//							Place p = (Place) it.next();
+//							if (p==place) p = (Place) it.next();
+//							
+//							// for now only very primitive cases are considered
+//							if (p.getMarking()>0) break;
+//							
+//							if (!MARKED_GRAPH_PLACE.fulfilled(p)) break;
+//							
+//							Transition t2 = (Transition) p.getChildren().iterator().next();
+//							if (place.getChildValue(t2)!=1) break;
+//							
+//							parents.remove(t1);
+//							children.remove(t2);
+//						}
+//					}
+//					
+//					// if all parents and children were matched, then it is a redundant place
+//					if (parents.size()==0&&children.size()==0) return true;
+//				}
+//			}
 			
+		
+			// shared place optimization
+			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
+				boolean sharedPlace = SharedPlaceSolver.isImplicit(place);
+				if (sharedPlace) return true;
+			}
 			
 			// ******************* 
 			// the advanced cases
@@ -946,10 +951,19 @@ public abstract class ConditionFactory {
 						" -F -d (" + 
 						cl.toString());
 				
+				
+				OutputStream os = null;
+				OutputStream es = null;
+				
 				if (CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) {
-					StreamGobbler.createGobbler(exec.getInputStream(), "safe mpsat", System.out);
-					StreamGobbler.createGobbler(exec.getErrorStream(), "safe mpsat-Error", System.out);
+					os = System.out;
+					es = System.err;
 				}
+				
+				StreamGobbler.createGobbler(exec.getInputStream(), "mpsat", os);
+				StreamGobbler.createGobbler(exec.getErrorStream(), "mpsat-er", es);
+				
+				
 				exec.waitFor();
 				exec.getErrorStream().close();
 				exec.getInputStream().close();
@@ -1840,6 +1854,7 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 	public static final Condition<Node> 		ALL_NODES 				= new All<Node>();
 	public static final Condition<Place> 		ALL_PLACES 				= new All<Place>();
 	public static final Condition<Transition> 	ALL_TRANSITIONS 		= new All<Transition>();
+	public static final Condition<Transition> 	ALL_DUMMY				= new AllDummy<Transition>();
 	
 	public static final Condition<Transition>	LOCAL_TRANSITIONS		= new LocalTransitions<Transition>();
 	

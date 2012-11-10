@@ -47,6 +47,7 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
+import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.AbstractDecomposition;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
@@ -114,7 +115,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction RG = new STGEditorAction(
 			"Create reachability graph", KeyEvent.VK_R, null, 0, this);
 	
-	public final STGEditorAction REDUCE = new STGEditorAction("Reduce Component", 0, null, 0, this);
+	public final STGEditorAction REDUCE_SAFE = new STGEditorAction("Reduce Component (safe)", 0, null, 0, this);
+	public final STGEditorAction REDUCE_UNSAFE = new STGEditorAction("Reduce Component (unsafe)", 0, null, 0, this);
 	
 	public final STGEditorAction DECOMPOSE = new STGEditorAction("Decompose", 0, null, 0, this);
 	public final STGEditorAction DECO_BASIC = new STGEditorAction("Basic", 0, null, 0, this);
@@ -695,10 +697,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 					source == DECO_ICSC_AWARE) {
 				
 				decompose(source);
-			} else if (source == REDUCE) {
-//				 //new DecompositionOptions("Decomposition", currentNode.getSTG(), new
-////						 DesijCommandLineWrapper(new String[]{""})).setVisible(true);
-				 reduce();
+			} else if (source == REDUCE_SAFE) {
+				 reduceSafe();
+			} else if (source == REDUCE_UNSAFE) {
+				 reduceUnsafe();
 			} else if (source == ABOUT) {
 				new STGEditorAbout(this).setVisible(true);
 			}
@@ -810,6 +812,23 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// // return result;
 	// // }
 	//
+	
+	private void reduceSafe() {
+		boolean old_safeness = CLW.instance.SAFE_CONTRACTIONS.isEnabled();
+		CLW.instance.SAFE_CONTRACTIONS.setEnabled(true);
+		// do only safe contractions
+		reduce();
+		
+		CLW.instance.SAFE_CONTRACTIONS.setEnabled(old_safeness);
+	}
+	
+	private void reduceUnsafe() {
+		boolean old_safeness = CLW.instance.SAFE_CONTRACTIONS.isEnabled();
+		// do unsafe contractions
+		CLW.instance.SAFE_CONTRACTIONS.setEnabled(false);
+		reduce();
+		CLW.instance.SAFE_CONTRACTIONS.setEnabled(old_safeness);
+	}
 
 	private void reduce() {
 		

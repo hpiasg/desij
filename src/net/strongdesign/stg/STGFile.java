@@ -180,6 +180,7 @@ public abstract class STGFile {
 	
 	public static String convertToG(STG stg, boolean withSignalNames, boolean implicitPlaces) {
 		
+		
 		boolean implicit = implicitPlaces || CLW.instance.SAVE_ALL_PLACES.isEnabled();
 		
 		
@@ -193,7 +194,7 @@ public abstract class STGFile {
 		
 		//collect all implicit places which have to be made explicit
 		// initial comments
-		result.append(Messages.getString("STGFile.stg_start_comment")+new Date() + "\n"); 
+		result.append(Messages.getString("STGFile.stg_start_comment")+" "+new Date() + "\n"); 
 		result.append("#Number of places: " + stg.getNumberOfPlaces() + "  Number of Transitions: " + stg.getNumberOfTransitions() +"\n\n");
 		
 		Map<Node, String> savedNames = new HashMap<Node, String>();
@@ -204,13 +205,18 @@ public abstract class STGFile {
 		// first, name all transitions
 		
 		for (Transition transition : stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)  ) {
-			Signature sig = stg.getSignature(transition.getIdentifier());
+			Signature sig = stg.getSignature(transition.getLabel().signal);
+			
 			if (sig== Signature.ANY) continue; // this transition type is not supported at the moment
 			
 			if (sig== Signature.DUMMY) {
 				int id=2;
 				String name=transition.getString(0);
-				if (!withSignalNames) name  = signalPrefix;
+				
+				if (!withSignalNames) {
+					name  = signalPrefix+transition.getLabel().signal+"/"+transition.getIdentifier();
+				}
+				
 				if (used.contains(name)) {
 					while (used.contains(name+"/"+id)) {
 						id++;
@@ -223,13 +229,18 @@ public abstract class STGFile {
 			} else {
 				int id=2;
 				String name=transition.getString(0);
-				if (!withSignalNames) name  = signalPrefix + transition.getLabel();
+				
+				if (!withSignalNames) {
+					name  = signalPrefix +transition.getLabel()+"/"+transition.getIdentifier();
+				}
+				
 				if (used.contains(name)) {
 					while (used.contains(name+"/"+id)) {
 						id++;
 					}
 					name=name+"/"+id;
 				}
+				
 				savedNames.put(transition, name);
 				used.add(name);
 			}
@@ -370,7 +381,9 @@ public abstract class STGFile {
 		result.append("\n\n.marking {"); 
 		
 		
-		for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES)  ) 
+		for (Place place : stg.getPlaces(ConditionFactory.ALL_PLACES)  ) {
+			if (!place.hasChildren()) continue;
+			
 			if (place.getMarking()>0) {
 				String marking = place.getMarking()==1?"":"="+place.getMarking();
 				
@@ -385,11 +398,11 @@ public abstract class STGFile {
 				}
 				result.append(marking);
 			}
-		
+		}
 		
 		result.append(" }\n.end\n");
 		
-		if (stg.isWithCoordinates()) {
+		if (withSignalNames&&stg.isWithCoordinates()) {
 			// now save coordinates
 			
 			result.append(" \n.coordinates\n");

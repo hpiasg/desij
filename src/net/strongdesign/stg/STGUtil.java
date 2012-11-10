@@ -23,8 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,11 +50,11 @@ import net.strongdesign.util.StreamGobbler;
 
 
 public abstract class STGUtil {
-//	IMPLEMENT more efficient, maybe calculate once when neccessary and save the result?
+	
+//	IMPLEMENT more efficient, maybe calculate once when necessary and save the result?
 	public static boolean isMarkedGraph(STG stg) {
 		return stg.getPlaces(new NotCondition<Place>(ConditionFactory.MARKED_GRAPH_PLACE) ).isEmpty();
 	}
-
 	
 	/**
 	 * Contracts all dummy transitions of an STG.
@@ -315,17 +318,34 @@ public abstract class STGUtil {
 
 
 
+	static class GreatestPresetFirst implements Comparator<Place> {
+		@Override
+		public int compare(Place p1, Place p2) {
+			int t = p2.getParents().size() - p1.getParents().size();
+			if (t==0) {
+				t = p2.getChildren().size() - p1.getChildren().size();
+			}
+			return t;
+		}
+		
+	}
+	
 	public static Set<Place> removeRedundantPlaces(STG stg, boolean repeat, NodeRemover remover) {
 			Set<Place> result = new HashSet<Place>();
 		
 		Condition<Place> redPlace = ConditionFactory.getRedundantPlaceCondition(stg);
+		
 		boolean found;
 		do {			
 			found = false;
 			int y=stg.getNumberOfPlaces();
 			if (y>100000) throw new DesiJException("The STG has more than 100000 places."); //System.exit(1);			
 			
-			for (Place place : new HashSet<Place>(stg.getPlaces()) ){
+			LinkedList<Place> places = new LinkedList<Place>();
+			places.addAll(stg.getPlaces());
+			Collections.sort(places, new STGUtil.GreatestPresetFirst());
+			
+			for (Place place : places ){
 				if (redPlace.fulfilled(place)) {
 					found = true;
 					remover.removePlace(place);
@@ -333,6 +353,42 @@ public abstract class STGUtil {
 				}
 			}
 		} while (repeat && found);
+		
+		if (CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
+			redPlace = ConditionFactory.getImplicitPlaceCondition(stg);
+			do {
+				found = false;
+				int pl = stg.getPlaces().size(); 
+				int i = 0;
+				
+				LinkedList<Place> places = new LinkedList<Place>();
+				places.addAll(stg.getPlaces());
+				Collections.sort(places, new STGUtil.GreatestPresetFirst());
+				
+				for (Place place : places ){
+					i++;
+					//is the single parent of a post-set transition -> definitely not redundant
+					boolean singleParent = false;
+					for (Node children : place.getChildren()) {
+						singleParent = singleParent || children.getParents().size() == 1;
+					}
+					
+					if (singleParent) continue;
+					
+					System.out.print("LP solver for place "+i+"/"+pl+" pre:post "+place.getParents().size()+":"+place.getChildren().size());
+					
+					if (redPlace.fulfilled(place)) {
+						found = true;
+						remover.removePlace(place);
+						result.add(place);
+						System.out.print("+\n");
+					} else {
+						System.out.print("\n");
+					}
+					
+				}
+			} while (repeat && found);
+		}
 
 		return result;
 	}
@@ -550,6 +606,7 @@ public abstract class STGUtil {
 				Transition t = (Transition)p.getParents().iterator().next();
 				if (!sameTransitions(mt, t))  success=false;
 				if (t.getParents().size()!=1) success=false;
+				if (t.getChildren().size()!=1) success=false;
 				
 				Place pp = (Place)t.getParents().iterator().next();
 				if (pto.contains(pp))   success=false;
@@ -574,6 +631,7 @@ public abstract class STGUtil {
 			for (Place p: pto) {
 				Transition t = (Transition)p.getChildren().iterator().next();
 				if (!sameTransitions(mt, t))   success=false;
+				if (t.getParents().size()!=1) success=false;
 				if (t.getChildren().size()!=1) success=false;
 				
 				Place pp = (Place)t.getChildren().iterator().next();
@@ -662,13 +720,237 @@ public abstract class STGUtil {
 		for (Transition t: enforce) {
 			enforceInjectiveLabelling(stg, t);
 		}
+	}
+	
+	
+	/**
+	 * 
+	 * @param fromp	- place, where the main path starts
+	 * @param top	- place, where the main path ends
+	 * @param p1	- place, where the copied transitions should go   
+	 * @param p2	- the last place of the copied path
+	 */
+	private static void copyPath(STG stg, Place fromp, Place top, Place p1, Place p2) {
+		
+		while (fromp!=top) {
+			Transition ft = (Transition)fromp.getChildren().iterator().next();
+			Transition t = stg.addTransition(ft.getLabel());
+			
+			p1.setChildValue(t, 1);
+			
+			fromp = (Place)ft.getChildren().iterator().next();
+			
+			if (fromp!=top) {
+				
+				Place np = stg.addPlace("p", 0);
+				
+				t.setChildValue(np, 1);
+				p1 = np;
+			} else {
+				
+				t.setChildValue(p2, 1);
+				p1=p2;
+			}
+			
+			
+		}
+	}
+	
+	/**
+	 * Function produces new transitions 
+	 * @param stg - the stg to work on
+	 */
+	public static void relaxInjectiveLabelling(STG stg) {
+		
+		Collection<Place> places = new HashSet<Place>();
+		places.addAll(stg.getPlaces());
+		
+		// do the optimisation that is opposite to enforcing injective labelling
+		for (Place place: places) {
+			
+			// the primitive case of the shared path optimisation
+			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
+				Place place2 = place;
+				
+				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
+					
+					boolean failed = false;
+					
+					while (place2.getChildren().size()==1) {
+						
+						if (place2.getMarking()>0) failed=true;
+						
+						Transition t = (Transition)place2.getChildren().iterator().next();
+						
+						
+						if (t.getParents().size()!=1||t.getChildren().size()!=1) {
+							failed=true;
+							break;
+						} else {
+							Place np = (Place)t.getChildren().iterator().next();
+							// do not allow self-loop transitions
+							if (np!=place2)
+								place2 = (Place)t.getChildren().iterator().next();
+							else
+								failed=true;
+						}
+					}
+					
+					Set<Node> parents  = new HashSet<Node>();
+					parents.addAll(place.getParents());
+					
+					Set<Node> children = new HashSet<Node>();
+					children.addAll(place2.getChildren());
+					
+					Set<Node> test = new HashSet<Node>();
+					test.addAll(parents);
+					test.addAll(children);
+					
+					Map<Transition, Place> tp = new HashMap<Transition, Place>();
+					Map<Place, Transition> pt = new HashMap<Place, Transition>();
+					
+					// check pre-sets and post-sets to have the same number of elements and check these sets do not intersect 
+					if (!failed&&parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
+						
+						for (Node t1: place.getParents()) {
+							if (t1.getChildren().size()!=2) break;
+							if (t1.getChildValue(place)!=1) break;
+							
+							Iterator<Node> it = t1.getChildren().iterator();
+							Place p = (Place) it.next();
+							if (p==place) p = (Place) it.next();
+							
+							// for now only very primitive cases are considered
+							if (p.getMarking()>0) break;
+							
+							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) break;
+							
+							Transition t2 = (Transition) p.getChildren().iterator().next();
+							if (place2.getChildValue(t2)!=1) break;
+							
+							
+							if (parents.contains(t1)&&children.contains(t2)) {
+								tp.put((Transition)t1,p);
+								pt.put(p, t2);
+								
+								parents.remove(t1);
+								children.remove(t2);
+							} else failed=true;
+						}
+					}
+					
+					
+					if (!failed&&parents.size()==0&&children.size()==0) {
+						// 
+						for (Entry<Transition, Place> e: tp.entrySet()) {
+							Transition t1 = e.getKey();
+							Transition t2 = pt.get(e.getValue());
+							
+							if (stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY||
+								stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY) {
+								
+								if (place.getParents().size()>1) {
+									
+									Place p1 = stg.addPlace("p", 0);
+									Place p2 = stg.addPlace("p", 0);
+									
+									t1.setChildValue(p1, 1);
+									p2.setChildValue(t2, 1);
+									t1.setChildValue(place, 0);
+									place2.setChildValue(t2, 0);
+									
+									copyPath(stg, place, place2, p1, p2);
+									
+								}
+								
+								stg.removePlace(e.getValue());
+							}
+						}
+					}
+				}
+			}
+			
+		}
+		
 		
 	}
 
+	
+	
+	private static void collectNodes(Node node, int depth, Set<Node> collector) {
+		if (depth==0) return;
+		
+		for (Node n: node.getParents()) {
+			collector.add(n);
+			collectNodes(n, depth-1, collector); 
+		}
+		
+		for (Node n: node.getChildren()) {
+			collector.add(n);
+			collectNodes(n, depth-1, collector); 
+		}
+	}
+			 
+	/**
+	 * Returns an STG showing structure surrounding a given node up to a given depth
+	 * @param stg
+	 * @param node
+	 * @param depth
+	 * @return new stg
+	 */
+	public static STG getNodeSurrounding(STG old_stg, Node node, int depth) {
+		
+		STG stg = new STG();
+		
+		// collect all nodes that are to be copied
+		Set<Node> toCopy = new HashSet<Node>();
+		toCopy.add(node);
+		collectNodes(node, depth, toCopy);
+		
+		// produce the new stg with nodes from the collection
+		Map<Node,Node> newNodes = new HashMap<Node,Node>();
+		
+		for (Node n: toCopy) {
+			if (n instanceof Transition) {
+				// its a transition
+				Transition t = (Transition)n;
+				
+				// create the copied transition
+				String name = old_stg.getSignalName(t.getLabel().getSignal());
+				
+				Integer newNum = stg.getSignalNumber(name); // get or create the signal
+				
+				Signature s = old_stg.getSignature(t.getLabel().getSignal());
+				stg.setSignature(newNum, s);
+				
+				SignalEdge se = new SignalEdge(newNum, t.getLabel().getDirection());
+				
+				Transition newTransition = stg.addTransition(se, t.getIdentifier());
+				
+				newNodes.put(t, newTransition);
+				
+			} else {
+				// its a place
+				Place p = (Place)n;
+				Place np = stg.addPlace(p.getLabel(), p.getMarking());
+				newNodes.put(p, np);
+			}
+		}
+		
+		// produce same connections
+		for (Node n1: toCopy) {
+			for (Node n2: n1.getChildren()) {
+				if (n1==n2) continue;
+				newNodes.get(n1).setChildValue(newNodes.get(n2), n1.getChildValue(n2));
+			}
+		}
+		
+		return stg;
+	}
+	
 	/**
 	 * This function merges two STGs (same as the standard parallel composition),
 	 * but it only works with signals of the same signature
-	 * @return
 	 */
 	public static STG synchronousProduct(STG stg1, STG stg2, boolean removeRedPlaces) {
 		
@@ -877,7 +1159,8 @@ public abstract class STGUtil {
 		return returnValue;
 	}
 	
-	/*
+	
+	/**
 	 * 1. creates the Cartesian product of the given two sets of places,
 	 * 2. creates appropriate transition arcs
 	 * 3. sets appropriate token counts

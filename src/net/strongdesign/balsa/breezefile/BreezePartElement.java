@@ -27,6 +27,11 @@ public class BreezePartElement extends AbstractBreezeElement implements NamedBre
 		it.next();
 		
 		this.name = (String)it.next();
+		if (name.startsWith("\"")) {
+			this.name = this.name.split("\"")[1];
+		}
+		
+		
 		while (it.hasNext()) {
 			Object cur = it.next();
 			String symb = BreezeElementFactory.symbolOf(cur);
@@ -54,7 +59,7 @@ public class BreezePartElement extends AbstractBreezeElement implements NamedBre
 	
 	@Override
 	public void output() {
-		System.out.printf("(breeze-part "+name);
+		System.out.printf("(breeze-part \""+name+"\"");
 		super.output(ports, 2, false, 2);
 		
 		super.output(attributes, 2, false, 1);

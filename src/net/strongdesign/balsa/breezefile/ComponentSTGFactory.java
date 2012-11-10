@@ -1,13 +1,36 @@
+/**
+ * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ *
+ * This file is part of DesiJ.
+ * 
+ * DesiJ is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DesiJ is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package net.strongdesign.balsa.breezefile;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.StringReader;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
@@ -35,7 +58,7 @@ public class ComponentSTGFactory {
 	
 //	static public HashMap<String, String> componentMap;
 	
-	//  -G operation=breeze C:\RA\Documents\presentation\wc2\BalsaPlugin\bin\org\workcraft\testing\parsers\breeze\data\HU.breeze
+	//  -G operation=breeze C:\workspace\breeze\Viterbi\HU.breeze
 	@SuppressWarnings("unchecked")
 	static public int getScale(LinkedList<Object> channels) {
 		if (channels==null) return 4;
@@ -51,6 +74,31 @@ public class ComponentSTGFactory {
 		return ret;
 	}
 	
+	public static STG getSTGFromExpression(String expression, int scale) {
+		HCExpressionParser parser = new HCExpressionParser(new StringReader(expression));
+		STG stg = null;
+		
+		try {
+			HCTerm t = parser.HCParser();
+			
+            if (t==null) {
+            	return null;
+            } else {
+    			HCTerm up   = t.expand(ExpansionType.UP, scale, parser, false);
+    			
+    			stg = HCInfixOperator.generateComposedSTG(true, up, parser);
+    		}
+			
+		} catch (ParseException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return stg;
+		
+	}
+	
 	
 	static public STG createSTGComponent(String compName, LinkedList<Object> parameters, LinkedList<Object> channels) {
 		if (compName.startsWith("\"")) compName = compName.split("\"")[1];
@@ -63,39 +111,10 @@ public class ComponentSTGFactory {
 		
 		STG stg = null;
 		
-		if (expression.startsWith(".")) {
-			
-			// consider the input to be an STG in .g format
-			try {
-				GParser parser = new GParser(new StringReader(expression));
-				stg = parser.STG();
-			} catch (net.strongdesign.stg.parser.ParseException e) {
-				e.printStackTrace();
-			} catch (STGException e) {
-				e.printStackTrace();
-			}
-			
+		if (expression.startsWith("$")) {
+			stg = ComponentSTGInternalImplementations.getInternalImplementation(expression, scale);
 		} else {
-			
-			HCExpressionParser parser = new HCExpressionParser(new StringReader(expression));
-			stg = null;
-			
-			try {
-				HCTerm t = parser.HCParser();
-				
-	            if (t==null) {
-	            	return null;
-	            } else {
-	    			HCTerm up   = t.expand(ExpansionType.UP, scale, parser, false);
-	    			
-	    			stg = HCInfixOperator.generateComposedSTG(true, up, parser);
-	    		}
-				
-			} catch (ParseException e) {
-				e.printStackTrace();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			stg = getSTGFromExpression(expression, scale);
 		}
 		
 		if (stg==null) return null;
@@ -149,8 +168,6 @@ public class ComponentSTGFactory {
 		
 	}
 
-	
-	
 	static public STG parallelComposition(LinkedList <STG> stgs, LinkedList<String> names) {
 		// using the external pcomp tool
 		
@@ -159,7 +176,11 @@ public class ComponentSTGFactory {
 			int len = stgs.size();
 			File in[] = new File[len];
 			String files[] = new String[len];
-			String fnames="";
+			
+//			String fnames="";
+			
+			File fnames = File.createTempFile("fnames", ".txt");
+			FileWriter fw = new FileWriter(fnames);
 			
 			// for all selected nodes create temporary files and save corresponding STGs  
 			for (int i=0;i<len;i++) {
@@ -170,17 +191,22 @@ public class ComponentSTGFactory {
 				}
 				
 				files[i]=in[i].getAbsolutePath();
-				if (i>0) fnames+=" ";
-				fnames+=files[i];
+				
+				fw.write(files[i]+"\n");
 			}
+			
+			fw.flush();
+			fw.close();
 			
 			for (int i=0;i<len;i++) {
 				FileSupport.saveToDisk(STGFile.convertToG(stgs.get(i)), files[i]);
 			}
 			
 			String options=" -d ";
+			
 			if (CLW.instance.OPTIMIZED_PCOMP.isEnabled()) options+="-p ";
-			Process pcomp = HelperApplications.startExternalTool(HelperApplications.PCOMP, options+fnames);
+			
+			Process pcomp = HelperApplications.startExternalTool(HelperApplications.PCOMP, options+" @"+fnames.getAbsolutePath());
 			
 			
 			BufferedReader bin = new BufferedReader(new InputStreamReader(pcomp.getInputStream()));
@@ -189,7 +215,12 @@ public class ComponentSTGFactory {
 			pcomp.getOutputStream().flush();
 			pcomp.getOutputStream().close();
 			
-			StreamGobbler.createGobbler(pcomp.getErrorStream(), "pcomp", System.err);
+			
+			OutputStream er = System.err;
+			
+			if (!CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) er = null;
+			
+			StreamGobbler.createGobbler(pcomp.getErrorStream(), "pcomp-er", er);
 			
 			STG stg = null;
 			
@@ -212,6 +243,8 @@ public class ComponentSTGFactory {
 				(new File(files[i])).delete();
 			}
 			
+			fnames.delete();
+			
 			return stg;
 		
 		} catch (InterruptedException e) {
@@ -223,7 +256,8 @@ public class ComponentSTGFactory {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static STG breeze2stg() throws Exception {
+	public static Map<String, STG> breeze2stg() throws Exception {
+		Map<String, STG> ret = new HashMap<String, STG>();
 		
 		for (String fileName : CLW.instance.getOtherParameters()) {
 			
@@ -235,6 +269,8 @@ public class ComponentSTGFactory {
 				AbstractBreezeElement ae = BreezeElementFactory.baseElement(item);
 				// Go through all the breeze part elements, find all the component STGs 
 				if (ae instanceof BreezePartElement) {
+					BreezePartElement  bp = (BreezePartElement)ae;
+					String bpname = bp.getName();
 					
 					STG mainSTG = null;
 					TreeMap<Integer, BreezeComponentElement> tm = ((BreezePartElement)ae).getComponentList().getComponents();
@@ -260,12 +296,12 @@ public class ComponentSTGFactory {
 					}
 					
 					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
-					return mainSTG;
+					ret.put(bpname, mainSTG);
 				}
 			}
 			
 		}
-		return null;
+		return ret;
 	}
 	
 }

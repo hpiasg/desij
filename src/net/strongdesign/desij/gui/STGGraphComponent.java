@@ -81,26 +81,37 @@ public class STGGraphComponent extends mxGraphComponent {
 		
 		public JMenuItem injectiveLabelling = new JMenuItem("Apply injective labelling"); 
 		
+		public JMenuItem showSurrounding = new JMenuItem("Show node surrounding"); 
 		
-		public List<Transition> toProcess = new LinkedList<Transition>();
 		
-		public STGGraphComponentPopupMenu(STGGraphComponent component) {
+		public List<Transition> transitionsToProcess = new LinkedList<Transition>();
+		public List<Node> nodesToProcess = new LinkedList<Node>();
+		
+		public STGGraphComponentPopupMenu(STGGraphComponent component, boolean transitions) {
 			super();
 			this.component = component;
 			
-			add(contractTransition);
-			add(makeSignalDummy);
-			add(fireTransition);
-			add(unFireTransition);
-			add(renameSignal);
-			add(injectiveLabelling);
 			
-			contractTransition.addActionListener(this);
-			makeSignalDummy.addActionListener(this);
-			fireTransition.addActionListener(this);
-			unFireTransition.addActionListener(this);
-			renameSignal.addActionListener(this);
-			injectiveLabelling.addActionListener(this);
+			// actions only available for transitions
+			if (transitions) {
+				add(contractTransition);
+				add(makeSignalDummy);
+				add(fireTransition);
+				add(unFireTransition);
+				add(renameSignal);
+				add(injectiveLabelling);
+				
+				contractTransition.addActionListener(this);
+				makeSignalDummy.addActionListener(this);
+				fireTransition.addActionListener(this);
+				unFireTransition.addActionListener(this);
+				renameSignal.addActionListener(this);
+				injectiveLabelling.addActionListener(this);
+			}
+			
+			// actions for all nodes
+			add(showSurrounding);
+			showSurrounding.addActionListener(this);
 		}
 
 		@Override
@@ -109,7 +120,7 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (e.getSource()==injectiveLabelling) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
-				STGUtil.enforceInjectiveLabelling(component.activeSTG, toProcess.get(0));
+				STGUtil.enforceInjectiveLabelling(component.activeSTG, transitionsToProcess.get(0));
 				
 				component.initSTG(activeSTG, component.frame.isShorthand());
 				component.frame.refreshSTGInfo();
@@ -121,7 +132,7 @@ public class STGGraphComponent extends mxGraphComponent {
 				try {
 					
 					BasicDecomposition deco = new BasicDecomposition("basic", activeSTG);
-					deco.contract(activeSTG, toProcess);
+					deco.contract(activeSTG, transitionsToProcess);
 					
 				} catch (Exception ex) {
 					ex.printStackTrace();
@@ -134,7 +145,7 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (e.getSource()==makeSignalDummy) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
-				Transition t = toProcess.get(0);
+				Transition t = transitionsToProcess.get(0);
 				component.activeSTG.setSignature(t.getLabel().getSignal(), Signature.DUMMY);
 				
 				component.initSTG(activeSTG, component.frame.isShorthand());
@@ -144,7 +155,7 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (e.getSource()==fireTransition) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
-				Transition t = toProcess.get(0);
+				Transition t = transitionsToProcess.get(0);
 				component.activeSTG.fireTransition(t);
 				
 				component.initSTG(activeSTG, component.frame.isShorthand());
@@ -153,18 +164,17 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (e.getSource()==unFireTransition) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
-				Transition t = toProcess.get(0);
+				Transition t = transitionsToProcess.get(0);
 				component.activeSTG.unFireTransition(t);
 				
 				component.initSTG(activeSTG, component.frame.isShorthand());
 			}
 			
-			
 			if (e.getSource()==renameSignal) {
 				
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
-				Transition t = toProcess.get(0);
+				Transition t = transitionsToProcess.get(0);
 				String oldName = activeSTG.getSignalName(t.getLabel().getSignal());
 				
 				String newName = JOptionPane.showInputDialog(null, "Change signal name: ", oldName);
@@ -184,6 +194,22 @@ public class STGGraphComponent extends mxGraphComponent {
 				component.initSTG(activeSTG, component.frame.isShorthand());
 			}
 			
+			if (e.getSource()==showSurrounding) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				Node n = nodesToProcess.get(0);
+				
+				for (int i=2;i<7;i++) {
+					STG stg = STGUtil.getNodeSurrounding(n.getSTG(), n, i);
+					
+					String s="surrounding";
+					if (n instanceof Transition) s=((Transition)n).getString(Node.UNIQUE);
+					if (n instanceof Place) s=((Place)n).getString(Node.UNIQUE);
+					
+					component.frame.addSTG(stg, "surrounding for "+s);
+					component.setLayout(7);
+				}
+			}
 		}
 	}
 	
@@ -197,14 +223,29 @@ public class STGGraphComponent extends mxGraphComponent {
 			
 			Point pt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
 			
-			STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this);
+			STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, true);
 			
-			menu.toProcess.add(t);
+			menu.transitionsToProcess.add(t);
+			menu.nodesToProcess.add(t);
 			
 			
 			menu.show(this, pt.x, pt.y);
 
 			e.consume();
+		} else {
+			PlaceCell pc = (PlaceCell)getGraph().getSelectionCell();
+			Place p = (Place)cell2Node.get(pc);
+			
+			Point pt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
+			
+			STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, false);
+			
+			menu.nodesToProcess.add(p);
+			
+			menu.show(this, pt.x, pt.y);
+
+			e.consume();
+			
 		}
 	}
 	

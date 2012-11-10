@@ -25,6 +25,15 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.LinkedList;
 
 import javax.swing.JPopupMenu;
@@ -36,8 +45,23 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
+import net.strongdesign.desij.CLW;
+import net.strongdesign.desij.DesiJException;
+import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.STGInOutParameter;
+import net.strongdesign.stg.Node;
+import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCoordinates;
+import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.STGUtil;
+import net.strongdesign.stg.Transition;
+import net.strongdesign.stg.traversal.ConditionFactory;
+import net.strongdesign.util.FileSupport;
+import net.strongdesign.util.HelperApplications;
+import net.strongdesign.util.Pair;
+import net.strongdesign.util.StreamGobbler;
 
 //import org.jgraph.JGraph;
 //import org.jgraph.event.GraphSelectionEvent;
@@ -62,6 +86,11 @@ public class STGEditorNavigation extends JTree implements
 	public final STGEditorAction DELETE_SELECTED = new STGEditorAction("Delete selected nodes", 0 , null, 0, this);
 	public final STGEditorAction PARALLEL_COMPOSITION = new STGEditorAction("Parallel composition", 0 , null, 0, this);
 	public final STGEditorAction SYNCHRONOUS_PRODUCT = new STGEditorAction("Synchronous product (same signature on both STGs)", 0 , null, 0, this);
+	public final STGEditorAction DUMMY_SURROUNDING = new STGEditorAction("Show surrounding for each dummy", 0 , null, 0, this);
+
+	public final STGEditorAction PETRIFY = new STGEditorAction("Process STG with Petrify", 0 , null, 0, this);
+	
+	public final STGEditorAction RELAX_INJECTIVE = new STGEditorAction("Relax injective labelling", 0 , null, 0, this);
 	
 	/**
 	 * 
@@ -278,6 +307,76 @@ public class STGEditorNavigation extends JTree implements
 		if (source == PARALLEL_COMPOSITION) parallelComposition();
 		
 		if (source == SYNCHRONOUS_PRODUCT) synchronousProduct();
+		
+		if (source == DUMMY_SURROUNDING) dummySurrounding();
+		
+		if (source == PETRIFY) usePetrify();
+		
+		if (source == RELAX_INJECTIVE) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			STG stg = stgin.clone();
+			
+			STGUtil.relaxInjectiveLabelling(stg);
+			frame.addSTG(stg, "Relaxed");
+			
+		}
+	}
+	
+	public void usePetrify() {
+		
+		TreePath path = getSelectionPaths()[0]; 
+		STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+		STG stgin = node.getSTG();
+		
+		try {
+			
+			Process petrify = HelperApplications.startExternalTool(HelperApplications.PETRIFY,"");
+			
+			OutputStreamWriter osw = new OutputStreamWriter(petrify.getOutputStream());
+			
+			osw.write(STGFile.convertToG(stgin));
+			osw.flush();
+			osw.close();
+			
+			BufferedReader bin = new BufferedReader(new InputStreamReader(petrify.getInputStream()));
+			
+			OutputStream er = System.err;
+			if (!CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) er = null;
+			
+			StreamGobbler.createGobbler(petrify.getErrorStream(), "petrify-er", er);
+			
+			STG stg = null;
+			
+			try {
+				stg= STGFile.readerToSTG(bin);
+				
+			} catch (STGException e) {
+				e.printStackTrace();
+			} catch (net.strongdesign.stg.parser.ParseException e) {
+				e.printStackTrace();
+			}
+			
+			petrify.waitFor();
+			petrify.getErrorStream().close();
+			petrify.getInputStream().close();
+			
+			if (stg!=null) {
+				frame.addSTG(stg, "Petrified");
+				frame.setLayout(7);
+			}
+			
+		}
+		catch (InterruptedException e) {
+			throw new DesiJException("Error involving petrify:  " + e.getMessage());
+		} catch (IOException e) {
+			throw new DesiJException("Error involving petrify: " + e.getMessage());
+		}
+		
+		
 	}
 
 	public void parallelComposition() {
@@ -295,6 +394,31 @@ public class STGEditorNavigation extends JTree implements
 		
 		if (stg!=null) {
 			frame.addSTG(stg, "Composed");
+		}
+		
+	}
+	
+	public void dummySurrounding() {
+		
+		
+		TreePath path = getSelectionPaths()[0];
+		STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+	
+		STG stg = node.getSTG().clone();
+		STGInOutParameter componentParameter = new STGInOutParameter(stg);
+		
+		try {
+			
+			BasicDecomposition deco = new BasicDecomposition("basic", stg);
+			deco.reduce(componentParameter);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		for (Transition t: stg.getTransitions(ConditionFactory.ALL_DUMMY)) {
+			STG sur = STGUtil.getNodeSurrounding(stg, t, 4);
+			frame.addSTG(sur, "surrounding for "+t.getString(Node.UNIQUE));
+			//frame.setLayout(7);
 		}
 		
 	}

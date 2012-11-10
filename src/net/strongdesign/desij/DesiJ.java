@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
@@ -307,11 +308,11 @@ public class DesiJ {
 
 	private static void breeze() throws Exception {
 		
-		STG stg = ComponentSTGFactory.breeze2stg();
-		if (CLW.instance.OUTFILE.getValue().equals("")) {
-			System.out.print(STGFile.convertToG(stg));
-		} else {
-			FileSupport.saveToDisk(STGFile.convertToG(stg),CLW.instance.OUTFILE.getValue() );
+		for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
+			String fname = e.getKey()+".g";
+			STG stg = e.getValue();
+			
+			FileSupport.saveToDisk(STGFile.convertToG(stg),fname);
 		}
 		
 	} 
@@ -616,13 +617,13 @@ public class DesiJ {
 		//load breeze
 		if (CLW.instance.OPERATION.getValue().equals("breeze")) {
 			
-			STG stg;
 			try {
-				stg = ComponentSTGFactory.breeze2stg();
 				
-				String str = "Generated breeze";
-				
-				frame.addSTG(stg, str);
+				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
+					String fname = e.getKey();
+					STG stg = e.getValue();
+					frame.addSTG(stg, fname);
+				}
 				
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block

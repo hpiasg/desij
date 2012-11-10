@@ -78,7 +78,7 @@ public class CLW extends CommandLineWrapper {
 
 	//	 *******************************************************************
 	
-	@Help("Show punf/mpsat output")
+	@Help("Show pcomp/punf/mpsat output")
 	public  CommandLineOption PUNF_MPSAT_GOBBLE = 
 		new CommandLineOption('m', "punf-mpsat-output", false);
 	
@@ -265,24 +265,6 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineOption SAFE_CONTRACTIONS_UNFOLDING =
 		new CommandLineOption('x', "safe-contractions-unfolding", false);
 	
-	
-	// *******************************************************************
-	
-	@Help("Use shared shortcut place optimization")
-	public CommandLineOption SHARED_SHORTCUT_PLACE =
-		new CommandLineOption('B', "shared-shortcut-place", true);
-	
-	// *******************************************************************
-	
-	@Help("Enforce injective labelling, when generating breeze components")
-	public CommandLineOption ENFORCE_INJECTIVE_LABELLING =
-		new CommandLineOption('j', "injective-labelling", false);
-	
-	// *******************************************************************
-	
-	@Help("Use optimized parallel composition")
-	public CommandLineOption OPTIMIZED_PCOMP =
-		new CommandLineOption('M', "optimized-pcomp", true);
 	
 	// *******************************************************************
 	
@@ -502,6 +484,30 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineOption NOILP = 
 		new CommandLineOption('Q', "noilp", true);
 	
+	
+	// *******************************************************************
+	
+	@Help("Use shared place optimization")
+	public CommandLineOption SHARED_SHORTCUT_PLACE =
+		new CommandLineOption('B', "shared-place-optimization", true);
+	
+	// *******************************************************************
+	
+	@Help("Enforce injective labelling, when generating breeze components")
+	public CommandLineOption ENFORCE_INJECTIVE_LABELLING =
+		new CommandLineOption('j', "injective-labelling", true);
+	
+	// *******************************************************************
+	
+	@Help("Use optimized parallel composition for breeze files")
+	public CommandLineOption OPTIMIZED_PCOMP =
+		new CommandLineOption('M', "optimized-pcomp", true);
+	
+	// *******************************************************************
+	
+	@Help("Use LP solver to find implicit places")
+	public CommandLineOption USE_LP_SOLVE_FOR_IMPLICIT_PLACES =
+		new CommandLineOption('t', "lp-solver", false);
 	
 	// *******************************************************************
 	// Input / Output options

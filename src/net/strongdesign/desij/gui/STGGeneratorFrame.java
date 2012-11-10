@@ -40,6 +40,8 @@ import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 
 import net.strongdesign.balsa.breezefile.ComponentSTGExpressions;
+import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
+import net.strongdesign.balsa.breezefile.ComponentSTGInternalImplementations;
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
 import net.strongdesign.balsa.hcexpressionparser.ParseException;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator;
@@ -194,10 +196,10 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		}
 		
 		String input = inputText.getText();
-		boolean dotGInput = input.startsWith(".");
+		boolean internalImplementation = input.startsWith("$");
 
 		//
-		if (source == expandButton && ! dotGInput) {
+		if (source == expandButton && !internalImplementation) {
 
 			// launch the parser routine
 			HCExpressionParser parser = new HCExpressionParser(
@@ -244,7 +246,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 			
 			STG stg = null;
 			
-			if (!dotGInput) {
+			if (!internalImplementation) {
 				
 				// launch the parser routine
 				HCExpressionParser parser = new HCExpressionParser(
@@ -292,15 +294,9 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 					e.printStackTrace();
 				}
 			} else {
-				// try to parse as an STG file
-				try {
-					GParser parser = new GParser(new StringReader(inputText.getText()));
-					stg = parser.STG();
-				} catch (net.strongdesign.stg.parser.ParseException e) {
-					e.printStackTrace();
-				} catch (STGException e) {
-					e.printStackTrace();
-				}
+				
+				// create STG from the internal implementation
+				stg = ComponentSTGInternalImplementations.getInternalImplementation(inputText.getText(), 0);
 				
 			}
 			
@@ -325,7 +321,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 				frame.addSTG(stg, "generated");
 				frame.setLayout(3);
 			}
-
+			
 			setVisible(false);
 		}
 

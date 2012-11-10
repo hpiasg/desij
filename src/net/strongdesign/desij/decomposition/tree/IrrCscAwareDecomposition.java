@@ -690,10 +690,14 @@ public class IrrCscAwareDecomposition extends AbstractTreeDecomposition {
 					HelperApplications.SECTION_START+tmpUNF.getCanonicalPath()+HelperApplications.SECTION_END + 
 					" " + 
 					HelperApplications.SECTION_START+tmpSTG.getCanonicalPath()+HelperApplications.SECTION_END );
+			
+			
+			
 			if (CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) {
 				StreamGobbler.createGobbler(punf.getInputStream(), "punf", System.out);
 				StreamGobbler.createGobbler(punf.getErrorStream(), "punf", System.err);
 			}
+			
 			punf.waitFor();
 			punf.getErrorStream().close();
 			punf.getInputStream().close();
