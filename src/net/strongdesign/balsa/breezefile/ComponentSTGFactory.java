@@ -100,7 +100,7 @@ public class ComponentSTGFactory {
 	}
 	
 	
-	static public STG createSTGComponent(String compName, LinkedList<Object> parameters, LinkedList<Object> channels) {
+	static public STG createSTGComponent(String compName, int compID, LinkedList<Object> parameters, LinkedList<Object> channels) {
 		if (compName.startsWith("\"")) compName = compName.split("\"")[1];
 		
 		int scale = ComponentSTGFactory.getScale(channels);
@@ -123,7 +123,7 @@ public class ComponentSTGFactory {
 		
 		TreeMap<String, String> renaming = new TreeMap<String, String>();
 		
-		// do the renaming to the actual channel names
+		// do the renaming to the channel names
 		byte cnt=0;
 		for (Object o : channels) {
 			if ( o instanceof LinkedList<?>) {
@@ -137,22 +137,28 @@ public class ComponentSTGFactory {
 					String aFrom = ("a"+(char)('A'+cnt));
 					if (i>0) aFrom += i;
 					
-					String input = ("i"+(char)('A'+cnt));
+					String input = (""+(char)('A'+cnt));
 					if (i>0) input += i;
-					String output = ("o"+(char)('A'+cnt));
+					String output = (""+(char)('A'+cnt));
 					if (i>0) output += i;
+					
+					String internal = (""+(char)('A'+cnt));
+					if (i>0) internal += i;
 					
 					renaming.put(rFrom, "r"+cl.get(i));
 					renaming.put(aFrom, "a"+cl.get(i));
-					renaming.put(input, "i"+cl.get(i));
-					renaming.put(output, "o"+cl.get(i));
+					renaming.put("i"+input, "i"+compID+input);
+					renaming.put("o"+output, "o"+compID+output);
+					renaming.put("c"+internal, "c"+compID+internal);
 				}
+				
 			} else if (o instanceof Integer) {
 				// rename non-scalable channel
 				renaming.put("r"+(char)('A'+cnt), "r"+(Integer)o);
 				renaming.put("a"+(char)('A'+cnt), "a"+(Integer)o);
-				renaming.put("i"+(char)('A'+cnt), "i"+(Integer)o);
-				renaming.put("o"+(char)('A'+cnt), "o"+(Integer)o);
+				renaming.put("i"+(char)('A'+cnt), "i"+compID+(char)('A'+cnt));
+				renaming.put("o"+(char)('A'+cnt), "o"+compID+(char)('A'+cnt));
+				renaming.put("c"+(char)('A'+cnt), "c"+compID+(char)('A'+cnt));
 			}
 			cnt++;
 		}
@@ -255,52 +261,61 @@ public class ComponentSTGFactory {
 		
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static Map<String, STG> breeze2stg() throws Exception {
 		Map<String, STG> ret = new HashMap<String, STG>();
 		
 		for (String fileName : CLW.instance.getOtherParameters()) {
-			
-			FileReader file = new FileReader(fileName);
-			
-			BreezeParser parser = new BreezeParser(file);
-			
-			for (Object item: (LinkedList<Object>)parser.ParseBreezeNet()) {
-				AbstractBreezeElement ae = BreezeElementFactory.baseElement(item);
-				// Go through all the breeze part elements, find all the component STGs 
-				if (ae instanceof BreezePartElement) {
-					BreezePartElement  bp = (BreezePartElement)ae;
-					String bpname = bp.getName();
-					
-					STG mainSTG = null;
-					TreeMap<Integer, BreezeComponentElement> tm = ((BreezePartElement)ae).getComponentList().getComponents();
-					
-					LinkedList <STG> stgs = new LinkedList<STG>();
-					LinkedList <String> names = new LinkedList<String>();
-					
-					for (Entry <Integer, BreezeComponentElement> e : tm.entrySet()) {
-						
-						BreezeComponentElement be = e.getValue();
-						STG stg = ComponentSTGFactory.createSTGComponent(e.getValue().getName(), be.parameters, be.channels);
-						if(stg!=null) {
-							stgs.add(stg);
-							String name = e.getValue().getName();
-							name=name.replaceAll("[\"$]", "");
-							names.add(name);
-						} else {
-							if (! CLW.instance.SILENT.isEnabled()) {
-								System.out.print("Component "+e.getValue().getName()+" not found\n");
-							}
-							
-						}
-					}
-					
-					mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
-					ret.put(bpname, mainSTG);
-				}
-			}
-			
+			ret.putAll(breeze2stg(fileName));
 		}
+		
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String, STG> breeze2stg(String fileName) throws Exception {
+		Map<String, STG> ret = new HashMap<String, STG>();
+		
+			
+		FileReader file = new FileReader(fileName);
+		
+		BreezeParser parser = new BreezeParser(file);
+		
+		for (Object item: (LinkedList<Object>)parser.ParseBreezeNet()) {
+			AbstractBreezeElement ae = BreezeElementFactory.baseElement(item);
+			// Go through all the breeze part elements, find all the component STGs 
+			if (ae instanceof BreezePartElement) {
+				BreezePartElement  bp = (BreezePartElement)ae;
+				String bpname = bp.getName();
+				
+				STG mainSTG = null;
+				TreeMap<Integer, BreezeComponentElement> tm = ((BreezePartElement)ae).getComponentList().getComponents();
+				
+				LinkedList <STG> stgs = new LinkedList<STG>();
+				LinkedList <String> names = new LinkedList<String>();
+				
+				for (Entry <Integer, BreezeComponentElement> e : tm.entrySet()) {
+					
+					BreezeComponentElement be = e.getValue();
+					STG stg = ComponentSTGFactory.createSTGComponent(e.getValue().getName(), e.getValue().getID(), be.parameters, be.channels);
+					if(stg!=null) {
+						stgs.add(stg);
+						String name = e.getValue().getName();
+						name=name.replaceAll("[\"$]", "");
+						names.add(name);
+					} else {
+						if (! CLW.instance.SILENT.isEnabled()) {
+							System.out.print("Component "+e.getValue().getName()+" not found\n");
+						}
+						
+					}
+				}
+				
+				mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
+				ret.put(bpname, mainSTG);
+			}
+		}
+			
+		
 		return ret;
 	}
 	

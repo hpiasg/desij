@@ -35,6 +35,8 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 		add(listener.DUMMY_SURROUNDING);
 		add(listener.PETRIFY);
 		add(listener.RELAX_INJECTIVE);
+		add(listener.RELAX_INJECTIVE2);
+		add(listener.SIMPLE_DUMMY_REMOVAL);
 
 	}
 	

@@ -22,6 +22,7 @@ package net.strongdesign.stg;
 import java.io.File;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -317,7 +318,6 @@ public abstract class STGUtil {
 	}
 
 
-
 	static class GreatestPresetFirst implements Comparator<Place> {
 		@Override
 		public int compare(Place p1, Place p2) {
@@ -327,15 +327,18 @@ public abstract class STGUtil {
 			}
 			return t;
 		}
-		
 	}
 	
 	public static Set<Place> removeRedundantPlaces(STG stg, boolean repeat, NodeRemover remover) {
 			Set<Place> result = new HashSet<Place>();
-		
+			
+		// first, remove all redundant places that are quick to find
 		Condition<Place> redPlace = ConditionFactory.getRedundantPlaceCondition(stg);
+		Condition<Place> redPlaceOld = ConditionFactory.getRedundantPlaceCondition(stg);
 		
 		boolean found;
+		
+		
 		do {			
 			found = false;
 			int y=stg.getNumberOfPlaces();
@@ -354,40 +357,130 @@ public abstract class STGUtil {
 			}
 		} while (repeat && found);
 		
-		if (CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
-			redPlace = ConditionFactory.getImplicitPlaceCondition(stg);
-			do {
-				found = false;
-				int pl = stg.getPlaces().size(); 
-				int i = 0;
-				
-				LinkedList<Place> places = new LinkedList<Place>();
-				places.addAll(stg.getPlaces());
-				Collections.sort(places, new STGUtil.GreatestPresetFirst());
-				
-				for (Place place : places ){
-					i++;
-					//is the single parent of a post-set transition -> definitely not redundant
-					boolean singleParent = false;
-					for (Node children : place.getChildren()) {
-						singleParent = singleParent || children.getParents().size() == 1;
-					}
-					
-					if (singleParent) continue;
-					
-					System.out.print("LP solver for place "+i+"/"+pl+" pre:post "+place.getParents().size()+":"+place.getChildren().size());
-					
-					if (redPlace.fulfilled(place)) {
-						found = true;
-						remover.removePlace(place);
-						result.add(place);
-						System.out.print("+\n");
-					} else {
-						System.out.print("\n");
-					}
-					
+		// use shallow lp solver (quick)
+		int d=4;
+		if (stg.getPlaces().size()>5000) d=3;
+		if (stg.getPlaces().size()>10000) d=2;
+		if (stg.getPlaces().size()>15000) d=1;
+		
+		redPlace = ConditionFactory.getImplicitPlaceCondition(stg, d);
+		do {
+			found = false;
+			int i = 0;
+			
+			LinkedList<Place> places = new LinkedList<Place>();
+			places.addAll(stg.getPlaces());
+			Collections.sort(places, new STGUtil.GreatestPresetFirst());
+			
+			for (Place place : places ){
+				i++;
+				//is the single parent of a post-set transition -> definitely not redundant
+				boolean singleParent = false;
+				for (Node children : place.getChildren()) {
+					singleParent = singleParent || children.getParents().size() == 1;
 				}
-			} while (repeat && found);
+				
+				if (singleParent) continue;
+				
+				if (redPlace.fulfilled(place)) {
+					found = true;
+					remover.removePlace(place);
+					result.add(place);
+				}
+				
+			}
+		} while (repeat && found);
+
+		
+		// use full lp solver if the number of places is not "too large"
+		int psize=stg.getPlaces().size();
+		if (psize<500||CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
+			
+//			int []depths={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,0};
+			int []depths={0};
+			
+			for (int dd: depths) 
+			{
+				long startTime = System.currentTimeMillis();
+				
+				int both=0;
+				int onlyNew=0;
+				int onlyOld=0;
+				
+//				System.out.println("************************************** Checking depth:"+dd);
+				
+				redPlace = ConditionFactory.getImplicitPlaceCondition(stg, dd);
+				
+				
+				do {
+					found = false;
+					int pl = stg.getPlaces().size(); 
+					int i = 0;
+					
+					LinkedList<Place> places = new LinkedList<Place>();
+					places.addAll(stg.getPlaces());
+					Collections.sort(places, new STGUtil.GreatestPresetFirst());
+					
+					for (Place place : places ){
+						i++;
+						//is the single parent of a post-set transition -> definitely not redundant
+						boolean singleParent = false;
+						for (Node children : place.getChildren()) {
+							singleParent = singleParent || children.getParents().size() == 1;
+						}
+						
+						if (singleParent) continue;
+						
+						if (dd==0&&psize>=500) {
+							System.out.printf("LP solver for place "+i+"/"+pl+" |pre|="+place.getParents().size()+" |post|="+place.getChildren().size());
+						}
+						
+						boolean m1 = redPlace.fulfilled(place);
+						boolean m2 = redPlaceOld.fulfilled(place);
+						
+						if (m1) {
+							if (m2) {
+								both++;
+								if (dd==0&&psize>=500)
+									System.out.print("++\n");
+								
+							} else {
+								onlyNew++;
+								if (dd==0&&psize>=500)
+									System.out.print("+ --> -\n");
+							}
+						} else {
+							if (m2) {
+								onlyOld++;
+								if (dd==0&&psize>=500)
+									System.out.print("- --> +!!!\n");
+							} else {
+								if (dd==0&&psize>=500)
+									System.out.print("\n");
+							}
+						}
+						
+						if (m1) {
+							found = true;
+							remover.removePlace(place);
+							result.add(place);
+						}
+						
+					}
+				} while (repeat && found);
+				
+				long endTime = System.currentTimeMillis();
+				
+//				System.out.printf("LP solver found:%d\n",both+onlyNew);
+//				System.out.println("Both found:"+both);
+//				System.out.println("Only new found:"+onlyNew);
+//				System.out.println("Only old found:"+onlyOld);
+//				
+//				System.out.println("New place count:"+stg.getPlaces().size());
+//				
+//				System.out.printf("Time elapsed: %.2f sec\n",(Double.valueOf(endTime-startTime))/1000);
+				
+			}
 		}
 
 		return result;
@@ -402,7 +495,9 @@ public abstract class STGUtil {
 //		
 //		return result;
 		Condition<Transition> redTransition = ConditionFactory.getRedundantTransitionCondition(stg);
+		
 		while (true) {
+			
 			java.util.List<Transition> t = stg.getTransitions(redTransition);
 			if (t.size()==0) return result;
 			remover.removeTransition(t.get(0));
@@ -542,6 +637,138 @@ public abstract class STGUtil {
 	}
 	
 	/**
+	 * only applies injective labelling for a given transition
+	 * @param stg
+	 * @param tran
+	 */
+	public static void enforceInjectiveLabellingExperimental(STG stg, Transition tran) {
+		LinkedList<Transition> merge = new LinkedList<Transition>();
+		
+		// collect all transitions that are to be merged, but ignore transitions with self-loops
+		Collection<Transition> allt = stg.getTransitions(ConditionFactory.ALL_TRANSITIONS);
+		
+		for (Transition t: allt) {
+			if (sameTransitions(tran, t)) {
+				merge.add(t);
+			}
+		}
+		
+		if (merge.size()<2) return;
+		
+		
+		// find common preset and post-set places (the ones that are shared among all transitions in merge
+		Set<Node> common_pre = new HashSet<Node>();
+		Set<Node> common_post = new HashSet<Node>();
+		
+		boolean first=true;
+		
+		for (Transition t: merge) {
+			for (Node p: t.getParents()) {
+				if (t.getParentValue(p)!=1) return;
+				if (t.getChildValue(p)!=0) return;
+				if (((Place)p).getMarking()!=0) return;
+			}
+			
+			for (Node p: t.getChildren()) {
+				if (t.getChildValue(p)!=1) return;
+				if (t.getParentValue(p)!=0) return;
+				if (((Place)p).getMarking()!=0) return;
+			}
+			
+			if (first) {
+				first=false;
+				common_pre.addAll(t.getParents());
+				common_post.addAll(t.getChildren());
+			}
+			
+			common_pre.retainAll(t.getParents());
+			common_post.retainAll(t.getChildren());
+		}
+		
+		
+		LinkedList<Place> pfrom = new LinkedList<Place>();
+		LinkedList<Place> pto   = new LinkedList<Place>();
+		
+		// there should be exactly one place in pre-set and one place in post-set, which is 
+		// a marked graph place
+		// 
+		for (Transition t: merge) {
+			Set<Node> pre = new HashSet<Node>();
+			pre.addAll(t.getParents());
+			pre.removeAll(common_pre);
+			
+			Set<Node> post = new HashSet<Node>();
+			post.addAll(t.getChildren());
+			post.removeAll(common_post);
+			
+			if (pre.size()!=1) return;
+			if (post.size()!=1) return;
+			
+			Place p1 = (Place)pre.iterator().next();
+			Place p2 = (Place)post.iterator().next();
+			
+			if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p1)) return;
+			if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p2)) return;
+			
+			
+			// create place pair
+			pfrom.add(p1);
+			pto.add(p2);
+		}
+		
+		
+		// create arcs from presets to postsets
+		LinkedList<Place> checkRedun  = new LinkedList<Place>();
+		for (Node p: common_pre) {
+			checkRedun.add((Place)p);
+		}
+		
+		for (Node p: common_post) {
+			checkRedun.add((Place)p);
+		}
+
+		
+		for (int i=0;i<pfrom.size();i++) {
+			Transition t1 = (Transition)pfrom.get(i).getParents().iterator().next();
+			Transition t2 = (Transition)pto.get(i).getChildren().iterator().next();
+			Place p = stg.addPlace("p", 0);
+			checkRedun.add(p);
+			
+			t1.setChildValue(p, 1);
+			p.setChildValue(t2, 1);
+		}
+		
+		// all connect to the main places (indexed 0)
+		for (int i=1;i<pfrom.size();i++) {
+			Transition t1 = (Transition)pfrom.get(i).getParents().iterator().next();
+			Transition t2 = (Transition)pto.get(i).getChildren().iterator().next();
+			
+			Place p = pfrom.get(0);
+			t1.setChildValue(p, 1);
+			
+			p = pto.get(0);
+			p.setChildValue(t2, 1);
+		}
+		
+		
+		
+		// remove all merged nodes, apart from the ones indexed 0
+		for (int i=1;i<pfrom.size();i++) {
+			Node n = pfrom.get(i);
+			Node c = n.getChildren().iterator().next();
+			Node n2= pto.get(i);
+			stg.removeNode(n);
+			stg.removeNode(c);
+			stg.removeNode(n2);
+		}
+		
+
+		// launch the redundancy check
+		removeRedundantPlaces(stg);
+	}
+		
+	
+	/**
 	 * For a given transition it tries to merge all transitions 
 	 * with the same signal direction into one instance
 	 * It transforms the stg passed as an argument 
@@ -674,7 +901,7 @@ public abstract class STGUtil {
 			p.setChildValue(t2, 1);
 		}
 		
-		
+
 		// remove all merged nodes, apart from the ones indexed 0
 		for (int i=1;i<pfrom.size();i++) {
 			Node n = pfrom.get(i);
@@ -692,6 +919,20 @@ public abstract class STGUtil {
 		for (Place p: checkRedun) {
 			if (redPlace.fulfilled(p))
 				stg.removePlace(p);
+		}
+		
+	}
+	
+	
+	static class SmallestPresetFirst implements Comparator<Transition> {
+
+		@Override
+		public int compare(Transition t1, Transition t2) {
+			int t = t1.getParents().size() - t2.getParents().size();
+			if (t==0) {
+				t = t1.getChildren().size() - t2.getChildren().size();
+			}
+			return t;
 		}
 	}
 	
@@ -717,6 +958,12 @@ public abstract class STGUtil {
 			
 		}
 		
+		// sort entries, smallest sizes go first
+		LinkedList<Transition> enforce_list = new LinkedList<Transition>();
+		enforce_list.addAll(enforce);
+		Collections.sort(enforce_list, new SmallestPresetFirst());
+		
+		// 
 		for (Transition t: enforce) {
 			enforceInjectiveLabelling(stg, t);
 		}
@@ -738,6 +985,12 @@ public abstract class STGUtil {
 			
 			p1.setChildValue(t, 1);
 			
+			// also add arc from each pre-place, which is not "fromp",
+			for (Node p: ft.getParents()) {
+				if (p==fromp) continue;
+				p.setChildValue(t, p.getChildValue(ft));
+			}
+			
 			fromp = (Place)ft.getChildren().iterator().next();
 			
 			if (fromp!=top) {
@@ -756,6 +1009,131 @@ public abstract class STGUtil {
 		}
 	}
 	
+	
+	/**
+	 * Function splits merge places to allow more contractions
+	 * 
+	 * @param stg - the stg to work on
+	 */
+	public static void splitMergePlaces(STG stg) {
+		
+		// for each dummy transition, that has no loops and has a choice place in its preset
+		for (Transition tran: stg.getTransitions(ConditionFactory.IS_DUMMY)) {
+			
+			if (ConditionFactory.LOOP_NODE.fulfilled(tran)) continue;
+			
+			boolean hasConflictPrePlace = false;
+			boolean hasMergePostPlace = false;
+			boolean failed = false;
+			// does it have a conflict pre-place?
+			for (Node pre: tran.getParents()) {
+				if (pre.getChildren().size()>1) {
+					hasConflictPrePlace=true;
+					break;
+				}
+			}
+			
+			HashSet<Node> tt = new HashSet<Node>();
+			
+			// does it have a merge post-place?
+			for (Node post: tran.getChildren()) {
+				if (post.getParents().size()>1) {
+					hasMergePostPlace = true;
+					
+					// all connections around the place must have weight 1
+					for (Node par: post.getParents()) {
+						if (post.getParentValue(par)>1) 
+							failed=true;
+					}
+					
+					for (Node chil: post.getChildren()) {
+						if (post.getChildValue(chil)>1) 
+							failed=true;
+					}
+					
+				}
+				
+				// check that for each t: | *t intersected with tran* | < 2
+				HashSet<Node> t = new HashSet<Node>();
+				t.addAll(tt);
+				t.retainAll(post.getChildren());
+				
+				if (t.isEmpty()) {
+					tt.addAll(post.getChildren());
+				} else {
+					failed=true;
+					break;
+				}
+				
+			}
+			
+			
+			HashSet<Node> postPlaces = new HashSet<Node>();
+			postPlaces.addAll(tran.getChildren());
+			
+			
+			// if both conditions occur, then it is not a reducible place, 
+			if (!hasConflictPrePlace || !hasMergePostPlace) continue;
+			
+			// additional rule: only allow relaxation if no dummy is about to be split
+			for (Node post: postPlaces) {
+				if (post.getParents().size()>1) {
+					for (Node t: post.getChildren()) {
+						if (ConditionFactory.IS_DUMMY.fulfilled((Transition)t)) {
+							failed=true;
+							break;
+						}
+					}
+				}
+			}
+			
+			if (failed) continue;
+			
+			
+			
+			
+			
+			// conditions are good, apply relaxation for each of the tran* 
+			for (Node post: postPlaces) {
+				
+				if (post.getParents().size()>1) {
+					
+					// create a new place p with zero marking
+					Place p  = stg.addPlace("p", 0);
+					
+					// switch connection tran->post to tran->p
+					tran.setChildValue(post, 0);
+					tran.setChildValue(p, 1);
+					
+					
+					HashSet<Node> postTransitions = new HashSet<Node>();
+					postTransitions.addAll(post.getChildren());
+					
+					// duplicate each of the post* transitions 
+					for (Node postT: postTransitions) {
+						
+						// copy transitiona and all its connections
+						Transition t = (Transition)postT;
+						Transition dt = stg.addTransition(t.getLabel());
+						
+						for (Node pp: t.getParents())
+							dt.setParentValue(pp, t.getParentValue(pp));
+						
+						for (Node pp: t.getChildren())
+							dt.setChildValue(pp, t.getChildValue(pp));
+						
+						// switch connection post->dt to p->dt
+						post.setChildValue(dt, 0);
+						p.setChildValue(dt,1);
+					}
+					
+				}
+			}
+			
+		}
+		
+	}
+
 	/**
 	 * Function produces new transitions 
 	 * @param stg - the stg to work on
@@ -769,21 +1147,23 @@ public abstract class STGUtil {
 		for (Place place: places) {
 			
 			// the primitive case of the shared path optimisation
-			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
-				Place place2 = place;
+			//if (true||CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
+			{
+				
 				
 				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
+					Place place2 = place;
 					
 					boolean failed = false;
 					
-					while (place2.getChildren().size()==1) {
+					while (!failed&&place2.getChildren().size()==1) {
 						
 						if (place2.getMarking()>0) failed=true;
 						
 						Transition t = (Transition)place2.getChildren().iterator().next();
 						
 						
-						if (t.getParents().size()!=1||t.getChildren().size()!=1) {
+						if (t.getChildren().size()!=1) {
 							failed=true;
 							break;
 						} else {
@@ -809,24 +1189,24 @@ public abstract class STGUtil {
 					Map<Transition, Place> tp = new HashMap<Transition, Place>();
 					Map<Place, Transition> pt = new HashMap<Place, Transition>();
 					
-					// check pre-sets and post-sets to have the same number of elements and check these sets do not intersect 
-					if (!failed&&parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
+					// check pre-sets and post-sets do not intersect 
+					if (!failed&&parents.size()+children.size()==test.size()) {
 						
 						for (Node t1: place.getParents()) {
-							if (t1.getChildren().size()!=2) break;
-							if (t1.getChildValue(place)!=1) break;
+							if (t1.getChildren().size()!=2) continue;
+							if (t1.getChildValue(place)!=1) continue;
 							
 							Iterator<Node> it = t1.getChildren().iterator();
 							Place p = (Place) it.next();
 							if (p==place) p = (Place) it.next();
 							
 							// for now only very primitive cases are considered
-							if (p.getMarking()>0) break;
+							if (p.getMarking()>0) continue;
 							
-							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) break;
+							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) continue;
 							
 							Transition t2 = (Transition) p.getChildren().iterator().next();
-							if (place2.getChildValue(t2)!=1) break;
+							if (place2.getChildValue(t2)!=1) continue;
 							
 							
 							if (parents.contains(t1)&&children.contains(t2)) {
@@ -835,19 +1215,20 @@ public abstract class STGUtil {
 								
 								parents.remove(t1);
 								children.remove(t2);
-							} else failed=true;
+							}
 						}
 					}
 					
 					
-					if (!failed&&parents.size()==0&&children.size()==0) {
+					if (!failed) {
 						// 
 						for (Entry<Transition, Place> e: tp.entrySet()) {
 							Transition t1 = e.getKey();
 							Transition t2 = pt.get(e.getValue());
 							
-							if (stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY||
-								stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY) {
+							//if (stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY||
+							//	stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY) 
+							{
 								
 								if (place.getParents().size()>1) {
 									
@@ -856,6 +1237,7 @@ public abstract class STGUtil {
 									
 									t1.setChildValue(p1, 1);
 									p2.setChildValue(t2, 1);
+									
 									t1.setChildValue(place, 0);
 									place2.setChildValue(t2, 0);
 									
@@ -1102,7 +1484,6 @@ public abstract class STGUtil {
 		return removeRedundantTransitions(stg, new DefaultNodeRemover(stg));
 	}
 
-
 	/**
 	 * Removes - if possible - internal signals (encoding signals) 
 	 * by preserving the CSC property.
@@ -1206,6 +1587,49 @@ public abstract class STGUtil {
 		}
 		
 		return toReturn;
+	}
+
+	/**
+	 * very quick simplification, removes simple dummy transitions
+	 * @param stg
+	 */
+	public static void simpleDummyRemoval(STG stg) {
+		// for each empty MG place check if it is the only post-set and the only preset for its parent and child,
+		// then merge pre-set and post-set transitions, if at least one of them is dummy
+		
+		Collection<Place> places = stg.getPlaces(ConditionFactory.MARKED_GRAPH_PLACE);
+		
+		for (Place p: places) {
+			if (p.getMarking()>0) continue;
+			
+			Transition t1 = (Transition)p.getParents().iterator().next();
+			Transition t2 = (Transition)p.getChildren().iterator().next();
+			
+			if (t1.getChildren().size()>1) continue;
+			if (t2.getParents().size()>1) continue;
+			
+			if (ConditionFactory.IS_DUMMY.fulfilled(t2)) {
+				// child is dummy
+				for (Node t2p: t2.getChildren()) {
+					t1.setChildValue(t2p, t2.getChildValue(t2p));
+				}
+				
+				stg.removePlace(p);
+				stg.removeTransition(t2);
+				continue;
+			} else {
+				if (ConditionFactory.IS_DUMMY.fulfilled(t1)) {
+					// parent is dummy
+					for (Node pt1: t1.getParents()) {
+						t2.setParentValue(pt1, t1.getParentValue(pt1));
+					}
+					
+					stg.removePlace(p);
+					stg.removeTransition(t1);
+					continue;
+				}
+			}
+		}
 	}
 	
 }

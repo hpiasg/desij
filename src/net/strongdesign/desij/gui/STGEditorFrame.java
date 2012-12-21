@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.zip.ZipOutputStream;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -47,6 +48,7 @@ import javax.swing.JSplitPane;
 
 import com.mxgraph.swing.mxGraphOutline;
 
+import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.AbstractDecomposition;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
@@ -116,6 +118,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			"Create reachability graph", KeyEvent.VK_R, null, 0, this);
 	
 	public final STGEditorAction REDUCE_SAFE = new STGEditorAction("Reduce Component (safe)", 0, null, 0, this);
+	public final STGEditorAction REDUCE_WITH_LP_SOLVER = new STGEditorAction("Reduce Component (with solver)", 0, null, 0, this);
 	public final STGEditorAction REDUCE_UNSAFE = new STGEditorAction("Reduce Component (unsafe)", 0, null, 0, this);
 	
 	public final STGEditorAction DECOMPOSE = new STGEditorAction("Decompose", 0, null, 0, this);
@@ -556,42 +559,59 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public void open(String fileName) {
 		
 		fileChooser.setMultiSelectionEnabled(false);
-		fileChooser.setFileFilter(STGFileFilter.STANDARD);
-		
+		fileChooser.setFileFilter(STGFileFilter.STANDARD_OPEN);
 		
 		if (fileName==null) {
 			if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return; 
 			fileName = fileChooser.getSelectedFile().getAbsolutePath();
 		}
+		
+		if (fileName.endsWith(".g")) {
+			try {
 
-		try {
+				File f = new File(fileName);
+				if (!f.exists()) {
+					f = new File(fileName + ".g");
+					if (!f.exists())
+						throw new FileNotFoundException(fileName);
+				}
+				
+				String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
+				//fileName = f.getAbsolutePath();
+				STG stg = STGEditorFile.convertToSTG(file, true);
+				
+				// add new tree element
+				
+				addSTG(stg, fileName);
+				
 
-			File f = new File(fileName);
-			if (!f.exists()) {
-				f = new File(fileName + ".g");
-				if (!f.exists())
-					throw new FileNotFoundException(fileName);
+			} catch (ParseException e) {
+				JOptionPane.showMessageDialog(this, "Could not parse file: "
+						+ fileName+"\n"+ e.getMessage(), "JDesi Error", JOptionPane.ERROR_MESSAGE);
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(this, "Could not load file: "
+						+ fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
+			} catch (STGException e) {
+				JOptionPane.showMessageDialog(this, "Could not parse file: "
+						+ fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
 			}
 			
-			String file = FileSupport.loadFileFromDisk(f.getAbsolutePath());
-			//fileName = f.getAbsolutePath();
-			STG stg = STGEditorFile.convertToSTG(file, true);
+		} else if (fileName.endsWith(".breeze")) {
+			try {
+				
+				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg(fileName).entrySet()) {
+					String fname = e.getKey();
+					STG stg = e.getValue();
+					addSTG(stg, fname);
+				}
+				
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			
-			// add new tree element
-			
-			addSTG(stg, fileName);
-			
-
-		} catch (ParseException e) {
-			JOptionPane.showMessageDialog(this, "Could not parse file: "
-					+ fileName+"\n"+ e.getMessage(), "JDesi Error", JOptionPane.ERROR_MESSAGE);
-		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this, "Could not load file: "
-					+ fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
-		} catch (STGException e) {
-			JOptionPane.showMessageDialog(this, "Could not parse file: "
-					+ fileName, "JDesi Error", JOptionPane.ERROR_MESSAGE);
 		}
+		
 
 	}
 
@@ -699,6 +719,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 				decompose(source);
 			} else if (source == REDUCE_SAFE) {
 				 reduceSafe();
+			} else if (source == REDUCE_WITH_LP_SOLVER) {
+				 reduceWithLPSolver();
 			} else if (source == REDUCE_UNSAFE) {
 				 reduceUnsafe();
 			} else if (source == ABOUT) {
@@ -820,6 +842,15 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		reduce();
 		
 		CLW.instance.SAFE_CONTRACTIONS.setEnabled(old_safeness);
+	}
+	
+	private void reduceWithLPSolver() {
+		boolean old_safeness = CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled();
+		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(true);
+		// do only safe contractions
+		reduce();
+		
+		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(old_safeness);
 	}
 	
 	private void reduceUnsafe() {

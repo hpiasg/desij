@@ -25,7 +25,8 @@ class STGFileFilter extends javax.swing.filechooser.FileFilter {
 	protected String pattern;
 	protected String descr;
 
-	public static final STGFileFilter STANDARD = new STGFileFilter(".*\\.g", "STG File");
+	public static final STGFileFilter STANDARD_OPEN = new STGFileFilter(".*((\\.g)|(\\.breeze))", "STG Files and Breeze Files");
+	public static final STGFileFilter STANDARD = new STGFileFilter(".*\\.g", "STG File and Breeze Files");
 	
 	public static final STGFileFilter SVGFILTER = new STGFileFilter(".*\\.svg", "SVG File");
 	

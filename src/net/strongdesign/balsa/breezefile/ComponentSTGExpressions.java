@@ -80,10 +80,10 @@ public class ComponentSTGExpressions {
 		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
 		components.put("$BrzLoop", "active B\nrA+;#(B)");
 		components.put("$BrzVariable", "scaled B\n#(rA+;oA+;iA+;aA+;rA-;oA-;iA-;aA-)||(#||(#(B)))");
-		components.put("$BrzCase", "scaled B\nactive B\n#(rA+;up(#|(iB+;up(B);aA+;rA-;iB-;down(B)));aA-)");
-		components.put("$BrzCaseFetch", "scaled C\nactive B,C\n#(rA+;(B;#|(iC+;up(C);aA+;rA-;iC-;down(C));aA-))");
+		components.put("$BrzCase", "scaled B\nactive B\n#(rA+;oA+;up(#|(iB+;up(B);aA+;rA-;oA-;iB-;down(B)));aA-)");
+		components.put("$BrzCaseFetch", "scaled C\nactive B,C\n#(rA+;(B;oA+;#|(iC+;up(C);aA+;rA-;oA+;iC-;down(C));aA-))");
 		components.put("$BrzHalt", "rA+");
-		components.put("$BrzNullAdapt", "active A\nA:(up(B);down(B))");
+		components.put("$BrzNullAdapt", "active A\n#(B:(up(A);down(A)))");
 		
 		// using synchronous product
 		components.put("$BrzDecisionWait", "scaled B,C\nactive C\n#(#|(B:C)) ** #(rA+;#|(up(C);aA+;rA-;down(C));aA-)");
@@ -97,9 +97,6 @@ public class ComponentSTGExpressions {
 				+"**#((iA+;rC+;aC+;aA+;rA-;oA-;iA-)|(iB+;rD+;aD+;aB+;rB-;oB-;iB-))"
 				+"**#((rC+;aC+;aA+;rA-;oA-;iA-;rC-;aC-)|(rD+;aD+;aB+;rB-;oB-;iB-;rD-;aD-))");
 		
-		
-		
-
 		// components for the internal generators
 		components.put("$BrzActiveEagerFalseVariable", "$BrzActiveEagerFalseVariable:2");
 		components.put("$BrzFalseVariable", "$BrzFalseVariable:2");

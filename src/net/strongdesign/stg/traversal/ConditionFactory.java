@@ -279,7 +279,20 @@ public abstract class ConditionFactory {
 	protected static class LoopOnlyTransition<T extends Transition> extends AbstractCondition<T> {
 		public boolean fulfilled(T transition) {
 			
-			if (transition.getSTG().getSignature(transition.getLabel().getSignal()) != Signature.DUMMY) return false;
+			if (!IS_DUMMY.fulfilled(transition)) return false;
+			
+/*			for (Node p: transition.getParents()) {
+				int cv = transition.getChildValue(p);
+				int pv = transition.getParentValue(p);
+				if (cv!=pv) return false;
+			}
+			
+			for (Node p: transition.getChildren()) {
+				int cv = transition.getChildValue(p);
+				int pv = transition.getParentValue(p);
+				if (cv!=pv) return false;
+			}
+	*/
 			Set<Node> children = transition.getNeighbours();
 			for (Node actChild : children) {
 				int cv = transition.getChildValue(actChild);
@@ -287,11 +300,12 @@ public abstract class ConditionFactory {
 				if (cv != pv)
 					return false;
 			}
+			
 			return true;
 		}
 	}
 	
-	protected static class AllDummy<T extends Transition> extends AbstractCondition<T> {
+	protected static class IsDummy<T extends Transition> extends AbstractCondition<T> {
 		public boolean fulfilled(T transition) {
 			if (transition.getSTG().getSignature(transition.getLabel().getSignal()) != Signature.DUMMY) return false;
 			return true;
@@ -516,10 +530,10 @@ public abstract class ConditionFactory {
 			
 		
 			// shared place optimization
-			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
-				boolean sharedPlace = SharedPlaceSolver.isImplicit(place);
-				if (sharedPlace) return true;
-			}
+//			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
+//				boolean sharedPlace = SharedPlaceSolver.isImplicit(place);
+//				if (sharedPlace) return true;
+//			}
 			
 			// ******************* 
 			// the advanced cases
@@ -656,11 +670,28 @@ public abstract class ConditionFactory {
 				return true;
 			
 			//Duplicate transition
-			if (stg.getTransitions(
-					ConditionFactory
-					.getDuplicateTransitionCondition(transition))
-					.size() != 0)
-				return true;
+			for (Node p: transition.getChildren()) {
+				for (Node t: p.getParents()) {
+					if (ConditionFactory
+					.getDuplicateTransitionCondition(transition)
+					.fulfilled((Transition)t)) return true;
+				}
+			}
+			
+			for (Node p: transition.getParents()) {
+				for (Node t: p.getChildren()) {
+					if (ConditionFactory
+					.getDuplicateTransitionCondition(transition)
+					.fulfilled((Transition)t)) return true;
+				}
+			}
+			
+			// SG: this is highly unoptimal!!!
+//			if (stg.getTransitions(
+//					ConditionFactory
+//					.getDuplicateTransitionCondition(transition))
+//					.size() != 0)
+//				return true;
 			
 			return false;
 		}
@@ -1286,9 +1317,17 @@ public abstract class ConditionFactory {
 	protected static class ImplicitPlaceCondition<P extends Place> extends AbstractCondition<P> {
 		
 		protected STG stg;
+		
+		protected int depth=0; // search for redundant places of a limited depth, depth=0 - no limitation
+		
 
 		public ImplicitPlaceCondition(STG stg) {
 			this.stg = stg;
+		}
+		
+		public ImplicitPlaceCondition(STG stg, int depth) {
+			this.stg = stg;
+			this.depth = depth;
 		}
 
 		@Override
@@ -1302,7 +1341,7 @@ public abstract class ConditionFactory {
 				
 				// M_1 = M_N + C v_1 --> -MN = -M1 + C v_1
 				// M_1 > 0 and v_1 >= 0 and solve as (I)LP problem
-				Problem problem = MarkingEquationCache.getMarkingEquation(stg);
+				Problem problem = MarkingEquationCache.getMarkingEquation(stg, place, depth);
 				Linear linear;
 				
 				// M_1[postPlace> --> NOT!!! just because of "place"
@@ -1615,6 +1654,7 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 			List<Node> sibblingsAbove = STGOperations.getElements(
 					transition.getParents(),
 					ConditionFactory.getNumberOfChildrenCondition(1));
+			
 			//no splitting 'above' the transition
 			//-> condition 1 fulfilled
 			if (sibblingsAbove.isEmpty())
@@ -1629,7 +1669,7 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 			if (! sibblingsBelow.isEmpty() )
 				return false;
 			
-			//at least one unmarked place 'below' the transition must exists
+			//at least one unmarked place 'below' the transition must exist
 			boolean unmarked = false;
 			for (Node child : transition.getChildren())
 				if (((Place) child).getMarking() == 0) {
@@ -1641,8 +1681,11 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 				return false;
 			}
 			
+			// TODO: why/when is this check needed?
 			if (CLW.instance.OD.isEnabled()) {
-				return !isWeakSyntacticConflict(transition);
+				// when risky strategy is used, allow weak syntactic conflicts?
+				if (!CLW.instance.RISKY.isEnabled())
+					return !isWeakSyntacticConflict(transition);
 			}
 			
 			return true;
@@ -1735,6 +1778,9 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 		return new ImplicitPlaceCondition<Place>(stg);
 	}
 	
+	public static Condition<Place> getImplicitPlaceCondition (STG stg, int depth) {
+		return new ImplicitPlaceCondition<Place>(stg, depth);
+	}
 	
 	
 	
@@ -1854,7 +1900,7 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 	public static final Condition<Node> 		ALL_NODES 				= new All<Node>();
 	public static final Condition<Place> 		ALL_PLACES 				= new All<Place>();
 	public static final Condition<Transition> 	ALL_TRANSITIONS 		= new All<Transition>();
-	public static final Condition<Transition> 	ALL_DUMMY				= new AllDummy<Transition>();
+	public static final Condition<Transition> 	IS_DUMMY				= new IsDummy<Transition>();
 	
 	public static final Condition<Transition>	LOCAL_TRANSITIONS		= new LocalTransitions<Transition>();
 	
@@ -1916,8 +1962,6 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 			}
 		};
 	}
-	
-	
 	
 	
 	protected static final MultiCondition<Transition> SECURE_CONTRACTABLE;

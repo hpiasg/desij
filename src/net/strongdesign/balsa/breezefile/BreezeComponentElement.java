@@ -7,7 +7,10 @@ public class BreezeComponentElement extends AbstractBreezeElement implements Nam
 
 	
 	private static final long serialVersionUID = -1344287802409223810L;
+	private static int component_counter = 0;
+	
 	boolean isDeclared = true;
+	int ID;
 	String symbol;
 	String name;
 	
@@ -30,8 +33,14 @@ public class BreezeComponentElement extends AbstractBreezeElement implements Nam
 			Object cur = it.next(); 
 			this.add(cur);
 		}
+		
+		ID = component_counter++;
 	}
 
+	public int getID() {
+		return ID;
+	}
+	
 	@Override
 	public String getName() {
 		return name;

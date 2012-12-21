@@ -41,16 +41,23 @@ public class ComponentSTGInternalImplementations {
 	static public STG brzWhile() {
 		STG stg = null;
 		String expression = 
-			".inputs aB aC iA iC rA\n"+
-			".outputs aA rB rC \n"+
-			".graph\n"+
-			"p2 iA+ iC+\np1 rB+\naA+ rA-\nrA- rB-/2\n"+
-			"aA- rA+\naB+ p2\naB- iC-\niC- rC+\n"+
-			"aB-/2 iA-\niA- aA-\naC+ rC-\nrC- aC-\n"+
-			"aC- p1\niA+ aA+\nrB- aB-\niC+ rB-\n"+
-			"rC+ aC+\nrA+ p1\nrB-/2 aB-/2\nrB+ aB+\n"+
-			".marking { <aA-,rA+> }\n.end";
-		
+//			".inputs aB aC iA iC oB rA\n"+
+//			".outputs aA rB rC \n"+
+//			".graph\n"+
+//			"p2 iA+ iC+\np1 rB+\naA+ rA-\nrA- rB-/2\n"+
+//			"aA- rA+\naB+ p2\naB- iC-\niC- rC+\n"+
+//			"aB-/2 iA-\niA- aA-\naC+ rC-\nrC- aC-\n"+
+//			"aC- p1\niA+ aA+\nrB- aB-\niC+ rB-\n"+
+//			"rC+ aC+\nrA+ p1\nrB-/2 aB-/2\nrB+ aB+\n"+
+//			".marking { <aA-,rA+> }\n.end";
+			
+			".inputs aB aC iA iC rA\n.outputs oB aA rB rC\n.graph\n"+
+			"p2 iA+ iC+\np1 rB+\niA+ aA+\niC+ rB-/2\nrB+ aB+\naA+ rA-\n"+
+			"rA- rB-\nrB- aB-/2\naA- rA+\nrA+ p1\niC- rC+\nrC+ aC+\n"+
+			"iA- aA-\nrC- aC-\naC+ rC-\naC- p1\nrB-/2 aB-\n"+
+			"aB+ oB+\noB+ p2\naB- oB-\noB- iC-\n"+
+			"aB-/2 oB-/2\noB-/2 iA-\n.marking { <aA-,rA+> }\n.end\n";
+			
 		try {
 			
 			GParser parser = new GParser(new StringReader(expression));
@@ -156,7 +163,7 @@ public class ComponentSTGInternalImplementations {
 	static public STG brzPassivator(int scale) {
 		
 		
-		String expression = "scaled A#||(rA+);oA+;#||(aA+;rA-);oA-;#||(aA-)";
+		String expression = "scaled A#||(rA+);cA+;#||(aA+;rA-);cA-;#||(aA-)";
 		
 		// initial model to work with
 		STG stg = ComponentSTGFactory.getSTGFromExpression(expression, scale);

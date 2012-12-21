@@ -23,6 +23,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGUtil;
 
 public class STGEditorTreeNode extends DefaultMutableTreeNode{
 
@@ -38,6 +39,9 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 	private boolean isSTG;
 	public Partition partition;
     
+	
+	
+	
 	public STGEditorTreeNode(String label, STG stg, boolean procreative) {
 		super(label);
 		
@@ -47,7 +51,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
         
         stgInfo = "";
         if (stg!=null)
-        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces()+" D:"+stg.getNumberOfDummies();
+        	stgInfo = stg.getSTGInfo();
         
 		isSTG = true;
 	}
@@ -86,7 +90,7 @@ public class STGEditorTreeNode extends DefaultMutableTreeNode{
 		this.label = label;
 		stgInfo = "";
         if (stg!=null)
-        	stgInfo = " T:"+stg.getNumberOfTransitions()+" P:"+stg.getNumberOfPlaces()+" D:"+stg.getNumberOfDummies();
+        	stgInfo = stg.getSTGInfo();
 	}
 	
 	public String getLabel() {

@@ -14,3 +14,11 @@ TokenMgrError.java
 desij.jar
 .settings
 generated
+src/net/strongdesign/balsa/hcexpressionparser/*.java
+src/net/strongdesign/balsa/breezeparser/BreezeParser.java
+src/net/strongdesign/balsa/breezeparser/BreezeParserConstants.java
+src/net/strongdesign/balsa/breezeparser/BreezeParserTokenManager.java
+src/net/strongdesign/balsa/breezeparser/ParseException.java
+src/net/strongdesign/balsa/breezeparser/SimpleCharStream.java
+src/net/strongdesign/balsa/breezeparser/Token.java
+src/net/strongdesign/balsa/breezeparser/TokenMgrError.java

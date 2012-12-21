@@ -90,7 +90,10 @@ public class STGEditorNavigation extends JTree implements
 
 	public final STGEditorAction PETRIFY = new STGEditorAction("Process STG with Petrify", 0 , null, 0, this);
 	
-	public final STGEditorAction RELAX_INJECTIVE = new STGEditorAction("Relax injective labelling", 0 , null, 0, this);
+	public final STGEditorAction RELAX_INJECTIVE = new STGEditorAction("Split common paths", 0 , null, 0, this);
+	public final STGEditorAction RELAX_INJECTIVE2 = new STGEditorAction("Split merged places", 0 , null, 0, this);
+	
+	public final STGEditorAction SIMPLE_DUMMY_REMOVAL = new STGEditorAction("Simple dummy removal", 0 , null, 0, this);
 	
 	/**
 	 * 
@@ -322,6 +325,31 @@ public class STGEditorNavigation extends JTree implements
 			
 			STGUtil.relaxInjectiveLabelling(stg);
 			frame.addSTG(stg, "Relaxed");
+		}
+		
+		if (source == RELAX_INJECTIVE2) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			STG stg = stgin.clone();
+			
+			STGUtil.splitMergePlaces(stg);
+			frame.addSTG(stg, "Relaxed2");
+		}
+		
+		
+		if (source == SIMPLE_DUMMY_REMOVAL) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			STG stg = stgin.clone();
+			
+			STGUtil.simpleDummyRemoval(stg);
+			frame.addSTG(stg, "Simplified");
 			
 		}
 	}
@@ -415,8 +443,8 @@ public class STGEditorNavigation extends JTree implements
 			e.printStackTrace();
 		}
 		
-		for (Transition t: stg.getTransitions(ConditionFactory.ALL_DUMMY)) {
-			STG sur = STGUtil.getNodeSurrounding(stg, t, 4);
+		for (Transition t: stg.getTransitions(ConditionFactory.IS_DUMMY)) {
+			STG sur = STGUtil.getNodeSurrounding(stg, t, 2);
 			frame.addSTG(sur, "surrounding for "+t.getString(Node.UNIQUE));
 			//frame.setLayout(7);
 		}

@@ -37,6 +37,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 
+import net.strongdesign.desij.decomposition.AbstractDecomposition.Reason;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
@@ -132,7 +133,13 @@ public class STGGraphComponent extends mxGraphComponent {
 				try {
 					
 					BasicDecomposition deco = new BasicDecomposition("basic", activeSTG);
-					deco.contract(activeSTG, transitionsToProcess);
+					Transition t = transitionsToProcess.get(0);
+					Reason r = deco.isContractable(t);
+					if (r!=Reason.OK) {
+						JOptionPane.showMessageDialog(null, deco.lastMessage);
+					} else {
+						deco.contract(activeSTG, transitionsToProcess);
+					}
 					
 				} catch (Exception ex) {
 					ex.printStackTrace();
@@ -216,7 +223,8 @@ public class STGGraphComponent extends mxGraphComponent {
 	private void showGraphPopupMenu(MouseEvent e) {
 		
 		boolean transitionSelected = (getGraph().getSelectionCell() instanceof TransitionCell);
-
+		boolean placeSelected =  (getGraph().getSelectionCell() instanceof PlaceCell);
+		
 		if (transitionSelected) {
 			TransitionCell tc = (TransitionCell)getGraph().getSelectionCell();
 			Transition t = (Transition)cell2Node.get(tc);
@@ -232,7 +240,7 @@ public class STGGraphComponent extends mxGraphComponent {
 			menu.show(this, pt.x, pt.y);
 
 			e.consume();
-		} else {
+		} else if (placeSelected) {
 			PlaceCell pc = (PlaceCell)getGraph().getSelectionCell();
 			Place p = (Place)cell2Node.get(pc);
 			
@@ -481,10 +489,10 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (coordinates==null||coordinates.size()==0) {
 				
 				// only start the layout if there are not too many transitions
-				if (stg.getNumberOfTransitions()<1000) {
-					mxGraphLayout cl = new mxOrganicLayout(graph);
-					cl.execute(parent);
-				}
+				mxCompactTreeLayout cl = new mxCompactTreeLayout(graph, false);
+				cl.execute(parent);
+				
+				
 				
 				shiftModel();
 				

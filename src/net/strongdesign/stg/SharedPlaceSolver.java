@@ -1,9 +1,19 @@
 package net.strongdesign.stg;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
-import lpsolve.LpSolve;
-import lpsolve.LpSolveException;
+import net.sf.javailp.Linear;
+import net.sf.javailp.OptType;
+import net.sf.javailp.Problem;
+import net.sf.javailp.Result;
+import net.sf.javailp.Solver;
+import net.sf.javailp.SolverFactory;
+import net.sf.javailp.SolverFactoryLpSolve;
+import net.strongdesign.stg.traversal.ConditionFactory;
+
 
 
 public class SharedPlaceSolver {
@@ -138,60 +148,114 @@ public class SharedPlaceSolver {
 	}
 
 	
+	
+	
+	
 	/**
 	 * Detects whether a given place is implicit using LP solver
 	 * @param place
 	 * @return
 	 */
-	static public boolean isImplicitLP(Place place) {
+	static private Result lpSolve(int test, String []names, double[][] v) {
+		
+		// launch solver
+		SolverFactory factory = new SolverFactoryLpSolve();
+		
+		factory.setParameter(Solver.VERBOSE, 0); // no messages
+		factory.setParameter(Solver.TIMEOUT, 0); // no timeout
+		
+		Problem problem = new Problem();
+		
+		for (int j = 0; j < v[0].length; j++)
+			problem.setVarType(names[j], Double.class);
+		
+		for (int i = 0; i < v.length; i++) {
+			Linear linear = new Linear();
+			
+			for (int j = 0; j < v[i].length; j++) {
+				linear.add(v[i][j], names[j]);
+			}
 
-		try {
-			// Create a problem with 4 variables and 0 constraints
-			LpSolve solver = LpSolve.makeLp(0, 2);
-			
-			solver.setVerbose(0); // no info from lpsolver
-			solver.setTimeout(2); // set timeout to two seconds
-			
-			// add all places apart from the ones restricting preset  
-			
-			
-			solver.strAddConstraint("-1 0 1", LpSolve.LE, 0);
-			solver.strAddConstraint("-1 1 0", LpSolve.LE, 0);
-			solver.strAddConstraint("0 -1 1", LpSolve.LE, 1);
-			
-			// set objective function
-//			solver.strSetObjFn("-1 0 1");
-//			solver.strSetObjFn("-1 1 0");
-			solver.strSetObjFn("0 -1 1");
-			
-			solver.setMaxim();
+			if (test == i) {
+				problem.add(linear, "<=", 1);
+				problem.setObjective(linear);
+			} else {
+				problem.add(linear, "<=", 0);
+			}
+		}
 
-			// solve the problem
-			int ret = solver.solve();
+		problem.setOptimizationType(OptType.MAX);
+
+		Result result = factory.get().solve(problem);
+
+		return result;
+	}
+	
+	public static boolean isImplicitLP(Place place) {
+		STG stg = place.getSTG();
+		
+		// launch solver
+		SolverFactory factory = new SolverFactoryLpSolve();
+		
+		factory.setParameter(Solver.VERBOSE, 0); // no messages
+		factory.setParameter(Solver.TIMEOUT, 0); // no timeout
+		
+		Problem problem = new Problem();
+		
+		List<Transition> tran = stg.getTransitions(ConditionFactory.ALL_TRANSITIONS); 
+		
+		for (Transition t: tran) {
+			problem.setVarType("T"+t.getIdentifier(), Double.class);
+		}
+		
+		problem.setVarType("M", Double.class);
+		
+		for (Place p: stg.getPlaces()) {
+			Linear linear = new Linear();
 			
-			// if no solution is found, then the place is implicit
-			if (ret == 0) {
-				/* a solution is calculated, now lets get some results */
-
-				/* objective value */
-				System.out.println("Objective value: " + solver.getObjective());
-
-				/* we are done now */
+			HashSet<Node> test = new HashSet<Node>();
+			
+			// add preset
+			for (Node n: p.getParents()) {
+				linear.add(-p.getParentValue(n), "T"+n.getIdentifier());
 			}
 			
-			solver.deleteLp();
+			// add postset
+			for (Node n: p.getChildren()) {
+				linear.add(p.getChildValue(n), "T"+n.getIdentifier());
+			}
+			
+			// add marking
+			linear.add(-p.getMarking(), "M");
+			
+			
+			if (p == place) {
+				problem.add(linear, "<=", 1);
+				problem.setObjective(linear);
+			} else {
+				problem.add(linear, "<=", 0);
+			}
 		}
 
-		catch (LpSolveException e) {
-			e.printStackTrace();
+		problem.setOptimizationType(OptType.MAX);
+
+		Result result = factory.get().solve(problem);
+		
+		if (result!=null) {
+			String str = result.toString();
+			if (str.startsWith("Objective: 0.0")) return true;
 		}
 
-		return true;
+		return false;
 	}
 	
 	static public void main(String[] args) {
+		int test = 1;
+		String names[] = {"x","y","z"};
+		double[][] v = { { -1, 0, 1 }, { -1, 1, 0 }, { 0, -1, 1 } };
 		
-		isImplicitLP(null);
+		System.out.print(lpSolve(test, names, v).toString());
+		
 		// test
 //		count=0;
 //		long values[] = new long[] {
@@ -234,7 +298,6 @@ public class SharedPlaceSolver {
 //		System.out.println("result:"+findOut(values, 3));
 //		System.out.println("count:"+count);
 		
-		
-		
 	}
+
 }

@@ -50,8 +50,8 @@ import net.strongdesign.util.Pair;
 
 /**
  * An abstract implementation of the decomposition algorithm, which is highly
- * configurebale. By an instance of
- * {@link desij.decomposition.DecompositionParameter} all neccessary parameters are
+ * configurable. By an instance of
+ * {@link desij.decomposition.DecompositionParameter} all necessary parameters are
  * provided to the algorithm.
  * 
  * <p>
@@ -69,6 +69,9 @@ public abstract class AbstractDecomposition   {
 	protected String filePrefix;
 	
 	protected STG specification;
+	
+	
+	public String lastMessage;
 
 
 	public AbstractDecomposition(String filePrefix) {
@@ -322,37 +325,45 @@ public abstract class AbstractDecomposition   {
 	}
 
 
-	private enum Reason {SYNTACTIC, CONFLICT, OK}
+	public enum Reason {SYNTACTIC, CONFLICT, OK}
 
+	
+	public Reason isContractable(Transition transition) {
+		return isContractable(transition.getSTG(), transition);
+	}
+	
 	private Reason isContractable(STG stg, Transition transition) {
 
 		if (stg.getSignature(transition.getLabel().getSignal()) != Signature.DUMMY) {
 			logging(stg, DecompositionEvent.CONTRACTION_NOT_POSSIBLE_DUMMY, transition.getString(Node.UNIQUE));
+			lastMessage = DecompositionEvent.CONTRACTION_NOT_POSSIBLE_DUMMY.toString();
 			return Reason.SYNTACTIC;
-			
-			
 		}
 
 		if ( ! ConditionFactory.SECURE_CONTRACTION.fulfilled(transition)) {
 			logging(stg, DecompositionEvent.CONTRACTION_NOT_SECURE, transition.getString(Node.UNIQUE));
+			lastMessage = DecompositionEvent.CONTRACTION_NOT_SECURE.toString();
 			return Reason.SYNTACTIC;
 		}
 
 		//TODO wird das doppelt geprueft ???
 		if ( ConditionFactory.LOOP_NODE.fulfilled(transition)) {
 			logging(stg, DecompositionEvent.CONTRACTION_NOT_POSSIBLE_LOOP, transition.getString(Node.UNIQUE));
+			lastMessage = DecompositionEvent.CONTRACTION_NOT_POSSIBLE_LOOP.toString();
 			return Reason.SYNTACTIC;
 		}
 
 		//TODO wird das doppelt geprueft ???
 		if ( ConditionFactory.ARC_WEIGHT.fulfilled(transition)) {
 			logging(stg, DecompositionEvent.CONTRACTION_NOT_POSSIBLE_ARC_WEIGHT, transition.getString(Node.UNIQUE));
+			lastMessage = DecompositionEvent.CONTRACTION_NOT_POSSIBLE_ARC_WEIGHT.toString();
 			return Reason.SYNTACTIC;
 		}
 
 
 		if (!CLW.instance.RISKY.isEnabled() && ConditionFactory.NEW_AUTOCONFLICT_PAIR.fulfilled(transition) ) {
 			logging(stg, DecompositionEvent.CONTRACTION_NOT_POSSIBLE_NEW_AUTOCONFLICT, transition.getString(Node.UNIQUE));
+			lastMessage = DecompositionEvent.CONTRACTION_NOT_POSSIBLE_NEW_AUTOCONFLICT.toString();
 			return Reason.CONFLICT;
 		}
 
@@ -362,11 +373,13 @@ public abstract class AbstractDecomposition   {
 				if (CLW.instance.SAFE_CONTRACTIONS_UNFOLDING.isEnabled() && stg.getSize() <= CLW.instance.MAX_STG_SIZE_FOR_UNFOLDING.getIntValue()) {
 					if (! new ConditionFactory.SafeContraction<Transition>(stg).fulfilled(transition)) {
 						logging(stg, DecompositionEvent.CONTRACTION_NOT_POSSIBLE_DYNAMICALLY_UNSAFE, transition.getString(Node.UNIQUE));
+						lastMessage = DecompositionEvent.CONTRACTION_NOT_POSSIBLE_DYNAMICALLY_UNSAFE.toString();
 						return Reason.SYNTACTIC;
 					}
 				}
 				else {
 					logging(stg, DecompositionEvent.CONTRACTION_NOT_POSSIBLE_SYNTACTICALLY_UNSAFE, transition.getString(Node.UNIQUE));
+					lastMessage = DecompositionEvent.CONTRACTION_NOT_POSSIBLE_SYNTACTICALLY_UNSAFE.toString();
 					return Reason.SYNTACTIC;
 				}
 			}

@@ -383,7 +383,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				stgs.add(generateComposedSTG(useCartesianProduct, term, parser));
 			}
 			
-			return STGUtil.synchronousProduct(stgs, true);
+			return STGUtil.synchronousProduct(stgs, false);
 			
 		} else {
 			

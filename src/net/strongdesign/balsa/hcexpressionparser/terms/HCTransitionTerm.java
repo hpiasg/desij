@@ -35,6 +35,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 			sg = Signature.OUTPUT;
 		
 		if (wire.equals("o")) sg  = Signature.OUTPUT;
+		if (wire.equals("c")) sg  = Signature.INTERNAL;
 		if (wire.endsWith("i")) sg = Signature.INPUT;
 		
 		stg.setSignature(signal, sg);
@@ -62,7 +63,9 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 			wire.equals("a")&&!sig.isActive(channel))
 			sg = Signature.OUTPUT;
 		
+		
 		if (wire.equals("o")) sg  = Signature.OUTPUT;
+		if (wire.equals("c")) sg  = Signature.INTERNAL;
 		if (wire.endsWith("i")) sg = Signature.INPUT;
 		
 		stg.setSignature(signal, sg);

@@ -19,6 +19,9 @@
 
 package net.strongdesign.stg;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.sf.javailp.Linear;
 import net.sf.javailp.Problem;
 import net.strongdesign.desij.CLW;
@@ -110,4 +113,97 @@ public class MarkingEquationCache {
 				
 		return problem;
 	}
+	
+	/**
+	 * Collects all the places in the direction from child to parent
+	 * @param tran - transition to be searched from
+	 * @param depth - depth of the search
+	 * @param placeCollector - the accumulator for all the places
+	 */
+	private static void collectPlaces(Transition tran, int depth, Set<Place> placeCollector) {
+		if (depth==0) return;
+		
+		for (Node p: tran.getParents()) {
+			
+			if (placeCollector.contains(p)) continue;
+			
+			
+			for (Node t: p.getParents()) {
+				collectPlaces((Transition)t, depth-1, placeCollector); 
+			}
+			
+			placeCollector.add((Place)p);
+			
+		}
+	}
+	
+	/**
+	 * This function creates a marking equation of a limited depth for a given STG and a place
+	 * @param stg
+	 * @param place - the central place from which to construct the limited STG
+	 * @param depth - depth for which to construct the marking equation
+	 * @return
+	 */
+	public static Problem getMarkingEquation(STG stg, Place place, int depth) {
+		// depth=0 means there is no limitation
+		if (depth==0) return getMarkingEquation(stg);
+		
+		Set<Place> places = new HashSet<Place>();
+		
+		// add all the places at a given depth
+		for (Node t: place.getChildren()) {
+			collectPlaces((Transition)t, depth, places);
+		}
+		// for each place add all transitions in their pre-set and post-set
+		Set<Transition> transitions = new HashSet<Transition>();
+		for (Place p: places) {
+			for (Node t: p.getChildren())
+				transitions.add((Transition)t);
+			
+			for (Node t: p.getParents()) 
+				transitions.add((Transition)t);
+		}
+		
+		
+		Problem problem = new Problem();
+		Linear linear;
+		int id;
+		
+		// M_1 = M_N + I v_1 --> -M0 = -M1 + I v_1
+		for (Place p : places) {
+			id = p.getIdentifier();
+			linear = new Linear();
+			linear.add(-1, "M1" + id);
+			// avoid building the IncidenceMatrix and compute on children and parents of p, only
+			for (Node transition : p.getNeighbours())
+				linear.add(transition.getChildValue(p) - transition.getParentValue(p), "v1" + transition.getIdentifier());
+			
+			problem.add(linear, "=", -1*p.getMarking());
+		}
+		
+		linear = new Linear();
+		// M_1 > 0 and v_1 >= 0 and solve as (I)LP problem 
+		for (Place p : places) {
+			id = p.getIdentifier();
+			problem.setVarLowerBound("M1" + id, 0);
+			linear.add(1, "M1" + id);
+			if (!CLW.instance.NOILP.isEnabled())
+				problem.setVarType("M1" + id, Integer.class);
+			else
+				problem.setVarType("M1" + id, Double.class);
+		}
+		problem.add(linear, ">=", 1);
+		
+		for (Transition t : transitions) {
+			id = t.getIdentifier();
+			problem.setVarLowerBound("v1" + id, 0);
+			if (!CLW.instance.NOILP.isEnabled())
+				problem.setVarType("v1" + id, Integer.class);
+			else
+				problem.setVarType("v1" + id, Double.class);
+		}
+				
+		return problem;
+	}
+	
 }

@@ -321,7 +321,7 @@ public class DesiJ {
 	private static void createSTG() throws STGException, IOException {
 		STG stg=null;
 		if (CLW.instance.MODEL.getValue().startsWith("$Bzr")) {
-			stg = ComponentSTGFactory.createSTGComponent(CLW.instance.MODEL.getValue(), null, null);
+			stg = ComponentSTGFactory.createSTGComponent(CLW.instance.MODEL.getValue(), 0, null, null);
 		} else {
 			stg = STGCreator.getPredefinedSTG(CLW.instance.MODEL.getValue());
 		}

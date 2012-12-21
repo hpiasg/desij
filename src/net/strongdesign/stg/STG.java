@@ -497,20 +497,49 @@ public final class STG implements Cloneable {
 
 	/**
 	 * Returns the number of dummies
-	 * (not very efficient)
+	 * @return
 	 */
 	public int getNumberOfDummies() {
-		int ret=0;
-		for (Transition t: transitions) {
-			if (getSignature(t.getLabel().getSignal())==Signature.DUMMY) {
-				ret++;
-			}
-		}
-		
-		return ret;
+		return getTransitions(ConditionFactory.IS_DUMMY).size();
 	}
 
-
+	
+	public String getSTGInfo() {
+		// get the number of transitions, places, dummies, arcs, and loops 
+		int arcs=0;
+		int loops=0;
+		
+		int aw=0; // the number of weightet arcs
+		// now for each place find the number of associated arcs and loops (read-arcs)
+		for (Node p: getPlaces()) {
+			arcs+=p.getParents().size();
+			arcs+=p.getChildren().size();
+			
+			HashSet<Node> par = new HashSet<Node>();
+			HashSet<Node> chi = new HashSet<Node>();
+			
+			par.addAll(p.getParents());
+			chi.addAll(p.getChildren());
+			
+			for (Node t: par) {
+				if (p.getChildValue(t)>1) aw++;
+				if (t.getChildValue(p)>1) aw++;
+			}
+			
+			for (Node t: chi) {
+				if (p.getChildValue(t)>1) aw++;
+				if (t.getChildValue(p)>1) aw++;
+			}
+			
+			par.retainAll(chi);
+			loops+=par.size();
+		}
+		
+		String aws="";
+		if (aw>0) aws+="("+aw+")";
+		return " A:"+arcs+aws+" L:"+loops+" T:"+getNumberOfTransitions()+" P:"+getNumberOfPlaces()+" D:"+getNumberOfDummies();
+	}
+	
 	// *******************************************************************
 	// Marking
 	// *******************************************************************
