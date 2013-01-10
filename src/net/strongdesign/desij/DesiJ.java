@@ -77,6 +77,7 @@ import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.parser.TokenMgrError;
+import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
 import net.strongdesign.stg.synthesis.StateGraph;
 import net.strongdesign.stg.synthesis.Unfolding;
 import net.strongdesign.stg.traversal.CollectorFactory;
@@ -210,6 +211,8 @@ public class DesiJ {
 				show();
 			else if (CLW.instance.OPERATION.getValue().equals("killdummies")) 
 				killdummies();
+			else if (CLW.instance.OPERATION.getValue().equals("killdummiesrelaxed")) 
+				killDummiesRelaxed();
 			else if (CLW.instance.OPERATION.getValue().equals("reduceint"))
 				reduceinternals();
 			else if (CLW.instance.OPERATION.getValue().equals("info")) 
@@ -308,13 +311,24 @@ public class DesiJ {
 
 	private static void breeze() throws Exception {
 		
-		for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
-			String fname = e.getKey()+".g";
-			STG stg = e.getValue();
-			
-			FileSupport.saveToDisk(STGFile.convertToG(stg),fname);
-		}
+		Map<String, STG> bmap = ComponentSTGFactory.breeze2stg();
 		
+		for (Entry<String,STG> e: bmap.entrySet()) {
+			String fname;
+			
+			if (CLW.instance.OUTFILE.equals("")) {
+				fname = e.getKey()+".g";
+			} else {
+				
+				fname=CLW.instance.OUTFILE.getValue();
+				
+				if (bmap.size()>1) {
+					fname = e.getKey()+fname;
+				}
+			}
+			
+			FileSupport.saveToDisk(STGFile.convertToG(e.getValue()),fname);
+		}
 	} 
 
 
@@ -364,12 +378,71 @@ public class DesiJ {
 			STG stg = loadSTG(fileName, true);
 
 
-			int r = STGUtil.removeDummies(stg);
+			int dum1 = stg.getNumberOfDummies();
+			int pl1 = stg.getNumberOfPlaces();
 
-			System.out.println(fileName+": "+r+" dummy transitions removed");
+			STGUtil.removeDummies(stg);
+			int dum2 = stg.getNumberOfDummies();
+			System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
+			
+			int pl2 = stg.getNumberOfPlaces();
+			System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
+			
 			String name = CLW.instance.OUTFILE.getValue().equals("")?fileName:CLW.instance.OUTFILE.getValue();
 			FileSupport.saveToDisk(STGFile.convertToG(stg), name);
 
+
+		}
+	}
+	
+	
+	
+	private static void killSTGDummies(STG stg, String fileName) throws IOException, STGException, ParseException {
+		
+		RedundantPlaceSolverLP.totalFound = 0;
+		RedundantPlaceSolverLP.totalSetupMills = 0;
+		RedundantPlaceSolverLP.totalSolverMills = 0;
+
+		int dum1 = stg.getNumberOfDummies();
+		int pl1 = stg.getNumberOfPlaces();
+
+		STGUtil.removeDummiesBreeze(stg);
+		int dum2 = stg.getNumberOfDummies();
+		System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
+		
+		int pl2 = stg.getNumberOfPlaces();
+		
+		System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
+		System.out.println(fileName+": Solver found: "+ RedundantPlaceSolverLP.totalFound +
+				" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
+				" running time: "+(double)RedundantPlaceSolverLP.totalSolverMills/1000+" s"+
+				" setup time: "+(double)RedundantPlaceSolverLP.totalSetupMills/1000+" s"
+				);
+	}
+	
+	
+	/**
+	 * contracts dummy signals while also uses relaxation to achieve more contractions
+	 * @throws Exception 
+	 */
+	private static void killDummiesRelaxed() throws Exception {
+		for (String fileName : CLW.instance.getOtherParameters()) {
+			
+			
+			STG stg;
+			if (fileName.endsWith("breeze")) {
+				
+				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
+					String fname = e.getKey()+".g";
+					stg = e.getValue();
+					killSTGDummies(stg, fname);
+				}
+				
+			} else {
+				stg = loadSTG(fileName, true);
+				
+				killSTGDummies(stg, fileName);
+			}
 
 		}
 	}
@@ -510,13 +583,29 @@ public class DesiJ {
 		System.out.println("Removing redundant places ");
 		
 		for (String fileName : CLW.instance.getOtherParameters()) {
-			System.out.print("File: " + fileName + " ...  ");
-			STG stg = loadSTG(fileName, false);
 
+			STG stg = loadSTG(fileName, true);
+
+			int pl1 = stg.getNumberOfPlaces();
+			int dum1 = stg.getNumberOfDummies();
+			
 			STGUtil.removeRedundantPlaces(stg);
+			
+			int pl2 = stg.getNumberOfPlaces();
+			int dum2 = stg.getNumberOfDummies();
+			
+			System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
+			System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
+			System.out.println(fileName+": Solver found: "+ RedundantPlaceSolverLP.totalFound +
+					" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
+					" running time: "+(double)RedundantPlaceSolverLP.totalSolverMills/1000+" s"+
+					" setup time: "+(double)RedundantPlaceSolverLP.totalSetupMills/1000+" s"
+					);
 
+			
 			FileSupport.saveToDisk(STGFile.convertToG(stg), fileName + ".red.g");
 			System.out.println("done");
+			
 		}
 	}
 

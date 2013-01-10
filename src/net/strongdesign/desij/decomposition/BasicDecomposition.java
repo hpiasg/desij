@@ -49,7 +49,7 @@ public class BasicDecomposition extends AbstractDecomposition {
 		super(filePrefix);
 		this.specification = specification;
 	}
-
+	
 	@Override
 	public List<Transition> reduce(STGInOutParameter stgParam) throws STGException {
 
@@ -174,6 +174,5 @@ public class BasicDecomposition extends AbstractDecomposition {
 			}
 		}        
 	}
-
 
 }

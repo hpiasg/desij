@@ -26,10 +26,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -40,12 +42,16 @@ import lpsolve.LpSolveException;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJ;
 import net.strongdesign.desij.DesiJException;
+import net.strongdesign.desij.decomposition.DecompositionEvent;
+import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.statesystem.StateSystem;
+import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
 import net.strongdesign.stg.traversal.Condition;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.stg.traversal.NotCondition;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
+import net.strongdesign.util.Pair;
 import net.strongdesign.util.StreamGobbler;
 
 
@@ -93,21 +99,27 @@ public abstract class STGUtil {
 				DesiJ.logFile.debug("Contracted transition: " + actTransition.getString(Node.UNIQUE));
 			}
 			
-			if (
-				   CLW.instance.CHECK_RED_OFTEN.isEnabled()
-				|| actTransition == null
-				|| contractions * redDel_frequency >= queue.getContractibleTransitionsCount()
-				|| stg.getNumberOfPlaces() > CLW.instance.PLACE_INCREASE.getDoubleValue() * nroPlaces
-			) {
-				contractions = 0;
-				NeighbourTrackingNodeRemover remover = new NeighbourTrackingNodeRemover(stg);
-				redDel(stg, remover);
-				queue.removeNodes(remover.getRemoved());
+			
+			// when only safe contractions are enabled, there is no risk of place count explosion
+			// so checking it often won't change much
+			if (!CLW.instance.SAFE_CONTRACTIONS.isEnabled()) {
 				
-				Collection<Node> neighbours = remover.getNeighbours();
-				queue.registerAffectedNodes(neighbours);
-				for(Node neighbour : neighbours)
-					queue.registerAffectedNodes(neighbour.getNeighbours());
+				if (
+						   CLW.instance.CHECK_RED_OFTEN.isEnabled()
+						|| actTransition == null
+						|| contractions * redDel_frequency >= queue.getContractibleTransitionsCount()
+						|| stg.getNumberOfPlaces() > CLW.instance.PLACE_INCREASE.getDoubleValue() * nroPlaces
+					) {
+						contractions = 0;
+						NeighbourTrackingNodeRemover remover = new NeighbourTrackingNodeRemover(stg);
+						redDel(stg, remover);
+						queue.removeNodes(remover.getRemoved());
+						
+						Collection<Node> neighbours = remover.getNeighbours();
+						queue.registerAffectedNodes(neighbours);
+						for(Node neighbour : neighbours)
+							queue.registerAffectedNodes(neighbour.getNeighbours());
+					}
 			}
 			
 			if(stg.getNumberOfPlaces() == nroPlaces && stg.getNumberOfTransitions() == nroTransitions)
@@ -116,7 +128,52 @@ public abstract class STGUtil {
 		return result-queue.size();
 	}
 	
-	
+	/**
+	 * Special type of removing dummies, 
+	 * designed for working with STGs generated from breeze files
+	 * @param stgParam
+	 * @return
+	 * @throws STGException
+	 */
+	public static void removeDummiesBreeze(STG stg) throws STGException {
+		
+		int dum1, dum2;
+		
+		// initial relaxation - before any other operations
+		STGUtil.relaxInjectiveSplitSharedPath(stg);
+		
+		if (!CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled())
+			redDel(stg, new NeighbourTrackingNodeRemover(stg));
+		
+		while (true) {
+			
+			dum1=stg.getNumberOfDummies();
+			//Contract dummies
+			removeDummies(stg);
+			dum2=stg.getNumberOfDummies();
+			
+			System.out.println(" D"+dum1+"-> D"+dum2);
+			
+			if (dum2==0) return; // nothing more to contract
+			
+			redDel(stg, new NeighbourTrackingNodeRemover(stg));
+			
+			// if fails to do any relaxations, then return
+			if (!STGUtil.relaxInjectiveSplitSharedPath(stg)) {
+				
+				System.out.println("relax1 failed");
+				if (!STGUtil.relaxInjectiveSplitMergePlaces(stg)) {
+					System.out.println("relax2 failed");
+					return;
+				} else {
+//					System.out.println("relax2 success");
+				}
+			} else {
+//				System.out.println("relax1 success");
+			}
+		}
+		
+	}
 	// the following three (private) methods are dedicated to removeDummies()
 	
 	enum Reason {SYNTACTIC, OK}
@@ -126,7 +183,6 @@ public abstract class STGUtil {
 		if (stg.getSignature(transition.getLabel().getSignal()) != Signature.DUMMY) {
 			DesiJ.logFile.debug("Contraction of " + transition.getString(Node.UNIQUE) + " is not possible because it is not a dummy");
 			return Reason.SYNTACTIC;
-			
 			
 		}
 
@@ -167,6 +223,9 @@ public abstract class STGUtil {
 	}
 	
 	private static Collection<Node> redDel(STG stg, NodeRemover remover) {
+		
+		
+		
 		Collection<Node> result = new HashSet<Node>();
 
 		if (CLW.instance.REMOVE_REDUNDANT_TRANSITIONS.isEnabled()) { 
@@ -179,7 +238,8 @@ public abstract class STGUtil {
 			Collection<Place> r=STGUtil.removeRedundantPlaces(stg, remover);
 			result.addAll(r);
 			DesiJ.logFile.debug("Remove all redundant places: " + r.toString());
-		}   
+		}
+		
 		return result;
 	}
 
@@ -330,157 +390,109 @@ public abstract class STGUtil {
 	}
 	
 	public static Set<Place> removeRedundantPlaces(STG stg, boolean repeat, NodeRemover remover) {
-			Set<Place> result = new HashSet<Place>();
-			
-		// first, remove all redundant places that are quick to find
-		Condition<Place> redPlace = ConditionFactory.getRedundantPlaceCondition(stg);
-		Condition<Place> redPlaceOld = ConditionFactory.getRedundantPlaceCondition(stg);
+		
+		Set<Place> result = new HashSet<Place>();
+		
+		if (!CLW.instance.REMOVE_REDUNDANT_PLACES.isEnabled()) return result;
 		
 		boolean found;
 		
+		// first, remove all redundant places that are quick to find
+		Condition<Place> redPlace = ConditionFactory.getRedundantPlaceCondition(stg);
 		
-		do {			
-			found = false;
-			int y=stg.getNumberOfPlaces();
-			if (y>100000) throw new DesiJException("The STG has more than 100000 places."); //System.exit(1);			
-			
-			LinkedList<Place> places = new LinkedList<Place>();
-			places.addAll(stg.getPlaces());
-			Collections.sort(places, new STGUtil.GreatestPresetFirst());
-			
-			for (Place place : places ){
-				if (redPlace.fulfilled(place)) {
-					found = true;
-					remover.removePlace(place);
-					result.add(place);
-				}
-			}
-		} while (repeat && found);
-		
-		// use shallow lp solver (quick)
-		int d=4;
-		if (stg.getPlaces().size()>5000) d=3;
-		if (stg.getPlaces().size()>10000) d=2;
-		if (stg.getPlaces().size()>15000) d=1;
-		
-		redPlace = ConditionFactory.getImplicitPlaceCondition(stg, d);
-		do {
-			found = false;
-			int i = 0;
-			
-			LinkedList<Place> places = new LinkedList<Place>();
-			places.addAll(stg.getPlaces());
-			Collections.sort(places, new STGUtil.GreatestPresetFirst());
-			
-			for (Place place : places ){
-				i++;
-				//is the single parent of a post-set transition -> definitely not redundant
-				boolean singleParent = false;
-				for (Node children : place.getChildren()) {
-					singleParent = singleParent || children.getParents().size() == 1;
-				}
+		if (!CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
+			do {
+				found = false;
+				int y=stg.getNumberOfPlaces();
+				if (y>100000) throw new DesiJException("The STG has more than 100000 places."); //System.exit(1);			
 				
-				if (singleParent) continue;
+				LinkedList<Place> places = new LinkedList<Place>();
+				places.addAll(stg.getPlaces());
+				Collections.sort(places, new STGUtil.GreatestPresetFirst());
 				
-				if (redPlace.fulfilled(place)) {
-					found = true;
-					remover.removePlace(place);
-					result.add(place);
-				}
-				
-			}
-		} while (repeat && found);
-
-		
-		// use full lp solver if the number of places is not "too large"
-		int psize=stg.getPlaces().size();
-		if (psize<500||CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
-			
-//			int []depths={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,0};
-			int []depths={0};
-			
-			for (int dd: depths) 
-			{
-				long startTime = System.currentTimeMillis();
-				
-				int both=0;
-				int onlyNew=0;
-				int onlyOld=0;
-				
-//				System.out.println("************************************** Checking depth:"+dd);
-				
-				redPlace = ConditionFactory.getImplicitPlaceCondition(stg, dd);
-				
-				
-				do {
-					found = false;
-					int pl = stg.getPlaces().size(); 
-					int i = 0;
-					
-					LinkedList<Place> places = new LinkedList<Place>();
-					places.addAll(stg.getPlaces());
-					Collections.sort(places, new STGUtil.GreatestPresetFirst());
-					
-					for (Place place : places ){
-						i++;
-						//is the single parent of a post-set transition -> definitely not redundant
-						boolean singleParent = false;
-						for (Node children : place.getChildren()) {
-							singleParent = singleParent || children.getParents().size() == 1;
-						}
-						
-						if (singleParent) continue;
-						
-						if (dd==0&&psize>=500) {
-							System.out.printf("LP solver for place "+i+"/"+pl+" |pre|="+place.getParents().size()+" |post|="+place.getChildren().size());
-						}
-						
-						boolean m1 = redPlace.fulfilled(place);
-						boolean m2 = redPlaceOld.fulfilled(place);
-						
-						if (m1) {
-							if (m2) {
-								both++;
-								if (dd==0&&psize>=500)
-									System.out.print("++\n");
-								
-							} else {
-								onlyNew++;
-								if (dd==0&&psize>=500)
-									System.out.print("+ --> -\n");
-							}
-						} else {
-							if (m2) {
-								onlyOld++;
-								if (dd==0&&psize>=500)
-									System.out.print("- --> +!!!\n");
-							} else {
-								if (dd==0&&psize>=500)
-									System.out.print("\n");
-							}
-						}
-						
-						if (m1) {
-							found = true;
-							remover.removePlace(place);
-							result.add(place);
-						}
-						
+				for (Place place : places ) {
+					if (redPlace.fulfilled(place)) {
+						found = true;
+						remover.removePlace(place);
+						result.add(place);
 					}
-				} while (repeat && found);
+				}
+			} while (repeat && found);
+		}
+		
+		
+		if (CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
+			long time = System.currentTimeMillis();
+			
+			Date start = new Date();
+			
+			int d=CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue();
+			int foundNum = 0;
+			
+			
+//			redPlace = ConditionFactory.getRedundantPlaceLPCondition(stg, d);
+			
+//			redPlace = ConditionFactory.getRedundantPlaceLP2Condition(stg, d);
+			
+//			Condition<Place> redPlace2 = ConditionFactory.getRedundantPlaceLP2Condition(stg, d);
+			
+			redPlace = ConditionFactory.getImplicitPlaceCondition(stg, d);
+			
+			RedundantPlaceSolverLP solver = new RedundantPlaceSolverLP();
+			
+			do {
+				found = false;
+				int i = 0;
+				int pl = stg.getPlaces().size();
 				
-				long endTime = System.currentTimeMillis();
+				LinkedList<Place> places = new LinkedList<Place>();
+				places.addAll(stg.getPlaces());
+				Collections.sort(places, new STGUtil.GreatestPresetFirst());
 				
-//				System.out.printf("LP solver found:%d\n",both+onlyNew);
-//				System.out.println("Both found:"+both);
-//				System.out.println("Only new found:"+onlyNew);
-//				System.out.println("Only old found:"+onlyOld);
-//				
-//				System.out.println("New place count:"+stg.getPlaces().size());
-//				
-//				System.out.printf("Time elapsed: %.2f sec\n",(Double.valueOf(endTime-startTime))/1000);
-				
-			}
+				for (Place place : places ){
+					i++;
+					
+/*					if (d==0) {
+						double tt = (System.currentTimeMillis()-(double)startTime)/1000;
+						System.out.printf("LP solver for place %d/%d |pre|=%d |post|=%d total found:%d time elapsed:%0.2f s\n", i, pl, place.getParents().size(), place.getChildren().size(), foundNum, tt);
+					} else
+	*/				
+					
+					if ((System.currentTimeMillis()-time)>5000) {
+						time=System.currentTimeMillis();
+						
+						System.out.printf("LP solver: place %d/%d |pre|=%d |post|=%d total found:%d time elapsed: "
+								+(new Date().getTime() - start.getTime())/1000.0+" s\n", 
+								i, pl, place.getParents().size(), place.getChildren().size(), foundNum);
+					}
+					
+					
+					boolean r1 = solver.isRedundant2(stg, place, d);
+//					boolean r2 = solver.isRedundant2(stg, place, d);
+					
+//					boolean r1 = redPlace.fulfilled(place);
+//					boolean r2 = redPlace2.fulfilled(place);
+//					
+//					if (r1&&!r2) {
+//						System.out.print("ERROR! +  -\n");
+//					}
+//					
+//					if (!r1&&r2) {
+//						System.out.print("ERROR! -  +\n");
+//					}
+					
+					
+					if (r1) {
+						found = true;
+						remover.removePlace(place);
+						result.add(place);
+						foundNum ++;
+					}
+					
+					
+				}
+			} while (false && repeat && found);
+			
 		}
 
 		return result;
@@ -1010,12 +1022,147 @@ public abstract class STGUtil {
 	}
 	
 	
+
+	/**
+	 * Function relaxes injective labelling by splitting shared paths 
+	 * @param stg - the stg to work on
+	 */
+	public static boolean relaxInjectiveSplitSharedPath(STG stg) {
+		boolean ret = false;
+		
+		Collection<Place> places = new HashSet<Place>();
+		places.addAll(stg.getPlaces());
+		
+		// do the optimisation that is opposite to enforcing injective labelling
+		for (Place place: places) {
+			
+			// the primitive case of the shared path optimisation
+			//if (true||CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
+			{
+				
+				
+				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
+					Place place2 = place;
+					
+					boolean failed = false;
+					
+					while (!failed&&place2.getChildren().size()==1) {
+						
+						if (place2.getMarking()>0) failed=true;
+						
+						Transition t = (Transition)place2.getChildren().iterator().next();
+						
+						// do not allow dummy transitions on the path
+						//if (ConditionFactory.IS_DUMMY.fulfilled(t)) { failed=true; break; }
+						
+						if (t.getChildren().size()!=1) {
+							failed=true;
+							break;
+						} else {
+							Place np = (Place)t.getChildren().iterator().next();
+							// do not allow self-loop transitions
+							if (np!=place2)
+								place2 = (Place)t.getChildren().iterator().next();
+							else
+								failed=true;
+						}
+					}
+					
+					Set<Node> parents  = new HashSet<Node>();
+					parents.addAll(place.getParents());
+					
+					Set<Node> children = new HashSet<Node>();
+					children.addAll(place2.getChildren());
+					
+					Set<Node> test = new HashSet<Node>();
+					test.addAll(parents);
+					test.addAll(children);
+					
+					Map<Transition, Place> tp = new HashMap<Transition, Place>();
+					Map<Place, Transition> pt = new HashMap<Place, Transition>();
+					
+					// check pre-sets and post-sets do not intersect 
+					if (!failed&&parents.size()+children.size()==test.size()) {
+						
+						for (Node t1: place.getParents()) {
+							if (t1.getChildren().size()!=2) continue;
+							if (t1.getChildValue(place)!=1) continue;
+							
+							Iterator<Node> it = t1.getChildren().iterator();
+							Place p = (Place) it.next();
+							if (p==place) p = (Place) it.next();
+							
+							// for now only very primitive cases are considered
+							if (p.getMarking()>0) continue;
+							
+							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) continue;
+							
+							Transition t2 = (Transition) p.getChildren().iterator().next();
+							if (place2.getChildValue(t2)!=1) continue;
+							
+							
+							if (parents.contains(t1)&&children.contains(t2)) {
+								tp.put((Transition)t1,p);
+								pt.put(p, t2);
+								
+								parents.remove(t1);
+								children.remove(t2);
+							}
+						}
+					}
+					
+					
+					if (!failed) {
+						// 
+						for (Entry<Transition, Place> e: tp.entrySet()) {
+							
+							Transition t1 = e.getKey();
+							Transition t2 = pt.get(e.getValue());
+							
+							//if (stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY||
+							//	stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY) 
+							{
+								
+								// we do have some changes
+								ret=true;
+								
+								if (place.getParents().size()>1) {
+									
+									Place p1 = stg.addPlace("p", 0);
+									Place p2 = stg.addPlace("p", 0);
+									
+									t1.setChildValue(p1, 1);
+									p2.setChildValue(t2, 1);
+									
+									t1.setChildValue(place, 0);
+									place2.setChildValue(t2, 0);
+									
+									copyPath(stg, place, place2, p1, p2);
+									
+								}
+								
+								stg.removePlace(e.getValue());
+							}
+						}
+					}
+				}
+			}
+			
+		}
+		
+		return ret;
+	}
+
+	
 	/**
 	 * Function splits merge places to allow more contractions
 	 * 
 	 * @param stg - the stg to work on
+	 * returns true if it did change something
 	 */
-	public static void splitMergePlaces(STG stg) {
+	public static boolean relaxInjectiveSplitMergePlaces(STG stg) {
+		
+		boolean ret = false;
 		
 		// for each dummy transition, that has no loops and has a choice place in its preset
 		for (Transition tran: stg.getTransitions(ConditionFactory.IS_DUMMY)) {
@@ -1089,14 +1236,12 @@ public abstract class STGUtil {
 			
 			if (failed) continue;
 			
-			
-			
-			
-			
 			// conditions are good, apply relaxation for each of the tran* 
 			for (Node post: postPlaces) {
 				
 				if (post.getParents().size()>1) {
+					
+					ret=true; // we do have some changes
 					
 					// create a new place p with zero marking
 					Place p  = stg.addPlace("p", 0);
@@ -1132,132 +1277,8 @@ public abstract class STGUtil {
 			
 		}
 		
+		return ret;
 	}
-
-	/**
-	 * Function produces new transitions 
-	 * @param stg - the stg to work on
-	 */
-	public static void relaxInjectiveLabelling(STG stg) {
-		
-		Collection<Place> places = new HashSet<Place>();
-		places.addAll(stg.getPlaces());
-		
-		// do the optimisation that is opposite to enforcing injective labelling
-		for (Place place: places) {
-			
-			// the primitive case of the shared path optimisation
-			//if (true||CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
-			{
-				
-				
-				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
-					Place place2 = place;
-					
-					boolean failed = false;
-					
-					while (!failed&&place2.getChildren().size()==1) {
-						
-						if (place2.getMarking()>0) failed=true;
-						
-						Transition t = (Transition)place2.getChildren().iterator().next();
-						
-						
-						if (t.getChildren().size()!=1) {
-							failed=true;
-							break;
-						} else {
-							Place np = (Place)t.getChildren().iterator().next();
-							// do not allow self-loop transitions
-							if (np!=place2)
-								place2 = (Place)t.getChildren().iterator().next();
-							else
-								failed=true;
-						}
-					}
-					
-					Set<Node> parents  = new HashSet<Node>();
-					parents.addAll(place.getParents());
-					
-					Set<Node> children = new HashSet<Node>();
-					children.addAll(place2.getChildren());
-					
-					Set<Node> test = new HashSet<Node>();
-					test.addAll(parents);
-					test.addAll(children);
-					
-					Map<Transition, Place> tp = new HashMap<Transition, Place>();
-					Map<Place, Transition> pt = new HashMap<Place, Transition>();
-					
-					// check pre-sets and post-sets do not intersect 
-					if (!failed&&parents.size()+children.size()==test.size()) {
-						
-						for (Node t1: place.getParents()) {
-							if (t1.getChildren().size()!=2) continue;
-							if (t1.getChildValue(place)!=1) continue;
-							
-							Iterator<Node> it = t1.getChildren().iterator();
-							Place p = (Place) it.next();
-							if (p==place) p = (Place) it.next();
-							
-							// for now only very primitive cases are considered
-							if (p.getMarking()>0) continue;
-							
-							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) continue;
-							
-							Transition t2 = (Transition) p.getChildren().iterator().next();
-							if (place2.getChildValue(t2)!=1) continue;
-							
-							
-							if (parents.contains(t1)&&children.contains(t2)) {
-								tp.put((Transition)t1,p);
-								pt.put(p, t2);
-								
-								parents.remove(t1);
-								children.remove(t2);
-							}
-						}
-					}
-					
-					
-					if (!failed) {
-						// 
-						for (Entry<Transition, Place> e: tp.entrySet()) {
-							Transition t1 = e.getKey();
-							Transition t2 = pt.get(e.getValue());
-							
-							//if (stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY||
-							//	stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY) 
-							{
-								
-								if (place.getParents().size()>1) {
-									
-									Place p1 = stg.addPlace("p", 0);
-									Place p2 = stg.addPlace("p", 0);
-									
-									t1.setChildValue(p1, 1);
-									p2.setChildValue(t2, 1);
-									
-									t1.setChildValue(place, 0);
-									place2.setChildValue(t2, 0);
-									
-									copyPath(stg, place, place2, p1, p2);
-									
-								}
-								
-								stg.removePlace(e.getValue());
-							}
-						}
-					}
-				}
-			}
-			
-		}
-		
-		
-	}
-
-	
 	
 	private static void collectNodes(Node node, int depth, Set<Node> collector) {
 		if (depth==0) return;

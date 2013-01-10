@@ -195,7 +195,9 @@ public abstract class STGFile {
 		//collect all implicit places which have to be made explicit
 		// initial comments
 		result.append(Messages.getString("STGFile.stg_start_comment")+" "+new Date() + "\n"); 
-		result.append("#Number of places: " + stg.getNumberOfPlaces() + "  Number of Transitions: " + stg.getNumberOfTransitions() +"\n\n");
+		result.append("# Number of places: " + stg.getNumberOfPlaces()+"\n");
+		result.append("# Number of transitions: " + stg.getNumberOfTransitions()+"\n");
+		result.append("# Number of dummies: " + stg.getNumberOfDummies()+"\n\n");
 		
 		Map<Node, String> savedNames = new HashMap<Node, String>();
 		Set<String> used = new HashSet<String>();
@@ -409,13 +411,16 @@ public abstract class STGFile {
 			
 			// all transitions first
 			for (Map.Entry<Node, Point> en: stg.getCoordinates().entrySet()) {
+				
+				
+				
 				if (!(en.getKey() instanceof Transition)) continue;
 				
 				Transition transition = (Transition)en.getKey();
 				
 				Point p = stg.getCoordinates(en.getKey());
 				
-				if (p!=null) {
+				if (p!=null&&savedNames.get(transition)!=null) {
 					result.append(savedNames.get(transition));
 					result.append(" "+p.x+" "+p.y+"\n");
 				}

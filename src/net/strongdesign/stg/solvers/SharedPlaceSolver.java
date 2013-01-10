@@ -1,4 +1,4 @@
-package net.strongdesign.stg;
+package net.strongdesign.stg.solvers;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -12,6 +12,10 @@ import net.sf.javailp.Result;
 import net.sf.javailp.Solver;
 import net.sf.javailp.SolverFactory;
 import net.sf.javailp.SolverFactoryLpSolve;
+import net.strongdesign.stg.Node;
+import net.strongdesign.stg.Place;
+import net.strongdesign.stg.STG;
+import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.traversal.ConditionFactory;
 
 
@@ -236,9 +240,9 @@ public class SharedPlaceSolver {
 				problem.add(linear, "<=", 0);
 			}
 		}
-
+		
 		problem.setOptimizationType(OptType.MAX);
-
+		
 		Result result = factory.get().solve(problem);
 		
 		if (result!=null) {

@@ -323,7 +323,7 @@ public class STGEditorNavigation extends JTree implements
 			
 			STG stg = stgin.clone();
 			
-			STGUtil.relaxInjectiveLabelling(stg);
+			STGUtil.relaxInjectiveSplitSharedPath(stg);
 			frame.addSTG(stg, "Relaxed");
 		}
 		
@@ -335,7 +335,7 @@ public class STGEditorNavigation extends JTree implements
 			
 			STG stg = stgin.clone();
 			
-			STGUtil.splitMergePlaces(stg);
+			STGUtil.relaxInjectiveSplitMergePlaces(stg);
 			frame.addSTG(stg, "Relaxed2");
 		}
 		

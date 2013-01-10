@@ -378,11 +378,114 @@ public final class STG implements Cloneable {
 		return STGOperations.collectUniqueFromCollection(transitions, condition, collector);
 	}
 
+	/**
+	 * Collects all the places in the direction from child to parent
+	 * @param tran - transition to be searched from
+	 * @param depth - depth of the search
+	 * @param placeCollector - the accumulator for all the places
+	 */
+	public static void collectNodesBackward(Set<Node> nodes, int depth, Set<Node> nodesCollector) {
+		
+		nodesCollector.addAll(nodes);
+		
+		if (depth==0) return;
+		
+		Set<Node> nextNodes = new HashSet<Node>();
+		
+		
+		for (Node n: nodes) {
+			nextNodes.addAll(n.getParents());
+		}
+		
+		nextNodes.removeAll(nodesCollector);
+		collectNodesBackward(nextNodes, depth-1, nodesCollector);
+	}
+	
+	/**
+	 * Collects all the places in the direction from parent to child
+	 * @param tran - transition to be searched from
+	 * @param depth - depth of the search
+	 * @param placeCollector - the accumulator for all the places
+	 */
+	public static void collectNodesForward(Set<Node> nodes, int depth, Set<Node> nodesCollector) {
+		
+		nodesCollector.addAll(nodes);
+		
+		if (depth==0) return;
+		
+		Set<Node> nextNodes = new HashSet<Node>();
+		
+		
+		for (Node n: nodes) {
+			nextNodes.addAll(n.getChildren());
+		}
+		
+		nextNodes.removeAll(nodesCollector);
+		
+		collectNodesForward(nextNodes, depth-1, nodesCollector);
+	}
+	
+	/**
+ 	 * Get STG subgraph for finding redundant places with LP solver 
+	 * @param stg  - the STG to be processed
+	 * @param mainPlace - the main place of interest
+	 * @param depth - how deep should the subgraph be
+	 * @param places - collector for places found
+	 * @param transitions - collector for transitions found
+	 */
+	public static void getSubgraphNodes(STG stg, Place mainPlace, int depth, Set<Place> places, Set<Transition> transitions) {
+		
+		if (depth==0) {
+			// for depth==0 just return the full graph
+			places.addAll(stg.getPlaces());
+			transitions.addAll(stg.getTransitions(ConditionFactory.ALL_TRANSITIONS));
+			return;
+		}
+		
+		Set<Node> nodesB = new HashSet<Node>();
+		Set<Node> nodesF = new HashSet<Node>();
+		
+		STG.collectNodesBackward(mainPlace.getChildren(), depth*2, nodesB);
+		
+		STG.collectNodesForward(mainPlace.getParents(), depth*2, nodesF);
+		nodesF.add(mainPlace);
+		nodesF.addAll(mainPlace.getChildren());
+		
+		places.add(mainPlace);
+		
+		// add all common places
+		for (Node n: nodesB) {
+			if (!nodesF.contains(n)) continue;
+			if (n instanceof Place) {
+				places.add((Place)n);
+			}
+		}
+		
+		// also add all places from the main place postset transitions presets
+		for (Node t: mainPlace.getChildren()) {
+			for (Node p: t.getParents()) {
+				places.add((Place)p);
+			}
+		}
+		
+		
+		// add all transitions from mainPlace postset
+		for (Node n: mainPlace.getNeighbours()) {
+			if (n instanceof Transition) transitions.add((Transition)n);
+		}
+		
+		// add all transitions from each place preset
+		for (Place p: places) {
+			for (Node n: p.getParents()) {
+				if (n instanceof Transition) transitions.add((Transition)n); 
+			}
+		}
+		
+	}
 
 	// *******************************************************************
 	// Information retrieval
 	// *******************************************************************
-
 
 	/**
 	 * Returns the weightmatrix W and the current marking M_N of the STG as lowlevel data structure.
@@ -445,6 +548,60 @@ public final class STG implements Cloneable {
 
 		return weightMatrix;
 	}
+	
+	
+	/**
+	 * Returns the weight matrix W for a given set of nodes
+	 */
+	static public int[] getWeightMatrix(Map<Node, Integer> mapping, STG stg, Place place, int depth) {
+		
+		int numPlaces = 0;
+		int numTrans = 0;
+		
+		Set<Place> places = new HashSet<Place>();
+		Set<Transition> transitions = new HashSet<Transition>(); 
+		
+		STG.getSubgraphNodes(stg, place, depth, places, transitions);
+		
+		numPlaces = places.size();
+		numTrans = transitions.size();
+		
+		Set<Node> nodes = new HashSet<Node>();
+		nodes.addAll(places);
+		nodes.addAll(transitions);
+		
+		int[] weightMatrix = new int[2*numPlaces*numTrans + 2*numPlaces + 2];
+		
+		weightMatrix[2*numPlaces*numTrans + 2*numPlaces + 0] = numPlaces;
+		weightMatrix[2*numPlaces*numTrans + 2*numPlaces + 1] = numTrans;
+		
+		int number=0;
+		for (Node node : places) {
+			mapping.put(node, number);
+			weightMatrix[2*numPlaces*numTrans + number] = ((Place)node).getMarking();
+			++number;
+		}
+		
+		number=0;
+		for (Node node : transitions) 
+			mapping.put(node, number++);
+
+		for (Node node : nodes) 
+			for (Node child : node.getChildren()) {
+				if (!nodes.contains(child)) continue;
+						
+				int pos;
+				if (node instanceof Place)
+					pos = mapping.get(node) * numTrans + mapping.get(child);
+				else
+					pos = numPlaces*numTrans + mapping.get(node) * numPlaces + mapping.get(child);
+
+				weightMatrix[pos] = node.getChildValue(child);				
+			}
+
+		return weightMatrix;
+	}
+	
 
 	/**
 	 * Returns all nodes.

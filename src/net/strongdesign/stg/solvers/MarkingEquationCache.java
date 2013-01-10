@@ -17,7 +17,7 @@
  * along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.strongdesign.stg;
+package net.strongdesign.stg.solvers;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,6 +25,10 @@ import java.util.Set;
 import net.sf.javailp.Linear;
 import net.sf.javailp.Problem;
 import net.strongdesign.desij.CLW;
+import net.strongdesign.stg.Node;
+import net.strongdesign.stg.Place;
+import net.strongdesign.stg.STG;
+import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.traversal.ConditionFactory;
 
 /**
@@ -114,28 +118,6 @@ public class MarkingEquationCache {
 		return problem;
 	}
 	
-	/**
-	 * Collects all the places in the direction from child to parent
-	 * @param tran - transition to be searched from
-	 * @param depth - depth of the search
-	 * @param placeCollector - the accumulator for all the places
-	 */
-	private static void collectPlaces(Transition tran, int depth, Set<Place> placeCollector) {
-		if (depth==0) return;
-		
-		for (Node p: tran.getParents()) {
-			
-			if (placeCollector.contains(p)) continue;
-			
-			
-			for (Node t: p.getParents()) {
-				collectPlaces((Transition)t, depth-1, placeCollector); 
-			}
-			
-			placeCollector.add((Place)p);
-			
-		}
-	}
 	
 	/**
 	 * This function creates a marking equation of a limited depth for a given STG and a place
@@ -144,26 +126,11 @@ public class MarkingEquationCache {
 	 * @param depth - depth for which to construct the marking equation
 	 * @return
 	 */
-	public static Problem getMarkingEquation(STG stg, Place place, int depth) {
-		// depth=0 means there is no limitation
+	public static Problem getMarkingEquation(STG stg, Place place, int depth, Set<Place> places, Set<Transition> transitions) {
+		// depth=0 means full depth will be returned
 		if (depth==0) return getMarkingEquation(stg);
 		
-		Set<Place> places = new HashSet<Place>();
-		
-		// add all the places at a given depth
-		for (Node t: place.getChildren()) {
-			collectPlaces((Transition)t, depth, places);
-		}
-		// for each place add all transitions in their pre-set and post-set
-		Set<Transition> transitions = new HashSet<Transition>();
-		for (Place p: places) {
-			for (Node t: p.getChildren())
-				transitions.add((Transition)t);
-			
-			for (Node t: p.getParents()) 
-				transitions.add((Transition)t);
-		}
-		
+		STG.getSubgraphNodes(stg, place, depth, places, transitions);
 		
 		Problem problem = new Problem();
 		Linear linear;
@@ -174,9 +141,13 @@ public class MarkingEquationCache {
 			id = p.getIdentifier();
 			linear = new Linear();
 			linear.add(-1, "M1" + id);
+			
 			// avoid building the IncidenceMatrix and compute on children and parents of p, only
-			for (Node transition : p.getNeighbours())
+			for (Node transition : p.getNeighbours()) {
+				if (!transitions.contains(transition)) continue;
+				
 				linear.add(transition.getChildValue(p) - transition.getParentValue(p), "v1" + transition.getIdentifier());
+			}
 			
 			problem.add(linear, "=", -1*p.getMarking());
 		}
@@ -187,11 +158,13 @@ public class MarkingEquationCache {
 			id = p.getIdentifier();
 			problem.setVarLowerBound("M1" + id, 0);
 			linear.add(1, "M1" + id);
+			
 			if (!CLW.instance.NOILP.isEnabled())
 				problem.setVarType("M1" + id, Integer.class);
 			else
 				problem.setVarType("M1" + id, Double.class);
 		}
+		
 		problem.add(linear, ">=", 1);
 		
 		for (Transition t : transitions) {

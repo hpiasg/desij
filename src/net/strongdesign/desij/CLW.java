@@ -90,6 +90,7 @@ public class CLW extends CommandLineWrapper {
 				"If an STG contains dummies, they are automatically contracted." +
 			"\n\t- check <specification> <component>+: same as for bisim, but only check if a STG-bisimulation exists. " +
 			"\n\t- killdummies: Contracts all dummy transitions." +
+			"\n\t- killdummiesrelaxed: Contracts all dummy while also using relaxation of injective labelling" +
 			"\n\t- reduceint: Removes overencoding, ie. if an STG satisfies CSC, then internal signals will be removed which are unnecessary to preserve CSC." +
 			"\n\t- info:" +
 			"\n\t- info1:" +
@@ -104,7 +105,7 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- breeze: Convert given Breeze file *.breeze to a cluster STG")
 			
 	public  CommandLineParameter OPERATION = 
-		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show,breeze", "decompose", false);
+		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,killdummiesrelaxed,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show,breeze", "decompose", false);
 	
 	// *******************************************************************
 	
@@ -508,6 +509,11 @@ public class CLW extends CommandLineWrapper {
 	@Help("Use LP solver to find implicit places")
 	public CommandLineOption USE_LP_SOLVE_FOR_IMPLICIT_PLACES =
 		new CommandLineOption('t', "lp-solver", false);
+	
+	@Help("LP solver depth, when searching for implicit places (1 - small (fast), 8 - default (mediorse), 0 - full depth(slow)).")
+	public  CommandLineInteger IPLACE_LP_SOLVER_DEPTH = 
+		new CommandLineInteger("lp-solver-depth", 0, Integer.MAX_VALUE, 8, false);	
+	
 	
 	// *******************************************************************
 	// Input / Output options

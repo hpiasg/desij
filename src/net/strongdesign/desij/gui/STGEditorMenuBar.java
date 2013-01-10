@@ -126,9 +126,12 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		partition.add(frame.LOCKED_PARTITION);
 		partition.add(frame.BEST_PARTITION);
 		
+		decomposition.add(frame.DELETE_REDUNDANT);
+		
 		decomposition.add(frame.REDUCE_SAFE);
 		decomposition.add(frame.REDUCE_WITH_LP_SOLVER);
 		decomposition.add(frame.REDUCE_UNSAFE);
+		decomposition.add(frame.REDUCE_BREEZE);
 		
 		JMenu decomp = new JMenu(frame.DECOMPOSE); 
 		decomposition.add(decomp);

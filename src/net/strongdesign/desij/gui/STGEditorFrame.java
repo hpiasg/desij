@@ -63,6 +63,7 @@ import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
+import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
@@ -117,9 +118,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction RG = new STGEditorAction(
 			"Create reachability graph", KeyEvent.VK_R, null, 0, this);
 	
+	public final STGEditorAction DELETE_REDUNDANT = new STGEditorAction("Delete redundant places", 0, null, 0, this);
+	
 	public final STGEditorAction REDUCE_SAFE = new STGEditorAction("Reduce Component (safe)", 0, null, 0, this);
 	public final STGEditorAction REDUCE_WITH_LP_SOLVER = new STGEditorAction("Reduce Component (with solver)", 0, null, 0, this);
 	public final STGEditorAction REDUCE_UNSAFE = new STGEditorAction("Reduce Component (unsafe)", 0, null, 0, this);
+	public final STGEditorAction REDUCE_BREEZE = new STGEditorAction("Reduce breeze", 0, null, 0, this);
 	
 	public final STGEditorAction DECOMPOSE = new STGEditorAction("Decompose", 0, null, 0, this);
 	public final STGEditorAction DECO_BASIC = new STGEditorAction("Basic", 0, null, 0, this);
@@ -717,12 +721,16 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 					source == DECO_ICSC_AWARE) {
 				
 				decompose(source);
+			} else if (source == DELETE_REDUNDANT) {
+				 deleteRedundant();
 			} else if (source == REDUCE_SAFE) {
 				 reduceSafe();
 			} else if (source == REDUCE_WITH_LP_SOLVER) {
 				 reduceWithLPSolver();
 			} else if (source == REDUCE_UNSAFE) {
 				 reduceUnsafe();
+			} else if (source == REDUCE_BREEZE) {
+				 reduceBreeze();
 			} else if (source == ABOUT) {
 				new STGEditorAbout(this).setVisible(true);
 			}
@@ -835,6 +843,37 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// // }
 	//
 	
+	private void deleteRedundant() {
+		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
+		
+		if (currentNode==null||!currentNode.isSTG()) {
+			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ",
+			JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		graphComponent.storeCoordinates(currentNode.getSTG().getCoordinates());
+
+		
+		STG stg = currentNode.getSTG().clone();
+		
+		// 2. run reduce on it, add it to the tree
+
+		try {
+			STGUtil.removeRedundantPlaces(stg);
+			
+			STGEditorTreeNode nn = new STGEditorTreeNode("reddel", stg, true);
+			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
+			currentNode.add(nn);
+			
+			navigationView.updateUI();
+			navigationView.showNode(nn);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
 	private void reduceSafe() {
 		boolean old_safeness = CLW.instance.SAFE_CONTRACTIONS.isEnabled();
 		CLW.instance.SAFE_CONTRACTIONS.setEnabled(true);
@@ -846,11 +885,15 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	
 	private void reduceWithLPSolver() {
 		boolean old_safeness = CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled();
+		int old_depth = CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue();
+		
 		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(true);
-		// do only safe contractions
+		CLW.instance.IPLACE_LP_SOLVER_DEPTH.setValue(0); // go full depth
+		
 		reduce();
 		
 		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(old_safeness);
+		CLW.instance.IPLACE_LP_SOLVER_DEPTH.setValue(old_depth);
 	}
 	
 	private void reduceUnsafe() {
@@ -865,7 +908,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
 		
-		if (currentNode==null) {
+		if (currentNode==null||!currentNode.isSTG()) {
 			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
 			JOptionPane.ERROR_MESSAGE);
 			return;
@@ -873,14 +916,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		graphComponent.storeCoordinates(currentNode.getSTG().getCoordinates());
 
-		if (!currentNode.isSTG()) {
-			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
-			JOptionPane.ERROR_MESSAGE);
-			return;
-		}
-		
-		if (!currentNode.isSTG()) return;
-		
 //		
 //		currentNode.setProcreative();
 //		
@@ -914,6 +949,35 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		}
 	}
 	
+	private void reduceBreeze() {
+		
+		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
+		
+		if (currentNode==null||!currentNode.isSTG()) {
+			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
+			JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		graphComponent.storeCoordinates(currentNode.getSTG().getCoordinates());
+
+		STG stg = currentNode.getSTG().clone();
+		
+		try {
+			
+			STGUtil.removeDummiesBreeze(stg);
+			
+			STGEditorTreeNode nn = new STGEditorTreeNode("reduced", stg, true);
+			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
+			currentNode.add(nn);
+			
+			navigationView.updateUI();
+			navigationView.showNode(nn);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	
 	
 	private void decompose(Object source) {

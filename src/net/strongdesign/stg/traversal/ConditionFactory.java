@@ -44,16 +44,17 @@ import net.sf.javailp.Solver;
 import net.sf.javailp.SolverFactory;
 import net.sf.javailp.SolverFactoryLpSolve;
 import net.strongdesign.desij.CLW;
-import net.strongdesign.stg.MarkingEquationCache;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
-import net.strongdesign.stg.SharedPlaceSolver;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
+import net.strongdesign.stg.solvers.MarkingEquationCache;
+import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
+import net.strongdesign.stg.solvers.SharedPlaceSolver;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
 import net.strongdesign.util.StreamGobbler;
@@ -487,50 +488,51 @@ public abstract class ConditionFactory {
 			
 			
 			// the primitive case of the shared place
-//			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
-//				if (place.getMarking()==0) {
-//					Set<Node> parents = new HashSet<Node>();
-//					parents.addAll(place.getParents());
-//					Set<Node> children= new HashSet<Node>();
-//					children.addAll(place.getChildren());
-//					
-//					Set<Node> test = new HashSet<Node>();
-//					test.addAll(parents);
-//					test.addAll(children);
-//					
-//					// if the place does not have self-loops and its parent and child counts are equal,
-//					// then it might be a shared shortcut place
-//					if (parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
-//						
-//						for (Node t1: place.getParents()) {
-//							if (t1.getChildren().size()!=2) break;
-//							if (t1.getChildValue(place)!=1) break;
-//							
-//							Iterator<Node> it = t1.getChildren().iterator();
-//							Place p = (Place) it.next();
-//							if (p==place) p = (Place) it.next();
-//							
-//							// for now only very primitive cases are considered
-//							if (p.getMarking()>0) break;
-//							
-//							if (!MARKED_GRAPH_PLACE.fulfilled(p)) break;
-//							
-//							Transition t2 = (Transition) p.getChildren().iterator().next();
-//							if (place.getChildValue(t2)!=1) break;
-//							
-//							parents.remove(t1);
-//							children.remove(t2);
-//						}
-//					}
-//					
-//					// if all parents and children were matched, then it is a redundant place
-//					if (parents.size()==0&&children.size()==0) return true;
-//				}
-//			}
-			
+/*			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
+				if (place.getMarking()==0) {
+					Set<Node> parents = new HashSet<Node>();
+					parents.addAll(place.getParents());
+					Set<Node> children= new HashSet<Node>();
+					children.addAll(place.getChildren());
+					
+					Set<Node> test = new HashSet<Node>();
+					test.addAll(parents);
+					test.addAll(children);
+					
+					// if the place does not have self-loops and its parent and child counts are equal,
+					// then it might be a shared shortcut place
+					if (parents.size()+children.size()==test.size()&&parents.size()==children.size()) {
+						
+						for (Node t1: place.getParents()) {
+							if (t1.getChildren().size()!=2) break;
+							if (t1.getChildValue(place)!=1) break;
+							
+							Iterator<Node> it = t1.getChildren().iterator();
+							Place p = (Place) it.next();
+							if (p==place) p = (Place) it.next();
+							
+							// for now only very primitive cases are considered
+							if (p.getMarking()>0) break;
+							
+							if (!MARKED_GRAPH_PLACE.fulfilled(p)) break;
+							
+							Transition t2 = (Transition) p.getChildren().iterator().next();
+							if (place.getChildValue(t2)!=1) break;
+							
+							parents.remove(t1);
+							children.remove(t2);
+						}
+					}
+					
+					// if all parents and children were matched, then it is a redundant place
+					if (parents.size()==0&&children.size()==0) return true;
+				}
+			}
+	/**/		
 		
 			// shared place optimization
-//			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) {
+//			if (CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
+//			{
 //				boolean sharedPlace = SharedPlaceSolver.isImplicit(place);
 //				if (sharedPlace) return true;
 //			}
@@ -1201,28 +1203,49 @@ public abstract class ConditionFactory {
 	 */
 	protected static class RedundantPlaceLP<P extends Place> extends AbstractCondition<P> {
 		
-		/**
-		 * The mapping between the nodes and their numbers in the weightmatrix
-		 */
-		protected Map<Node, Integer> mapping;
-		
-		/**
-		 * The weightmatrix as described in {@link STG#getWeightMatrix(Map)}
-		 */
-		protected int[] wm;
-		
-		protected int nroPlaces;
-		protected int nroTransitions;
-		
+		long setup=0;
+		long solver=0;
+		protected STG stg;
+		protected int depth;
 		
 		public RedundantPlaceLP(STG stg) {
-			mapping = new HashMap<Node, Integer>();
-			wm = stg.getWeightMatrix(mapping);
-			nroPlaces = wm[wm.length-2];
-			nroTransitions = wm[wm.length-1];    	
+			this.stg=stg;
+			this.depth=0; // use full depth
+		}
+		
+		public RedundantPlaceLP(STG stg, int depth) {
+			this.stg=stg;
+			this.depth=depth;
 		}
 		
 		public boolean fulfilled(P place) {
+			
+			long startSetup = System.currentTimeMillis();
+			long startSolver;
+			
+			// The mapping between the nodes and their numbers in the weightmatrix
+			Map<Node, Integer> mapping;
+			//The weightmatrix as described in {@link STG#getWeightMatrix(Map)}
+			int[] wm;
+			
+			int nroPlaces;
+			int nroTransitions;
+			
+			// recreate the problem for the desired depth 
+			mapping = new HashMap<Node, Integer>();
+			
+			if (depth<=0) {
+				// a simple solution with full depth  
+				wm = stg.getWeightMatrix(mapping);
+				
+			} else {
+				// depth-based approach, it builds the weight matrix from a subgraph
+				wm = STG.getWeightMatrix(mapping, stg, place, depth);
+			}
+			
+			nroPlaces = wm[wm.length-2];
+			nroTransitions = wm[wm.length-1];
+			
 			int redPlace = mapping.get(place);    		
 			
 			
@@ -1264,7 +1287,7 @@ public abstract class ConditionFactory {
 				//set second set of constraints for condition 2: 
 				// \forall t\in T : V(p)\Delta_t(p) - \sum_{q\in Q} V(q)\Delta_t(q) \geq 0
 				
-				//for every constraint 0 -- variable c not iomportant here
+				//for every constraint 0 -- variable c not important here
 				curRow[nroPlaces+1] = 0;			
 				for (int t = 0; t<nroTransitions; ++t) {
 					for (int p = 0; p<nroPlaces; ++p) {
@@ -1289,19 +1312,26 @@ public abstract class ConditionFactory {
 				
 				//for debugging
 				/*
-				 for (Node node : mapping.keySet())
-				 if (node instanceof Place)
-				 lp.setColName(mapping.get(node)+1, node.toString());
-				 else {
-				 lp.setRowName(mapping.get(node)+2, node.toString()+"-2");
-				 lp.setRowName(mapping.get(node)+2+nroTransitions, node.toString()+"-3");
-				 }
-				 */
+				for (Node node : mapping.keySet()) {
+					if (node instanceof Place)
+						lp.setColName(mapping.get(node)+1, node.toString());
+					else {
+						lp.setRowName(mapping.get(node)+2, node.toString()+"-2");
+						lp.setRowName(mapping.get(node)+2+nroTransitions, node.toString()+"-3");
+					}
+				}
+				*/
 				
-				//solve the problem, if it is feasible lp_solv returns immediately with 0 after the first vertex was encoutered
-				//because the object function is constant, then the place is redundant
-				//if the problem is infeasible the place is not redundant
-				if (lp.solve() == 0)
+				// solve the problem, if it is feasible lp_solv returns immediately with 0 after the first vertex was encountered
+				// because the object function is constant, then the place is redundant
+				// if the problem is infeasible the place is not redundant
+				startSolver = System.currentTimeMillis();
+				int res = lp.solve();
+				setup+=startSolver-startSetup;
+				solver+=System.currentTimeMillis()-startSolver;
+				System.out.println("setup: "+((double)setup)/1000+" solver: "+((double)solver)/1000);
+				
+				if (res == 0)
 					return true;
 				else
 					return false;
@@ -1317,7 +1347,6 @@ public abstract class ConditionFactory {
 	protected static class ImplicitPlaceCondition<P extends Place> extends AbstractCondition<P> {
 		
 		protected STG stg;
-		
 		protected int depth=0; // search for redundant places of a limited depth, depth=0 - no limitation
 		
 
@@ -1332,30 +1361,53 @@ public abstract class ConditionFactory {
 
 		@Override
 		public boolean fulfilled(P place) {
+			
+			long startSetup = System.currentTimeMillis();
+			long startSolver;
+			
+			
 			SolverFactory factory = new SolverFactoryLpSolve();
 			factory.setParameter(Solver.VERBOSE, 0); // we don't need messages from the solver
 			factory.setParameter(Solver.TIMEOUT, 0); // no timeout
 			
+			
 			for ( Node t : place.getChildren() ) {
 				Transition postPlace = (Transition)t;
 				
+				Set<Place> places = new HashSet<Place>();
+				Set<Transition> transitions = new HashSet<Transition>();
+				
 				// M_1 = M_N + C v_1 --> -MN = -M1 + C v_1
 				// M_1 > 0 and v_1 >= 0 and solve as (I)LP problem
-				Problem problem = MarkingEquationCache.getMarkingEquation(stg, place, depth);
+				Problem problem = MarkingEquationCache.getMarkingEquation(stg, place, depth, places, transitions);
 				Linear linear;
+				
+				boolean solve=false;
 				
 				// M_1[postPlace> --> NOT!!! just because of "place"
 				for (Node p : postPlace.getParents()) {
+					if (depth>0&&!places.contains(p)) continue;
+					
 					int id = p.getIdentifier();
 					linear = new Linear();
 					linear.add(1, "M1" + id);
 					if (p == place)
 						problem.add(linear, "<=", postPlace.getParentValue(p)-1);
-					else
+					else {
 						problem.add(linear, ">=", postPlace.getParentValue(p));
+						solve = true; // we require that at least one of the equations is with ">="
+					}
 				}
 				
+				if (!solve) return false;
+				
+				startSolver = System.currentTimeMillis();
 				Result result = factory.get().solve(problem);
+				
+				RedundantPlaceSolverLP.totalSetupMills+=startSolver-startSetup;
+				RedundantPlaceSolverLP.totalSolverMills+=System.currentTimeMillis()-startSolver;
+				
+				//System.out.println("setup: "+((double)setup)/1000+" solver: "+((double)solver)/1000+" (implicit)");
 				
 				if (result == null) // problem is infeasible
 					continue; // i.e. place is definitely implicit w.r.t. transition "postPlace"
@@ -1363,6 +1415,7 @@ public abstract class ConditionFactory {
 					return false; // i.e. place is maybe not implicit
 				
 			}
+			RedundantPlaceSolverLP.totalFound++;
 			return true;
 		}
 		
@@ -1722,7 +1775,7 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 	
 	
 	/**
-	 * Returns a Cndition<Node> which is fulfilled for nodes with 
+	 * Returns a Condition<Node> which is fulfilled for nodes with 
 	 * at most 'max' children 
 	 */
 	public static Condition<Node> getNumberOfChildrenCondition(int max) {
@@ -1778,13 +1831,20 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 		return new ImplicitPlaceCondition<Place>(stg);
 	}
 	
+	
+	/**
+	 * 
+	 * @param stg
+	 * @param depth
+	 * @return
+	 */
+	public static Condition<Place> getRedundantPlaceLPCondition(STG stg, int depth) {
+		return new RedundantPlaceLP<Place>(stg, depth);
+	}
+	
 	public static Condition<Place> getImplicitPlaceCondition (STG stg, int depth) {
 		return new ImplicitPlaceCondition<Place>(stg, depth);
 	}
-	
-	
-	
-	
 	
 	
 	public static Condition<Transition> getRedundantTransitionCondition(STG stg) {
@@ -1798,8 +1858,6 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 	public static Condition<Transition> getSignalNameOfTransitionCondition(Collection<String> signalNames) {
 		return new SignalNameOfTransition<Transition>(signalNames);
 	}
-	
-	
 	
 	/**
 	 * Returns a Condition<Transition> which is fulfilled for transitions

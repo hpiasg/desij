@@ -188,12 +188,6 @@ public abstract class AbstractDecomposition   {
 		}
 	}
 
-	public abstract List<Transition> reduce(STGInOutParameter stg) throws STGException;
-
-
-
-
-
 	protected Collection<Node> redDel(STG stg) {
 		Collection<Node> result = new HashSet<Node>();
 
@@ -210,6 +204,9 @@ public abstract class AbstractDecomposition   {
 		}   
 		return result;
 	}
+	
+	public abstract List<Transition> reduce(STGInOutParameter stg) throws STGException;
+
 
 
 	/**
