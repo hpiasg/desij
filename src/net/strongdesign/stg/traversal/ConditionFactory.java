@@ -54,6 +54,7 @@ import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.solvers.MarkingEquationCache;
 import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
+import net.strongdesign.stg.solvers.RedundantPlaceStatistics;
 import net.strongdesign.stg.solvers.SharedPlaceSolver;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
@@ -545,6 +546,7 @@ public abstract class ConditionFactory {
 			if (CLW.instance.SHORTCUTPLACE.isEnabled()) { 
 				boolean shortCutPlace = shortCutPlace(place, reason);
 				if (shortCutPlace) {
+					RedundantPlaceStatistics.totalShortcutPlaces++;
 					return true;
 				}
 			}
@@ -1404,18 +1406,22 @@ public abstract class ConditionFactory {
 				startSolver = System.currentTimeMillis();
 				Result result = factory.get().solve(problem);
 				
-				RedundantPlaceSolverLP.totalSetupMills+=startSolver-startSetup;
-				RedundantPlaceSolverLP.totalSolverMills+=System.currentTimeMillis()-startSolver;
+				RedundantPlaceStatistics.totalSetupMills+=startSolver-startSetup;
+				RedundantPlaceStatistics.totalSolverMills+=System.currentTimeMillis()-startSolver;
 				
 				//System.out.println("setup: "+((double)setup)/1000+" solver: "+((double)solver)/1000+" (implicit)");
 				
 				if (result == null) // problem is infeasible
 					continue; // i.e. place is definitely implicit w.r.t. transition "postPlace"
-				else
+				else {
+					RedundantPlaceStatistics.totalChecked++;
 					return false; // i.e. place is maybe not implicit
+				}
 				
 			}
-			RedundantPlaceSolverLP.totalFound++;
+			
+			RedundantPlaceStatistics.totalChecked++;
+			RedundantPlaceStatistics.totalFound++;
 			return true;
 		}
 		

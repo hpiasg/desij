@@ -78,6 +78,7 @@ import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.parser.TokenMgrError;
 import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
+import net.strongdesign.stg.solvers.RedundantPlaceStatistics;
 import net.strongdesign.stg.synthesis.StateGraph;
 import net.strongdesign.stg.synthesis.Unfolding;
 import net.strongdesign.stg.traversal.CollectorFactory;
@@ -395,13 +396,25 @@ public class DesiJ {
 		}
 	}
 	
-	
+	private static void reportStatistics(String fileName) {
+		System.out.println(fileName+": Shared path splits: "+RedundantPlaceStatistics.totalSharedPathSplits);
+		System.out.println(fileName+": Merge-place splits: "+RedundantPlaceStatistics.totalMergePlaceSplits);
+		
+		System.out.println(fileName+": Structural checks found: "+RedundantPlaceStatistics.totalStructuralChecks+
+				" shortcut places:"+RedundantPlaceStatistics.totalShortcutPlaces);
+		
+		System.out.println(fileName+": Solver found: "+ RedundantPlaceStatistics.totalFound +"/"+ RedundantPlaceStatistics.totalChecked+
+				" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
+				" running time: "+(double)RedundantPlaceStatistics.totalSolverMills/1000+" s"+
+				" setup time: "+(double)RedundantPlaceStatistics.totalSetupMills/1000+" s"
+				);
+		
+	}
 	
 	private static void killSTGDummies(STG stg, String fileName) throws IOException, STGException, ParseException {
 		
-		RedundantPlaceSolverLP.totalFound = 0;
-		RedundantPlaceSolverLP.totalSetupMills = 0;
-		RedundantPlaceSolverLP.totalSolverMills = 0;
+		RedundantPlaceStatistics.Reset();
+		
 
 		int dum1 = stg.getNumberOfDummies();
 		int pl1 = stg.getNumberOfPlaces();
@@ -413,11 +426,7 @@ public class DesiJ {
 		int pl2 = stg.getNumberOfPlaces();
 		
 		System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
-		System.out.println(fileName+": Solver found: "+ RedundantPlaceSolverLP.totalFound +
-				" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
-				" running time: "+(double)RedundantPlaceSolverLP.totalSolverMills/1000+" s"+
-				" setup time: "+(double)RedundantPlaceSolverLP.totalSetupMills/1000+" s"
-				);
+		reportStatistics(fileName);
 	}
 	
 	
@@ -596,13 +605,9 @@ public class DesiJ {
 			
 			System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
 			System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
-			System.out.println(fileName+": Solver found: "+ RedundantPlaceSolverLP.totalFound +
-					" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
-					" running time: "+(double)RedundantPlaceSolverLP.totalSolverMills/1000+" s"+
-					" setup time: "+(double)RedundantPlaceSolverLP.totalSetupMills/1000+" s"
-					);
-
 			
+			reportStatistics(fileName);
+
 			FileSupport.saveToDisk(STGFile.convertToG(stg), fileName + ".red.g");
 			System.out.println("done");
 			

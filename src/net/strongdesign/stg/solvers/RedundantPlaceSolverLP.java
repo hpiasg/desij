@@ -21,10 +21,6 @@ import net.strongdesign.stg.Transition;
 
 public class RedundantPlaceSolverLP {
 	
-	static public long totalSetupMills;  // number of milliseconds used for setting up the task
-	static public long totalSolverMills; // number of milliseconds solver was thinking (accumulates)
-	static public long totalFound;       // total number of the redundants found
-	
 	/**
 	 * Procedure checks for structural redundancy. It returns "true" if a place is structurally
 	 * redundant
@@ -140,11 +136,13 @@ public class RedundantPlaceSolverLP {
 			// if the problem is infeasible the place is not redundant
 			startSolver = System.currentTimeMillis();
 			int res = lp.solve();
-			totalSetupMills+=startSolver-startSetup;
-			totalSolverMills+=System.currentTimeMillis()-startSolver;
+			RedundantPlaceStatistics.totalSetupMills+=startSolver-startSetup;
+			RedundantPlaceStatistics.totalSolverMills+=System.currentTimeMillis()-startSolver;
+			
+			RedundantPlaceStatistics.totalChecked++;
 			
 			if (res == 0) {
-				totalFound++;
+				RedundantPlaceStatistics.totalFound++;
 				return true;
 			} else
 				return false;
@@ -158,24 +156,46 @@ public class RedundantPlaceSolverLP {
 		
 	}
 	
-	public boolean isRedundant2(STG stg, Place place, int depth) {
+	public boolean isRedundant2(STG stg, Place mainPlace, int depth) {
 		
 		long startSetup = System.currentTimeMillis();
 		long startSolver;
 		Set<Place> places = new HashSet<Place>();
 		Set<Transition> transitions = new HashSet<Transition>();
 		
-		// find the STG subgraph for the desired depth
-		STG.getSubgraphNodes(stg, place, depth, places, transitions);
-		// launch solver
+		// if the post set is empty, it is a redundant place
+		if (mainPlace.getChildren().size()==0) return true;
 		
+		// find the STG subgraph for the desired depth
+		STG.getSubgraphNodes(stg, mainPlace, depth, places, transitions);
+		
+		// quick check:
+		// before setting up the problem for lp solver, check that for each post-set transition in the subgraph
+		// there is at least one place in preset(postset(place)), which is not the mainPlace itself 
+		
+		for (Node t: mainPlace.getChildren()) {
+			boolean found=false;
+			
+			for (Node p: t.getParents()) {
+				if (!places.contains(p)) continue;
+				
+				if (p!=mainPlace) {
+					found=true;
+					break;
+				}
+			}
+			
+			if (!found) 
+				return false;
+		}
+		
+		
+		// creating the lp solver for action
 		SolverFactory factory = new SolverFactoryLpSolve();
 		factory.setParameter(Solver.VERBOSE, 0); // no messages
 		factory.setParameter(Solver.TIMEOUT, 0); // no timeout
 		
 		Problem problem  = new Problem();
-		
-		
 		
 		for (Place p: places) {
 			problem.setVarType(p, Double.class);
@@ -201,13 +221,13 @@ public class RedundantPlaceSolverLP {
 		problem.setObjective(linear);
 		//The valuation of the redundant place must be strictly greater than 0
 		//the exact value is not important
-		problem.setVarLowerBound(place, 1);
+		problem.setVarLowerBound(mainPlace, 1);
 		
 		
 		//set first constraint, for redundancy condition 1: V(p)M_N(p) - \sum_{q\in Q} V(q)M_N(q) - c = 0
 		linear = new Linear();
 		for (Place p: places) {
-			if (p==place) {
+			if (p==mainPlace) {
 				linear.add(p.getMarking(), p);
 			} else {
 				linear.add(-p.getMarking(), p);
@@ -225,7 +245,7 @@ public class RedundantPlaceSolverLP {
 			
 			for (Node p: t.getNeighbours()) {
 				if (!places.contains(p)) continue;
-				if (p==place) {
+				if (p==mainPlace) {
 					linear.add(t.getChildValue(p)-p.getChildValue(t), p);
 				} else {
 					linear.add(-(t.getChildValue(p)-p.getChildValue(t)), p);
@@ -243,7 +263,7 @@ public class RedundantPlaceSolverLP {
 			for (Node p: t.getNeighbours()) {
 				if (!places.contains(p)) continue;
 				
-				if (p==place) {
+				if (p==mainPlace) {
 					linear.add(p.getChildValue(t), p);
 				} else {
 					linear.add(-p.getChildValue(t), p);
@@ -262,11 +282,13 @@ public class RedundantPlaceSolverLP {
 		
 		Result res = factory.get().solve(problem);
 		
-		totalSetupMills+=startSolver-startSetup;
-		totalSolverMills+=System.currentTimeMillis()-startSolver;
+		RedundantPlaceStatistics.totalSetupMills+=startSolver-startSetup;
+		RedundantPlaceStatistics.totalSolverMills+=System.currentTimeMillis()-startSolver;
+		
+		RedundantPlaceStatistics.totalChecked++;
 		
 		if (res != null) {
-			totalFound++;
+			RedundantPlaceStatistics.totalFound++;
 			return true;
 		} else
 			return false;

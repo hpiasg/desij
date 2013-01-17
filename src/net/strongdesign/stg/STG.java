@@ -447,7 +447,11 @@ public final class STG implements Cloneable {
 		
 		STG.collectNodesBackward(mainPlace.getChildren(), depth*2, nodesB);
 		
-		STG.collectNodesForward(mainPlace.getParents(), depth*2, nodesF);
+		boolean emptyPreset = mainPlace.getParents().size()==0;
+		
+		if (!emptyPreset)
+			STG.collectNodesForward(mainPlace.getParents(), depth*2, nodesF);
+		
 		nodesF.add(mainPlace);
 		nodesF.addAll(mainPlace.getChildren());
 		
@@ -455,19 +459,20 @@ public final class STG implements Cloneable {
 		
 		// add all common places
 		for (Node n: nodesB) {
-			if (!nodesF.contains(n)) continue;
+			if (!emptyPreset&&!nodesF.contains(n)) continue;
 			if (n instanceof Place) {
 				places.add((Place)n);
 			}
 		}
 		
+		/*
 		// also add all places from the main place postset transitions presets
 		for (Node t: mainPlace.getChildren()) {
 			for (Node p: t.getParents()) {
 				places.add((Place)p);
 			}
 		}
-		
+		*/
 		
 		// add all transitions from mainPlace postset
 		for (Node n: mainPlace.getNeighbours()) {

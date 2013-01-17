@@ -46,6 +46,7 @@ import net.strongdesign.desij.decomposition.DecompositionEvent;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.statesystem.StateSystem;
 import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
+import net.strongdesign.stg.solvers.RedundantPlaceStatistics;
 import net.strongdesign.stg.traversal.Condition;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.stg.traversal.NotCondition;
@@ -156,7 +157,8 @@ public abstract class STGUtil {
 			
 			if (dum2==0) return; // nothing more to contract
 			
-			redDel(stg, new NeighbourTrackingNodeRemover(stg));
+			Collection<Node> n = redDel(stg, new NeighbourTrackingNodeRemover(stg));
+			if (!n.isEmpty()) continue;
 			
 			// if fails to do any relaxations, then return
 			if (!STGUtil.relaxInjectiveSplitSharedPath(stg)) {
@@ -165,12 +167,9 @@ public abstract class STGUtil {
 				if (!STGUtil.relaxInjectiveSplitMergePlaces(stg)) {
 					System.out.println("relax2 failed");
 					return;
-				} else {
-//					System.out.println("relax2 success");
 				}
-			} else {
-//				System.out.println("relax1 success");
 			}
+			
 		}
 		
 	}
@@ -400,7 +399,8 @@ public abstract class STGUtil {
 		// first, remove all redundant places that are quick to find
 		Condition<Place> redPlace = ConditionFactory.getRedundantPlaceCondition(stg);
 		
-		if (!CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) {
+		if (true||!CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled()) 
+		{
 			do {
 				found = false;
 				int y=stg.getNumberOfPlaces();
@@ -412,6 +412,7 @@ public abstract class STGUtil {
 				
 				for (Place place : places ) {
 					if (redPlace.fulfilled(place)) {
+						RedundantPlaceStatistics.totalStructuralChecks++;
 						found = true;
 						remover.removePlace(place);
 						result.add(place);
@@ -489,10 +490,10 @@ public abstract class STGUtil {
 						foundNum ++;
 					}
 					
-					
 				}
 			} while (false && repeat && found);
 			
+			System.out.printf("LP solver found:%d\n", foundNum);
 		}
 
 		return result;
@@ -1038,9 +1039,7 @@ public abstract class STGUtil {
 			
 			// the primitive case of the shared path optimisation
 			//if (true||CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
-			{
-				
-				
+			{	
 				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
 					Place place2 = place;
 					
@@ -1055,7 +1054,7 @@ public abstract class STGUtil {
 						// do not allow dummy transitions on the path
 						//if (ConditionFactory.IS_DUMMY.fulfilled(t)) { failed=true; break; }
 						
-						if (t.getChildren().size()!=1) {
+						if (t.getParents().size()!=1||t.getChildren().size()!=1) {
 							failed=true;
 							break;
 						} else {
@@ -1114,6 +1113,8 @@ public abstract class STGUtil {
 					
 					if (!failed) {
 						// 
+						RedundantPlaceStatistics.totalSharedPathSplits++;
+
 						for (Entry<Transition, Place> e: tp.entrySet()) {
 							
 							Transition t1 = e.getKey();
@@ -1236,7 +1237,9 @@ public abstract class STGUtil {
 			
 			if (failed) continue;
 			
-			// conditions are good, apply relaxation for each of the tran* 
+			// conditions are good, apply relaxation for each of the tran*
+			RedundantPlaceStatistics.totalMergePlaceSplits++;
+
 			for (Node post: postPlaces) {
 				
 				if (post.getParents().size()>1) {
@@ -1257,7 +1260,7 @@ public abstract class STGUtil {
 					// duplicate each of the post* transitions 
 					for (Node postT: postTransitions) {
 						
-						// copy transitiona and all its connections
+						// copy transition and all its connections
 						Transition t = (Transition)postT;
 						Transition dt = stg.addTransition(t.getLabel());
 						
