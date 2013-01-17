@@ -275,7 +275,7 @@ public class ComponentSTGFactory {
 	public static Map<String, STG> breeze2stg(String fileName) throws Exception {
 		Map<String, STG> ret = new HashMap<String, STG>();
 		
-			
+		
 		FileReader file = new FileReader(fileName);
 		
 		BreezeParser parser = new BreezeParser(file);

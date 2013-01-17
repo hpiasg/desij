@@ -434,7 +434,10 @@ public abstract class ConditionFactory {
 			// the easy cases
 			// ****************
 			
-			
+			// if empty postset, this is a redundant place
+			if (place.getChildren().size()==0) {
+				return true;
+			}
 			
 			// Is a loop-only place
 			if (LOOP_ONLY_PLACE.fulfilled(place))

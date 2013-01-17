@@ -164,7 +164,10 @@ public class RedundantPlaceSolverLP {
 		Set<Transition> transitions = new HashSet<Transition>();
 		
 		// if the post set is empty, it is a redundant place
-		if (mainPlace.getChildren().size()==0) return true;
+		if (mainPlace.getChildren().size()==0) {
+			RedundantPlaceStatistics.totalFound++;
+			return true;
+		}
 		
 		// find the STG subgraph for the desired depth
 		STG.getSubgraphNodes(stg, mainPlace, depth, places, transitions);
