@@ -348,7 +348,7 @@ public class STGEditorNavigation extends JTree implements
 			
 			STG stg = stgin.clone();
 			
-			STGUtil.simpleDummyRemoval(stg);
+			STGUtil.simpleDummyRemoval2(stg);
 			frame.addSTG(stg, "Simplified");
 			
 		}

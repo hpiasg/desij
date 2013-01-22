@@ -413,6 +413,8 @@ public class DesiJ {
 	
 	private static void killSTGDummies(STG stg, String fileName) throws IOException, STGException, ParseException {
 		
+		String name = CLW.instance.OUTFILE.getValue().equals("")?fileName:CLW.instance.OUTFILE.getValue();
+		
 		RedundantPlaceStatistics.Reset();
 		
 
@@ -421,12 +423,16 @@ public class DesiJ {
 
 		STGUtil.removeDummiesBreeze(stg);
 		int dum2 = stg.getNumberOfDummies();
-		System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
+		System.out.println(name+": Dummies before: "+dum1+" after:"+dum2);
 		
 		int pl2 = stg.getNumberOfPlaces();
 		
-		System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
-		reportStatistics(fileName);
+		System.out.println(name+": Places before: "+pl1+" after:"+pl2);
+		reportStatistics(name);
+		
+		if (name!=null&&!name.equals(""))
+			FileSupport.saveToDisk(STGFile.convertToG(stg), name);
+		
 	}
 	
 	
