@@ -136,20 +136,23 @@ public abstract class STGUtil {
 	 * @return
 	 * @throws STGException
 	 */
-	public static void removeDummiesBreeze(STG stg) throws STGException {
+	public static void removeDummiesBreeze(STG stg, boolean relaxed) throws STGException {
 		
 		int dum1, dum2;
 		
-		
-		//STGUtil.simpleDummyRemoval2(stg);
-		// initial relaxation - before any other operations
-		STGUtil.relaxInjectiveSplitSharedPath2(stg);
-		
 		// do the redundancy check without the solver before the loop
 		boolean lpsolve =  CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled();
+		
 		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(false);
 		redDel(stg, new NeighbourTrackingNodeRemover(stg));
 		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(lpsolve);
+		
+		STGUtil.simpleDummyRemoval2(stg);
+		// initial relaxation - before any other operations
+		
+		if (relaxed)
+			STGUtil.relaxInjectiveSplitSharedPath2(stg);
+		
 		
 		while (true) {
 			
@@ -168,14 +171,16 @@ public abstract class STGUtil {
 			
 			//STGUtil.simpleDummyRemoval2(stg);
 			// if fails to do any relaxations, then return
-			if (!STGUtil.relaxInjectiveSplitSharedPath2(stg)) {
-				
-				System.out.println("relax1 failed");
-				if (!STGUtil.relaxInjectiveSplitMergePlaces(stg)) {
-					System.out.println("relax2 failed");
-					return;
+			if (relaxed) {
+				if (!STGUtil.relaxInjectiveSplitSharedPath2(stg)) {
+					System.out.println("relax1 failed");
+					if (!STGUtil.relaxInjectiveSplitMergePlaces(stg)) {
+						System.out.println("relax2 failed");
+						return;
+					}
 				}
-			}
+				
+			} else return;
 			
 		}
 		
@@ -1003,6 +1008,10 @@ public abstract class STGUtil {
 			Transition ft = (Transition)fromp.getChildren().iterator().next();
 			Transition t = stg.addTransition(ft.getLabel());
 			
+			if (ConditionFactory.IS_DUMMY.fulfilled(ft)) {
+				System.out.println("DUMMY coppied!");
+			}
+			
 			p1.setChildValue(t, 1);
 			
 			// also add arc from each pre-place, which is not "fromp",
@@ -1194,11 +1203,14 @@ public abstract class STGUtil {
 		
 		
 		Node n = p1.getChildren().iterator().next();
-		if (p1.getChildValue(n)!=1) 
+		if (p1.getChildValue(n)!=1) return false;
 		
 		while (n!=p2) {
-			if (n.getChildren().size()!=1) return false;
-			if (n.getParents().size()!=1) return false;
+			if (n.getChildren().size()!=1)
+				return false;
+			
+			if (n.getParents().size()!=1) 
+				return false;
 			
 			if (n instanceof Place) {
 				Place p=(Place)n;
@@ -1206,8 +1218,9 @@ public abstract class STGUtil {
 				
 			} else {
 				Transition t=(Transition)n;
-				if (ConditionFactory.IS_DUMMY.fulfilled(t)) return false;
+				if (ConditionFactory.IS_DUMMY.fulfilled(t))	return false;
 			}
+			
 			Node n2 = n.getChildren().iterator().next();
 			if (n.getChildValue(n2)!=1) return false;
 			n=n2;
@@ -1221,112 +1234,121 @@ public abstract class STGUtil {
 		
 		simpleDummyRemoval2(stg);
 		
+		// just make sure the dumy count doesn't increase
+		int d = stg.getTransitions(ConditionFactory.IS_DUMMY).size();
+			
 		Collection<Place> places = new HashSet<Place>();
 		places.addAll(stg.getPlaces());
 		
-		for (Place p1: places) {
-			if (p1.getParents().size()<2) continue;
-			if (p1.getChildren().size()!=1) continue;
+		boolean iteration_found = true; 
+		
+		while (iteration_found) {
+			iteration_found=false;
 			
-			
-			// find a simple path
-			Node n = p1.getChildren().iterator().next();
-			while (n!=null&&n!=p1&&n.getChildren().size()==1) 
-				n=n.getChildren().iterator().next();
-			
-			Place p2 = null;
-			
-			if (n instanceof Place) {
-				p2=(Place)n;
-			} else continue;
-			
-			if (!isSimplePath(p1, p2)) continue;
-			
-			
-			Set<Node> parents  = new HashSet<Node>();
-			parents.addAll(p1.getParents());
-			
-			Set<Node> children = new HashSet<Node>();
-			children.addAll(p2.getChildren());
-			
-			Set<Node> test = new HashSet<Node>();
-			test.addAll(parents);
-			test.addAll(children);
-			
-			if (parents.size()!=children.size()) continue;
-			
-			if (parents.size()+children.size()!=test.size()) continue;
+			for (Place p1: places) {
+				if (p1.getParents().size()<2) continue;
+				if (p1.getChildren().size()!=1) continue;
+				
+				
+				// find a simple path
+				Node n = p1.getChildren().iterator().next();
+				while (n!=null&&n!=p1&&n.getChildren().size()==1) 
+					n=n.getChildren().iterator().next();
+				
+				Place p2 = null;
+				
+				if (n instanceof Place) {
+					p2=(Place)n;
+				} else continue;
+				
+				if (!isSimplePath(p1, p2)) continue;
+				
+				
+				Set<Node> parents  = new HashSet<Node>();
+				parents.addAll(p1.getParents());
+				
+				Set<Node> children = new HashSet<Node>();
+				children.addAll(p2.getChildren());
+				
+				Set<Node> test = new HashSet<Node>();
+				test.addAll(parents);
+				test.addAll(children);
+				
+				if (parents.size()!=children.size()) continue;
+				
+				if (parents.size()+children.size()!=test.size()) continue;
 
-			
-			Map<Transition, Place> tp = new HashMap<Transition, Place>();
-			Map<Place, Transition> pt = new HashMap<Place, Transition>();
-			
-			boolean failed=false;
-			
-			// for each transition in |*p1| do check it is a legitimate path user
-			for (Node t: p1.getParents()) {
-				if (t.getChildren().size()!=2) {
-					failed=true;
-					break;
+				
+				Map<Transition, Place> tp = new HashMap<Transition, Place>();
+				Map<Place, Transition> pt = new HashMap<Place, Transition>();
+				
+				boolean failed=false;
+				
+				// for each transition in |*p1| do check it is a legitimate path user
+				for (Node t: p1.getParents()) {
+					if (t.getChildren().size()!=2) {
+						failed=true;
+						break;
+					}
+					
+					Place p=null;
+					
+					for (Node pp: t.getChildren()) {
+						if (pp!=p1) 
+							p=(Place)pp;
+					}
+					
+					if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) failed=true;
+					
+					if (p.getMarking()!=0) failed=true;
+					
+					if (p.getChildren().size()!=1) failed=true;
+					
+					Transition t2 = (Transition)p.getChildren().iterator().next();
+					
+					if (!p2.getChildren().contains(t2)) failed=true; 
+					
+					if (!failed) {
+						tp.put((Transition)t, (Place)p);
+						pt.put((Place)p, (Transition)t2);
+					}
+					
+					if (failed) break;
 				}
 				
-				Place p=null;
+				if (failed) continue;
 				
-				for (Node pp: t.getChildren()) {
-					if (pp!=p1) 
-						p=(Place)pp;
+				// now we are sure we have the shared path split
+				for (Node t1: parents) {
+					ret=true;
+					iteration_found=true;
+					
+					
+					
+					Place p = tp.get(t1);
+					Transition t2 = pt.get(p);
+					stg.removePlace(p);
+					RedundantPlaceStatistics.totalSharedPathSplits++;
+					
+					if (p1.getParents().size()>1) {
+						Place np1 = stg.addPlace("p", 0);
+						Place np2 = stg.addPlace("p", 0);
+						copyPath(stg, p1, p2, np1, np2);
+						t1.setChildValue(p1, 0);
+						p2.setChildValue(t2, 0);
+						t1.setChildValue(np1, 1);
+						np2.setChildValue(t2, 1);
+					}
+					
+					simpleDummyRemoval2(stg, (Transition)t1);
+					simpleDummyRemoval2(stg, t2);
 				}
-				
-				if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) failed=true;
-				
-				if (p.getMarking()!=0) failed=true;
-				
-				if (p.getChildren().size()!=1) failed=true;
-				
-				Transition t2 = (Transition)p.getChildren().iterator().next();
-				
-				if (!p2.getChildren().contains(t2)) failed=true; 
-				
-				if (!failed) {
-					tp.put((Transition)t, (Place)p);
-					pt.put((Place)p, (Transition)t2);
-				}
-				
-				if (failed) break;
 			}
 			
-			if (failed) continue;
-			
-			// now we are sure we have the shared path split
-			boolean first=true;
-			for (Node t1: parents) {
-				
-				// skip first
-				if (first) {
-					first=false;
-					continue; 
-				}
-				
-				RedundantPlaceStatistics.totalSharedPathSplits++;
-				
-				Place p = tp.get(t1);
-				Transition t2 = pt.get(p);
-				
-				
-				Place np1 = stg.addPlace("p", 0);
-				Place np2 = stg.addPlace("p", 0);
-				copyPath(stg, p1, p2, np1, np2);
-				
-				t1.setChildValue(p1, 0);
-				p2.setChildValue(t2, 0);
-				
-				stg.removePlace(p);
-				
-				t1.setChildValue(np1, 1);
-				np2.setChildValue(t2, 1);
-				
-			}
 		}
+		
+		//System.out.println("Total path splits:" +RedundantPlaceStatistics.totalSharedPathSplits);
+		
 		return ret;
 	}
 	
@@ -1787,48 +1809,87 @@ public abstract class STGUtil {
 		
 		return toReturn;
 	}
-
-	/**
-	 * very quick simplification, removes simple dummy transitions
-	 * @param stg
-	 */
-	public static void simpleDummyRemoval(STG stg) {
-		// for each empty MG place check if it is the only post-set and the only preset for its parent and child,
-		// then merge pre-set and post-set transitions, if at least one of them is dummy
+//
+//	/**
+//	 * very quick simplification, removes simple dummy transitions
+//	 * @param stg
+//	 */
+//	public static void simpleDummyRemoval(STG stg) {
+//		// for each empty MG place check if it is the only post-set and the only preset for its parent and child,
+//		// then merge pre-set and post-set transitions, if at least one of them is dummy
+//		
+//		Collection<Place> places = stg.getPlaces(ConditionFactory.MARKED_GRAPH_PLACE);
+//		
+//		for (Place p: places) {
+//			if (p.getMarking()>0) continue;
+//			
+//			Transition t1 = (Transition)p.getParents().iterator().next();
+//			Transition t2 = (Transition)p.getChildren().iterator().next();
+//			
+//			if (t1.getChildren().size()>1) continue;
+//			if (t2.getParents().size()>1) continue;
+//			
+//			if (ConditionFactory.IS_DUMMY.fulfilled(t2)) {
+//				// child is dummy
+//				for (Node t2p: t2.getChildren()) {
+//					t1.setChildValue(t2p, t2.getChildValue(t2p));
+//				}
+//				
+//				stg.removePlace(p);
+//				stg.removeTransition(t2);
+//				continue;
+//			} else {
+//				if (ConditionFactory.IS_DUMMY.fulfilled(t1)) {
+//					// parent is dummy
+//					for (Node pt1: t1.getParents()) {
+//						t2.setParentValue(pt1, t1.getParentValue(pt1));
+//					}
+//					
+//					stg.removePlace(p);
+//					stg.removeTransition(t1);
+//					continue;
+//				}
+//			}
+//		}
+//	}
+	
+	
+	
+	public static void simpleDummyRemoval2(STG stg, Transition t) {
 		
-		Collection<Place> places = stg.getPlaces(ConditionFactory.MARKED_GRAPH_PLACE);
+		if (!ConditionFactory.IS_DUMMY.fulfilled(t)) return;
 		
-		for (Place p: places) {
-			if (p.getMarking()>0) continue;
-			
-			Transition t1 = (Transition)p.getParents().iterator().next();
-			Transition t2 = (Transition)p.getChildren().iterator().next();
-			
-			if (t1.getChildren().size()>1) continue;
-			if (t2.getParents().size()>1) continue;
-			
-			if (ConditionFactory.IS_DUMMY.fulfilled(t2)) {
-				// child is dummy
-				for (Node t2p: t2.getChildren()) {
-					t1.setChildValue(t2p, t2.getChildValue(t2p));
-				}
-				
-				stg.removePlace(p);
-				stg.removeTransition(t2);
-				continue;
-			} else {
-				if (ConditionFactory.IS_DUMMY.fulfilled(t1)) {
-					// parent is dummy
-					for (Node pt1: t1.getParents()) {
-						t2.setParentValue(pt1, t1.getParentValue(pt1));
-					}
-					
-					stg.removePlace(p);
-					stg.removeTransition(t1);
-					continue;
-				}
-			}
+		if (t.getParents().size()!=1)
+			return;
+		
+		if (t.getChildren().size()!=1) 
+			return;
+		
+		Place p1 = (Place)t.getParents().iterator().next();
+		Place p2 = (Place)t.getChildren().iterator().next();
+		
+		if (p1.getChildren().size()!=1)
+			return;
+		
+		if (p2.getParents().size()!=1) 
+			return;
+		
+		if (p1.getChildValue(t)!=1) 
+			return;
+		if (t.getChildValue(p2)!=1) 
+			return;
+		
+		int tokens = p1.getMarking()+p2.getMarking();
+		
+		for (Node tt: p2.getChildren()) {
+			int v = p2.getChildValue(tt);
+			p1.setChildValue(tt, v);
 		}
+		
+		p1.setMarking(tokens);
+		
+		stg.removeTransition(t);
+		stg.removePlace(p2);
 	}
 	
 	public static void simpleDummyRemoval2(STG stg) {
@@ -1837,26 +1898,8 @@ public abstract class STGUtil {
 		Collection<Transition> transitions = stg.getTransitions(ConditionFactory.IS_DUMMY);
 		
 		for (Transition t: transitions) {
-			if (t.getParents().size()!=1) continue;
-			if (t.getChildren().size()!=1) continue;
+			simpleDummyRemoval2(stg, t);
 			
-			Place p1 = (Place)t.getParents().iterator().next();
-			Place p2 = (Place)t.getChildren().iterator().next();
-			
-			if (p1.getChildren().size()!=1) continue;
-			if (p2.getParents().size()!=1) continue;
-			
-			int tokens = p1.getMarking()+p2.getMarking();
-			
-			for (Node tt: p2.getChildren()) {
-				int v = p2.getChildValue(tt);
-				p1.setChildValue(tt, v);
-			}
-			
-			p1.setMarking(tokens);
-			
-			stg.removeTransition(t);
-			stg.removePlace(p2);
 		}
 		
 	}

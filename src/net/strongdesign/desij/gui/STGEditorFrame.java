@@ -965,7 +965,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		try {
 			
-			STGUtil.removeDummiesBreeze(stg);
+			STGUtil.removeDummiesBreeze(stg, true);
 			
 			STGEditorTreeNode nn = new STGEditorTreeNode("reduced", stg, true);
 			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());

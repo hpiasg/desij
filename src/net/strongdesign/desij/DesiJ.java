@@ -373,29 +373,6 @@ public class DesiJ {
 	}
 
 
-	private static void killdummies() throws IOException, STGException, ParseException {
-		for (String fileName : CLW.instance.getOtherParameters()) {
-
-			STG stg = loadSTG(fileName, true);
-
-
-			int dum1 = stg.getNumberOfDummies();
-			int pl1 = stg.getNumberOfPlaces();
-
-			STGUtil.removeDummies(stg);
-			int dum2 = stg.getNumberOfDummies();
-			System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
-			
-			int pl2 = stg.getNumberOfPlaces();
-			System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
-			
-			String name = CLW.instance.OUTFILE.getValue().equals("")?fileName:CLW.instance.OUTFILE.getValue();
-			FileSupport.saveToDisk(STGFile.convertToG(stg), name);
-
-
-		}
-	}
-	
 	private static void reportStatistics(String fileName) {
 		System.out.println(fileName+": Shared path splits: "+RedundantPlaceStatistics.totalSharedPathSplits);
 		System.out.println(fileName+": Merge-place splits: "+RedundantPlaceStatistics.totalMergePlaceSplits);
@@ -411,30 +388,75 @@ public class DesiJ {
 		
 	}
 	
-	private static void killSTGDummies(STG stg, String fileName) throws IOException, STGException, ParseException {
-		
-		String name = CLW.instance.OUTFILE.getValue().equals("")?fileName:CLW.instance.OUTFILE.getValue();
+	private static void killSTGDummies(STG stg, String fileName, boolean relaxed) throws IOException, STGException, ParseException {
 		
 		RedundantPlaceStatistics.Reset();
-		
 
 		int dum1 = stg.getNumberOfDummies();
 		int pl1 = stg.getNumberOfPlaces();
 
-		STGUtil.removeDummiesBreeze(stg);
+		STGUtil.removeDummiesBreeze(stg, relaxed);
 		int dum2 = stg.getNumberOfDummies();
-		System.out.println(name+": Dummies before: "+dum1+" after:"+dum2);
+		System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
 		
 		int pl2 = stg.getNumberOfPlaces();
 		
-		System.out.println(name+": Places before: "+pl1+" after:"+pl2);
-		reportStatistics(name);
+		System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
+		reportStatistics(fileName);
+		
+		String name = CLW.instance.OUTFILE.getValue().equals("")?"":CLW.instance.OUTFILE.getValue();
 		
 		if (name!=null&&!name.equals(""))
 			FileSupport.saveToDisk(STGFile.convertToG(stg), name);
 		
 	}
 	
+	
+	private static void killdummies() throws Exception {
+		
+//		for (String fileName : CLW.instance.getOtherParameters()) {
+//
+//			STG stg = loadSTG(fileName, true);
+//
+//
+//			int dum1 = stg.getNumberOfDummies();
+//			int pl1 = stg.getNumberOfPlaces();
+//
+//			STGUtil.removeDummies(stg);
+//			int dum2 = stg.getNumberOfDummies();
+//			System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
+//			
+//			int pl2 = stg.getNumberOfPlaces();
+//			System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
+//			
+//			String name = CLW.instance.OUTFILE.getValue().equals("")?"":CLW.instance.OUTFILE.getValue();
+//			reportStatistics(fileName);
+//			
+//			if (!name.equals("")) {
+//				FileSupport.saveToDisk(STGFile.convertToG(stg), name);
+//			}
+//		}
+		
+		for (String fileName : CLW.instance.getOtherParameters()) {
+			
+			STG stg;
+			if (fileName.endsWith("breeze")) {
+				
+				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
+					String fname = e.getKey()+".g";
+					stg = e.getValue();
+					killSTGDummies(stg, fname, false);
+				}
+				
+			} else {
+				
+				stg = loadSTG(fileName, true);
+				killSTGDummies(stg, fileName, false);
+			}
+
+		}
+		
+	}
 	
 	/**
 	 * contracts dummy signals while also uses relaxation to achieve more contractions
@@ -443,20 +465,19 @@ public class DesiJ {
 	private static void killDummiesRelaxed() throws Exception {
 		for (String fileName : CLW.instance.getOtherParameters()) {
 			
-			
 			STG stg;
 			if (fileName.endsWith("breeze")) {
 				
 				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
 					String fname = e.getKey()+".g";
 					stg = e.getValue();
-					killSTGDummies(stg, fname);
+					killSTGDummies(stg, fname, true);
 				}
 				
 			} else {
-				stg = loadSTG(fileName, true);
 				
-				killSTGDummies(stg, fileName);
+				stg = loadSTG(fileName, true);
+				killSTGDummies(stg, fileName, true);
 			}
 
 		}
