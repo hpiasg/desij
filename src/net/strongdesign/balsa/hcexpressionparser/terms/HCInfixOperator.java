@@ -1,7 +1,9 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
@@ -63,6 +65,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 		if (operation==Operation.CONCUR) {
 			
 			if (type==ExpansionType.UP) {
+				
 				for (HCTerm t: components) {
 					HCTerm expUp   = t.expand(ExpansionType.UP, scale, sig, oldChoice);
 					HCTerm expDown = t.expand(ExpansionType.DOWN, scale, sig, oldChoice);
@@ -76,12 +79,13 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 					} else if (expUp!=null) {
 						ret.components.add(expUp);
 					} else {
-						throw new Exception("Unacceptable condition for expanding Concur");
+						throw new Exception("Unacceptable condition for expanding ||");
 					}
 				}
 				
+				
 				if (ret.components.size()==0) {
-					throw new Exception("Error, Concur expansion with 0 components");
+					throw new Exception("Error, || expansion with 0 components");
 				}
 				
 			} else return null; // empty expansion
@@ -373,14 +377,14 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	
 	
 	// for now, the synchronous product is only defined at the top level of expression
-	public static STG generateComposedSTG(boolean useCartesianProduct, HCTerm exp, HCExpressionParser parser) {
+	public static STG generateComposedSTG(boolean useCartesianProduct, HCTerm exp, HCExpressionParser parser, boolean enforce) {
 		
-		if (exp instanceof HCInfixOperator && ((HCInfixOperator)exp).operation == Operation.SYNCPROD) {
+		if ( exp instanceof HCInfixOperator && ((HCInfixOperator)exp).operation == Operation.SYNCPROD) {
 			HCInfixOperator io = (HCInfixOperator)exp;
 			LinkedList<STG> stgs = new LinkedList<STG>();
 			
 			for (HCTerm term : io.components) {
-				stgs.add(generateComposedSTG(useCartesianProduct, term, parser));
+				stgs.add(generateComposedSTG(useCartesianProduct, term, parser, enforce));
 			}
 			
 			return STGUtil.synchronousProduct(stgs, false);
@@ -389,30 +393,18 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			
 			STG stg = new STG();
 
-			if (useCartesianProduct) {
-				// do it the new way
-				Set<Place> listIn = new HashSet<Place>();
-				Set<Place> listOut = new HashSet<Place>();
+			// do it the new way
+			Set<Place> listIn = new HashSet<Place>();
+			Set<Place> listOut = new HashSet<Place>();
 
-				((HCSTGGenerator) exp).generateSTG(stg, parser, listIn,
-						listOut);
+			stg=((HCSTGGenerator) exp).generateSTG(parser, listIn,
+					listOut, enforce);
 
-				// add the initial token
-				for (Place p : listIn) {
-					p.setMarking(1);
-				}
-
-			} else {
-				// do it the old way
-				Place p = stg.addPlace("init", 1);
-				Place p2 = p;
-
-				if (!(exp instanceof HCLoopTerm)) p2 = stg.addPlace("finish", 0);
-
-				((HCSTGGenerator) exp).generateSTGold(stg, parser, p, p2);
+			// add the initial token
+			for (Place p : listIn) {
+				p.setMarking(1);
 			}
-			
-			
+
 			return stg;
 		}
 		
@@ -420,7 +412,10 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	
 	
 	@Override
-	public void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces) {
+	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce) {
+		
+		STG stg=null;
+		
 		// all of the components at this stage have to be the STG generators
 		
 		int len=components.size();
@@ -432,85 +427,154 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			toSets.add(new HashSet<Place>());
 		}
 		
-		/* generate all the separate components */
+		
+		/* generate all the separate components in separate STGs */
+		STG s[] = new STG[len];
+		
 		for (int i=0;i<len;i++) {
 			HCSTGGenerator hc = (HCSTGGenerator)components.get(i);
-			hc.generateSTG(stg, sig, fromSets.get(i), toSets.get(i));
+			s[i] = hc.generateSTG(sig, fromSets.get(i), toSets.get(i), enforce);
 		}
+		
+		/**
+		 * the split-place components are: choice and a loop with an exit
+		 * the merge-place component is loop
+		 * now, if a split-place component is followed by a merge-place component,
+		 * there must be an additional dummy preceding the merge-place component
+		 */
+		
 		
 		if (operation == Operation.SEQUENCE) {
 			
-			inPlaces.addAll(fromSets.get(0));
+			stg=s[0];
+			Set<Place> curIn = fromSets.get(0);
+			Set<Place> curOut = toSets.get(0);
 			
-			for (int i=0;i<len-1;i++) {
-				STGUtil.cartesianProductBinding(stg, toSets.get(i), fromSets.get(i+1));
+			for (int i=1;i<len;i++) {
+				
+				Set<Place> newIn = new HashSet<Place>();
+				Set<Place> newOut = new HashSet<Place>();
+				
+				STGCompositionOperations.sequentialComposition(
+						stg, curIn, curOut,
+						s[i], fromSets.get(i), toSets.get(i),
+						newIn, newOut);
+				curIn = newIn;
+				curOut = newOut;
 			}
 			
-			outPlaces.addAll(toSets.get(len-1));
-			
-			/* combine the sets sequentially */
+			inPlaces.addAll(curIn);
+			outPlaces.addAll(curOut);
 			
 		} else if (operation == Operation.CONCUR) {
 			
-			for (int i=0;i<len;i++) {
-				inPlaces.addAll(fromSets.get(i));
-				outPlaces.addAll(toSets.get(i));
+			
+			/* now form a synchronous product of them all,
+			 * the input and output places are combined inside */
+			stg = s[0];
+			Set<Place> curIn = fromSets.get(0);
+			Set<Place> curOut = toSets.get(0);
+			
+			if (enforce) {
+				for (int i=0;i<len;i++) {
+					STGUtil.enforceInjectiveLabelling(s[i]);
+				}
 			}
+			
+			for (int i=1;i<len;i++) {
+				Set<Place> newIn = new HashSet<Place>();
+				Set<Place> newOut = new HashSet<Place>();
+				
+				stg = STGCompositionOperations.synchronousProduct(
+						stg, curIn, curOut,
+						s[i], fromSets.get(i), toSets.get(i),
+						false, newIn, newOut);
+				
+				curIn = newIn;
+				curOut = newOut;
+			}
+			
+			inPlaces.addAll(curIn);
+			outPlaces.addAll(curOut);
 			
 		} else if (operation == Operation.CHOICE) {
 			
 			for (int i=0;i<len;i++) {
 				HCSTGGenerator hc = (HCSTGGenerator)components.get(i);
 				
-				// for each loop component create an additional dummy transition
+				// for each loop component surround it with dummies
 				if (hc instanceof HCLoopTerm) {
 					
 					int num;
-					Transition t;
-					Place np;
+					Transition t1, t2;
+					Place np1, np2;
 					
-					num=stg.getHighestSignalNumber()+1;
-					num=stg.getSignalNumber("choice_loop");
-					t = stg.addTransition(
+					// create new signals
+					num=s[i].getSignalNumber("choice_loop");
+					t1 = s[i].addTransition(
 							new SignalEdge(
-									num, 
+									num,
 									EdgeDirection.UNKNOWN
 									)
 							);
+					s[i].setSignature(num, Signature.DUMMY);
 					
-					stg.setSignature(num, Signature.DUMMY);
-					np = stg.addPlace("p", 0);
+					num=s[i].getSignalNumber("after_loop");
+					t2 = s[i].addTransition(
+							new SignalEdge(
+									num,
+									EdgeDirection.UNKNOWN
+									)
+							);
+					s[i].setSignature(num, Signature.DUMMY);
 					
-					np.setChildValue(t, 1);
-					// transition outputs into each of the loop's input places
+					// create new places
+					np1 = s[i].addPlace("p", 0);
+					np2 = s[i].addPlace("p", 0);
+					
+					np1.setChildValue(t1, 1);
 					for (Place p: fromSets.get(i)) {
-						t.setChildValue(p, 1);
+						t1.setChildValue(p, 1);
 					}
+					
+					for (Place p: toSets.get(i)) {
+						t2.setParentValue(p, 1);
+					}
+					np2.setParentValue(t2, 1);
 					
 					// set the new place as the from place 
 					fromSets.get(i).clear();
-					fromSets.get(i).add(np);
+					fromSets.get(i).add(np1);
+					toSets.get(i).clear();
+					toSets.get(i).add(np2);
 				}
 			}
 			
-			// now to find the final inPlaces and outPlaces, perform the Cartesian products
-			Set<Place> cart=fromSets.get(0);
-			for (int i=1;i<len;i++) {
-				cart=STGUtil.cartesianProductBinding(stg, cart, fromSets.get(i));
-			}
-			inPlaces.addAll(cart);
+			stg = s[0];
 			
-			cart=toSets.get(0);
-			for (int i=1;i<len;i++) {
-				cart=STGUtil.cartesianProductBinding(stg, cart, toSets.get(i));
-			}
-			outPlaces.addAll(cart);
+			Set<Place> curIn = fromSets.get(0);
+			Set<Place> curOut = toSets.get(0);
 			
-		} else {
-			// unsupported component
-			// TODO: throw something?
-			return;
+			for (int i=1;i<len;i++) {
+				Set<Place> newIn = new HashSet<Place>();
+				Set<Place> newOut = new HashSet<Place>();
+				
+				stg = STGCompositionOperations.choiceComposition(
+						stg, curIn, curOut,
+						s[i], fromSets.get(i), toSets.get(i),
+						false, newIn, newOut);
+				
+				curIn = newIn;
+				curOut = newOut;
+			}
+			
+			inPlaces.addAll(curIn);
+			outPlaces.addAll(curOut);
+			
+			
+			
 		}
 		
+		return stg;
 	}
 }

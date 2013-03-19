@@ -48,6 +48,7 @@ import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCLoopTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCSTGGenerator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
+import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm.ExpansionType;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
@@ -204,12 +205,13 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 			// launch the parser routine
 			HCExpressionParser parser = new HCExpressionParser(
 					new StringReader(inputText.getText()));
-
+			
 			try {
-				// parser.
+				// parser
 				outputText.setText("");
 				HCTerm t = parser.HCParser();
 				String s;
+				
 				if (t == null) {
 					s = "NULL term returned";
 				} else {
@@ -224,7 +226,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 						s = "UP: null\n";
 
 					if (down != null)
-						s += "DOWN (ignored in STG): " + down.toString();
+						s += "DOWN: " + down.toString();
 					else
 						s += "DOWN: null";
 
@@ -274,11 +276,22 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 							s = "UP: null\n";
 
 						if (down != null)
-							s += "DOWN (ignored in STG): " + down.toString();
+							s += "DOWN : " + down.toString();
 						else
 							s += "DOWN: null";
 						
-						stg = HCInfixOperator.generateComposedSTG(useCartesianProduct.isSelected(), up, parser);
+						HCInfixOperator ud = new HCInfixOperator();
+						ud.components.add(up);
+						ud.components.add(down);
+						ud.operation=Operation.SEQUENCE;
+						
+						HCTerm tt = ud;
+						if (down==null) tt = up;
+						
+						// the final result is the sequential composition of up expansion and
+						// down expansion
+						stg = HCInfixOperator.generateComposedSTG(useCartesianProduct.isSelected(), tt, 
+								parser, enforceInjectiveLabelling.isSelected());
 						
 					}
 

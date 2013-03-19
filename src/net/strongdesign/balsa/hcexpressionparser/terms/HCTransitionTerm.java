@@ -10,13 +10,28 @@ import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 
 public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
-	public String wire;
-	public String direction;
+	public String wire="";
+	public String direction="";
 	
 	@Override
 	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) {
-		if (type==ExpansionType.UP) return this;
-		return null;
+		if (direction.equals("")) { 
+			HCTransitionTerm ret = new HCTransitionTerm();
+			ret.wire = wire;
+			ret.channel = channel; 
+			
+			if (type==ExpansionType.UP) {
+				ret.direction="+";
+			} else if (type==ExpansionType.DOWN) {
+				ret.direction="-";
+			}
+			return ret;
+		} else {
+			if (type==ExpansionType.UP)
+				return this;
+			
+			return null;
+		}
 	}
 
 	@Override
@@ -31,7 +46,8 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 		Signature sg = Signature.INPUT;
 		
 		if (wire.equals("r")&&sig.isActive(channel)||
-			wire.equals("a")&&!sig.isActive(channel))
+				wire.equals("a")&&!sig.isActive(channel)||
+				wire.equals("n")&&!sig.isActive(channel))
 			sg = Signature.OUTPUT;
 		
 		if (wire.equals("o")) sg  = Signature.OUTPUT;
@@ -54,15 +70,17 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 
 	
 	@Override
-	public void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces) {
+	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce) {
+		
+		STG stg = new STG();
 		
 		Integer signal = stg.getSignalNumber(wire+getChannelName());
 		Signature sg = Signature.INPUT;
 		
 		if (wire.equals("r")&&sig.isActive(channel)||
-			wire.equals("a")&&!sig.isActive(channel))
-			sg = Signature.OUTPUT;
-		
+			wire.equals("a")&&!sig.isActive(channel)||
+			wire.equals("n")&&!sig.isActive(channel))
+				sg = Signature.OUTPUT;
 		
 		if (wire.equals("o")) sg  = Signature.OUTPUT;
 		if (wire.equals("c")) sg  = Signature.INTERNAL;
@@ -71,6 +89,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 		stg.setSignature(signal, sg);
 		
 		EdgeDirection ed = EdgeDirection.UNKNOWN;
+		
 		if (direction.equals("+")) ed=EdgeDirection.UP;
 		if (direction.equals("-")) ed=EdgeDirection.DOWN;
 		
@@ -87,5 +106,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 		t.setChildValue(outp, 1);
 		inPlaces.add(inp);
 		outPlaces.add(outp);
+		
+		return stg;
 	}
 }

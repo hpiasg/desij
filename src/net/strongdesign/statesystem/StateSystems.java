@@ -164,13 +164,13 @@ public abstract class StateSystems {
 					if (system instanceof StateSystemAdapter)
 						stg = ((StateSystemAdapter)system).getSTG();
 					System.out.println(condition);
-					
-					try {
-						FileSupport.saveToDisk(STGFile.convertToG(stg, false), "/home/mark/stg.g");
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-					
+//					
+//					try {
+//						FileSupport.saveToDisk(STGFile.convertToG(stg, false), "/home/mark/stg.g");
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					}
+//					
 					throw new StateSystemException(
 							"Could not generate inverse projection: could not activate event " + event + 
 							" of trace " + trace );

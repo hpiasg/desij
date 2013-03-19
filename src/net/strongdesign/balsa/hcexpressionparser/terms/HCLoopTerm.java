@@ -80,18 +80,20 @@ public class HCLoopTerm extends HCTerm implements HCSTGGenerator {
 	}
 	
 	@Override
-	public void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces) {
+	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce) {
 		
 		HCSTGGenerator hc = (HCSTGGenerator)component;
-		
 		
 		Set<Place> inP = new HashSet<Place>();
 		Set<Place> outP = new HashSet<Place>();
 		
-		hc.generateSTG(stg, sig, inP, outP);
+		STG stg = hc.generateSTG(sig, inP, outP, enforce);
 		
 		inPlaces.addAll(STGUtil.cartesianProductBinding(stg, inP, outP));
-		// the outPlaces will remain empty
+		
+		outPlaces.addAll(inPlaces);
+		
+		return stg;
 	}
 }
 

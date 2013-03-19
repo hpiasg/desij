@@ -74,7 +74,8 @@ public class ComponentSTGExpressions {
 		components.put("$BrzBinaryFuncConstR", "active B\n#(A:(B))");
 		
 		// low-level specifications
-		components.put("$BrzCallMux", "scaled A\nactive B\n#(#|(rA+;oA+;up(B);aA+;rA-;oA-;down(B);aA-))");
+		components.put("$BrzCallMux", "scaled A\nactive B\n#(#|(rA+;oA+;iB+;up(B);aA+;rA-;((oA-;iA-) || down(B));aA-))");
+		
 		components.put("$BrzEncode", "scaled A\nactive B\n#(#|(rA+;(oA+||rB+);aB+;aA+;rA-;rB-;aB-;oA-;aA-))");
 		components.put("$BrzCallDemux", "scaled A\nactive B\n#(#|(rA+;oA+;up(B);aA+;rA-;oA-;down(B);aA-))");
 		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
@@ -86,21 +87,25 @@ public class ComponentSTGExpressions {
 		components.put("$BrzNullAdapt", "active A\n#(B:(up(A);down(A)))");
 		
 		// using synchronous product
-		components.put("$BrzDecisionWait", "scaled B,C\nactive C\n#(#|(B:C)) ** #(rA+;#|(up(C);aA+;rA-;down(C));aA-)");
-		components.put("$BrzSynch", "active B\nscaled A\n#**(#(A:B))");
-		components.put("$BrzSynchPull", "active B\nscaled A\n#**(#(A:B))");
-		components.put("$BrzSynchPush", "active C\nscaled B\nscale 2\n#**(#(B:C)) ** #(A:C)");
-		components.put("$BrzPassivatorPush", "scaled A\n#(B) ** (#**( #(rA+;aB+;aA+;rA-;aB-;aA-)))");
+		components.put("$BrzDecisionWait", "scaled B,C\nactive C\n#(#|(B:C)) || #(rA+;#|(up(C);aA+;rA-;down(C));aA-)");
+		components.put("$BrzSynch", "active B\nscaled A\n#||(#(A:B))");
+		components.put("$BrzSynchPull", "active B\nscaled A\n#||(#(A:B))");
+		components.put("$BrzSynchPush", "active C\nscaled B\nscale 2\n#||(#(B:C)) || #(A:C)");
+		components.put("$BrzPassivatorPush", "scaled A\n#(B) || (#||( #(rA+;aB+;aA+;rA-;aB-;aA-)))");
 		
 		components.put("$BrzArbiter", "active C,D\n#(rA+;oA+;iA+;rC+;aC+;aA+;rA-;oA-;iA-;rC-;aC-;aA-)"
-				+"**#(rB+;oB+;iB+;rD+;aD+;aB+;rB-;oB-;iB-;rD-;aD-;aB-)"
-				+"**#((iA+;rC+;aC+;aA+;rA-;oA-;iA-)|(iB+;rD+;aD+;aB+;rB-;oB-;iB-))"
-				+"**#((rC+;aC+;aA+;rA-;oA-;iA-;rC-;aC-)|(rD+;aD+;aB+;rB-;oB-;iB-;rD-;aD-))");
+				+"||#(rB+;oB+;iB+;rD+;aD+;aB+;rB-;oB-;iB-;rD-;aD-;aB-)"
+				+"||#((iA+;rC+;aC+;aA+;rA-;oA-;iA-)|(iB+;rD+;aD+;aB+;rB-;oB-;iB-))"
+				+"||#((rC+;aC+;aA+;rA-;oA-;iA-;rC-;aC-)|(rD+;aD+;aB+;rB-;oB-;iB-;rD-;aD-))");
+		components.put("$BrzWhile", "active B, C, R\n#(rA+;up(B);rR+;#(aR+;down(B);down(R);up(C);down(C);up(B);rR+);"
+				+"nR+;aA+;rA-;down(B);rR-;nR-;aA-)");
 		
 		// components for the internal generators
-		components.put("$BrzActiveEagerFalseVariable", "$BrzActiveEagerFalseVariable:2");
-		components.put("$BrzFalseVariable", "$BrzFalseVariable:2");
-		components.put("$BrzWhile", "$BrzWhile");
+		components.put("$BrzActiveEagerFalseVariable", 
+				"scaled D\nactive B, C\n#(A:(B.#||(#(aD+;aD-))))||#(rA+;rC+;#||(#D);aC+;down(C);aA+;down(A))");
+		
+		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
+		
 		components.put("$BrzPassivator", "$BrzPassivator:2");
 	/**/
 	}

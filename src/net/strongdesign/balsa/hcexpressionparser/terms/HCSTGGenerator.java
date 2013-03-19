@@ -10,6 +10,7 @@ public interface HCSTGGenerator {
 
 	void generateSTGold(STG stg, HCChannelSenseController sig, Place inPlace, Place outPlace);
 	
-	void generateSTG(STG stg, HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces);
+	// generateSTG always creates a new STG and returns it
+	STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforceInj);
 	
 }

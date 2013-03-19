@@ -30,132 +30,6 @@ public class RedundantPlaceSolverLP {
 	 * @param depth - depth of the subgraph
 	 * @return
 	 */
-	public boolean isRedundant(STG stg, Place place, int depth) {
-		int nroPlaces;
-		
-		long startSetup = System.currentTimeMillis();
-		long startSolver;
-		Set<Place> places = new HashSet<Place>();
-		Set<Transition> transitions = new HashSet<Transition>();
-		
-		// find the STG subgraph for the desired depth
-		STG.getSubgraphNodes(stg, place, depth, places, transitions);
-		
-		nroPlaces = places.size();
-		
-		// create a mapping from each place to some number
-		HashMap<Place, Integer> map = new HashMap<Place, Integer>();
-		int num=0;
-		int redPlace = 0;
-		for (Place p: places) {
-			map.put(p, num);
-			if (p==place) redPlace=num;
-			++num;
-		}
-		
-		try {
-			double[] curRow = new double[nroPlaces+2];
-			
-			//Create a new LP
-			LpSolve lp = LpSolve.makeLp(0, nroPlaces + 1);
-			
-			lp.setVerbose(0);
-			
-			//Set the target function, which is constant because only feasibility must be checked
-			lp.setObjFn(curRow); 
-			
-			 
-			//The valuation of the redundant place must be strictly greater than 0
-			//the exact value is not important
-			lp.setLowbo(redPlace+1, 1);
-			
-			//set first constraint, for redundancy condition 1: V(p)M_N(p) - \sum_{q\in Q} V(q)M_N(q) - c = 0
-			for (Place p: places) {
-				int idx = map.get(p);
-				curRow[idx+1] = -p.getMarking();
-			}
-			curRow[redPlace+1] = -curRow[redPlace+1];
-			curRow[nroPlaces+1] = -1;
-			lp.addConstraint(curRow, LpSolve.EQ, 0);
-			
-			//for debugging
-			//lp.setRowName(1, "marking");
-			
-			
-			//set second set of constraints for condition 2: 
-			// \forall t\in T : V(p)\Delta_t(p) - \sum_{q\in Q} V(q)\Delta_t(q) \geq 0
-			
-			//for every constraint 0 -- variable c not important here
-			curRow[nroPlaces+1] = 0;
-			for (Transition t: transitions) {
-				curRow = new double[nroPlaces+2];
-				
-				for (Node p: t.getNeighbours()) {
-					if (!places.contains(p)) continue;
-					
-					int idx = map.get(p);
-					curRow[idx+1] = -(t.getChildValue(p)-p.getChildValue(t));
-				}
-				
-				curRow[redPlace+1] = -curRow[redPlace+1];
-				lp.addConstraint(curRow, LpSolve.GE, 0);					
-			}
-
-			
-			//third set of constraints for condition 3: 
-			// \forall t\in T : V(p)W(p,t) - \sum_{q\in Q} V(q)W(q,t) -c \leq 0
-			curRow[nroPlaces+1] = -1;
-			for (Transition t: transitions) {
-				curRow = new double[nroPlaces+2];
-				
-				for (Node p: t.getNeighbours()) {
-					if (!places.contains(p)) continue;
-					int idx = map.get(p);
-					curRow[idx+1] = -p.getChildValue(t);
-				}
-				
-				curRow[redPlace+1] = -curRow[redPlace+1];
-				
-				lp.addConstraint(curRow, LpSolve.LE, 0);					
-			}
-			
-			//for debugging
-			/*
-			for (Node node : mapping.keySet()) {
-				if (node instanceof Place)
-					lp.setColName(mapping.get(node)+1, node.toString());
-				else {
-					lp.setRowName(mapping.get(node)+2, node.toString()+"-2");
-					lp.setRowName(mapping.get(node)+2+nroTransitions, node.toString()+"-3");
-				}
-			}
-			*/
-			
-			// solve the problem, if it is feasible lp_solv returns immediately with 0 after the first vertex was encountered
-			// because the object function is constant, then the place is redundant
-			// if the problem is infeasible the place is not redundant
-			startSolver = System.currentTimeMillis();
-			int res = lp.solve();
-			RedundantPlaceStatistics.totalSetupMills+=startSolver-startSetup;
-			RedundantPlaceStatistics.totalSolverMills+=System.currentTimeMillis()-startSolver;
-			
-			RedundantPlaceStatistics.totalChecked++;
-			
-			if (res == 0) {
-				RedundantPlaceStatistics.totalFound++;
-				return true;
-			} else
-				return false;
-			
-			
-		} catch (LpSolveException e) {
-			System.err.println("Internal error while checking redundancy with lp_solv");
-			e.printStackTrace();
-			return false;
-		}
-		
-	}
-	
 	public boolean isRedundant2(STG stg, Place mainPlace, int depth) {
 		
 		long startSetup = System.currentTimeMillis();
@@ -301,7 +175,7 @@ public class RedundantPlaceSolverLP {
 	
 	public boolean isRedundant(STG stg, Place place) {
 		
-		return isRedundant(stg, place, 0);
+		return isRedundant2(stg, place, 0);
 	}
 }
 

@@ -464,7 +464,7 @@ public class STGEditorNavigation extends JTree implements
 		
 		if (stgs.size()!=2) return;
 		
-		STG stg= STGUtil.synchronousProduct(stgs.get(0), stgs.get(1), true);
+		STG stg= STGUtil.synchronousProduct(stgs, true);
 		
 		if (stg!=null) {
 			frame.addSTG(stg, "Product");

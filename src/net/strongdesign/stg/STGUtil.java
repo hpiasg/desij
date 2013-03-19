@@ -22,7 +22,6 @@ package net.strongdesign.stg;
 import java.io.File;
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,7 +30,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -39,11 +37,10 @@ import java.util.Set;
 
 import lpsolve.LpSolveException;
 
+import net.strongdesign.balsa.hcexpressionparser.terms.STGCompositionOperations;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJ;
 import net.strongdesign.desij.DesiJException;
-import net.strongdesign.desij.decomposition.DecompositionEvent;
-import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.statesystem.StateSystem;
 import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
 import net.strongdesign.stg.solvers.RedundantPlaceStatistics;
@@ -52,7 +49,6 @@ import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.stg.traversal.NotCondition;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
-import net.strongdesign.util.Pair;
 import net.strongdesign.util.StreamGobbler;
 
 
@@ -142,7 +138,6 @@ public abstract class STGUtil {
 		
 		// do the redundancy check without the solver before the loop
 		boolean lpsolve =  CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.isEnabled();
-		
 		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(false);
 		redDel(stg, new NeighbourTrackingNodeRemover(stg));
 		CLW.instance.USE_LP_SOLVE_FOR_IMPLICIT_PLACES.setEnabled(lpsolve);
@@ -163,9 +158,12 @@ public abstract class STGUtil {
 			
 			System.out.println(" D"+dum1+"-> D"+dum2);
 			
+			Collection<Node> n = 
+				redDel(stg, new NeighbourTrackingNodeRemover(stg));
+			
 			if (dum2==0) return; // nothing more to contract
 			
-			Collection<Node> n = redDel(stg, new NeighbourTrackingNodeRemover(stg));
+			
 			if (!n.isEmpty()) continue;
 			
 			
@@ -392,10 +390,17 @@ public abstract class STGUtil {
 	static class GreatestPresetFirst implements Comparator<Place> {
 		@Override
 		public int compare(Place p1, Place p2) {
-			int t = p2.getParents().size() - p1.getParents().size();
+			// higher marking goes first
+			
+			int t = p2.getMarking()- p1.getMarking();
 			if (t==0) {
-				t = p2.getChildren().size() - p1.getChildren().size();
+				// now compare by preset sizes
+				t = p2.getParents().size() - p1.getParents().size();
+				if (t==0) {
+					t = p2.getChildren().size() - p1.getChildren().size();
+				}
 			}
+			
 			return t;
 		}
 	}
@@ -794,6 +799,119 @@ public abstract class STGUtil {
 		
 	
 	/**
+	 * Special type of injective labelling, it tries to go backwards from a merge-place
+	 * and merge together preset transitions
+	 * @param stg
+	 * @param tran
+	 */
+	public static boolean tryZipUp(STG stg, Place place) {
+		
+		if (place.getParents().size()<=1) return false;
+		
+		LinkedList<Node> trans = new LinkedList<Node>();
+		
+		trans.addAll(place.getParents());
+		
+		for (Node t1: trans) {
+			for (Node t2: trans) {
+				if (t1==t2) continue;
+				if (!sameTransitions((Transition)t1, (Transition)t2)) continue;
+				
+				if (t1.getParents().size()!=1||t2.getParents().size()!=1) continue;
+				Place p1 = (Place)t1.getParents().iterator().next();
+				Place p2 = (Place)t2.getParents().iterator().next();
+				
+				if (p1==p2) continue;
+				
+				if (place.getParentValue(t1)!=place.getParentValue(t2)) continue;
+				if (t1.getParentValue(p1)!=t2.getParentValue(p2)) continue;
+				
+				if (p1.getChildren().size()!=1||p2.getChildren().size()!=1) continue;
+				
+				// presets of p1 and p2 must be disjoint
+				Set<Node> test = new HashSet<Node>();
+				test.addAll(p1.getParents());
+				test.retainAll(p2.getParents());
+				if (!test.isEmpty()) continue;
+				
+				// now simply copy all connections from *p2 to p2 in p1
+				int toks = p1.getMarking()+p2.getMarking();
+				p1.setMarking(toks);
+				
+				for (Node t: p2.getParents()) {
+					int val = p2.getParentValue(t);
+					p1.setParentValue(t, val);
+				}
+				
+				stg.removePlace(p2);
+				stg.removeTransition((Transition)t2);
+				
+				tryZipUp(stg, p1);
+			}
+		}
+		
+		return true;
+	}
+	
+	
+	/**
+	 * Special type of injective labelling, it tries to go forwards from a split-place
+	 * TODO: can we do this type of enforcing??
+	 * @param stg
+	 * @param tran
+	 */
+	public static boolean tryZipDown(STG stg, Place place) {
+		
+		
+		if (place.getChildren().size()<=1) return false;
+		LinkedList<Node> trans = new LinkedList<Node>();
+		
+		trans.addAll(place.getChildren());
+		
+		for (Node t1: trans) {
+			for (Node t2: trans) {
+				if (t1==t2) continue;
+				if (!sameTransitions((Transition)t1, (Transition)t2)) continue;
+				
+				if (t1.getChildren().size()!=1||t2.getChildren().size()!=1) continue;
+				
+				Place p1 = (Place)t1.getChildren().iterator().next();
+				Place p2 = (Place)t2.getChildren().iterator().next();
+				
+				if (p1==p2) continue;
+				
+				if (place.getChildValue(t1)!=place.getChildValue(t2)) continue;
+				if (t1.getChildValue(p1)!=t2.getChildValue(p2)) continue;
+				
+				if (p1.getParents().size()!=1||p2.getParents().size()!=1) continue;
+				
+				// postsets of p1 and p2 must be disjoint
+				Set<Node> test = new HashSet<Node>();
+				test.addAll(p1.getChildren());
+				test.retainAll(p2.getChildren());
+				if (!test.isEmpty()) continue;
+				
+				// now simply copy all connections from *p2 to p2 in p1
+				int toks = p1.getMarking()+p2.getMarking();
+				p1.setMarking(toks);
+				
+				for (Node t: p2.getChildren()) {
+					int val = p2.getChildValue(t);
+					p1.setChildValue(t, val);
+				}
+				
+				stg.removePlace(p2);
+				stg.removeTransition((Transition)t2);
+				
+				tryZipDown(stg, p1);
+			}
+		}
+		
+		return true;
+	}
+	
+	
+	/**
 	 * For a given transition it tries to merge all transitions 
 	 * with the same signal direction into one instance
 	 * It transforms the stg passed as an argument 
@@ -966,6 +1084,23 @@ public abstract class STGUtil {
 	 * @param stg
 	 */
 	public static void enforceInjectiveLabelling(STG stg) {
+		
+		// try to enforce injectivity on all merge places
+		HashSet<Place> places = new HashSet<Place>();
+		
+		places.addAll(stg.getPlaces());
+		for (Place p: places) {
+			if (p.getParents().size()<=1) continue;
+			tryZipUp(stg, p);
+		}
+		
+		for (Place p: places) {
+			if (p.getChildren().size()<=1) continue;
+			tryZipDown(stg, p);
+		}
+		
+		
+		
 		// first, find all transitions that we want to try to enforce
 		HashSet< Entry<Integer, EdgeDirection> > entries = new HashSet< Entry<Integer, EdgeDirection> >();
 		HashSet<Transition> enforce = new HashSet<Transition>();
@@ -1218,7 +1353,7 @@ public abstract class STGUtil {
 				
 			} else {
 				Transition t=(Transition)n;
-				if (ConditionFactory.IS_DUMMY.fulfilled(t))	return false;
+				//if (ConditionFactory.IS_DUMMY.fulfilled(t))	return false;
 			}
 			
 			Node n2 = n.getChildren().iterator().next();
@@ -1232,7 +1367,7 @@ public abstract class STGUtil {
 	public static boolean relaxInjectiveSplitSharedPath2(STG stg) {
 		boolean ret = false;
 		
-		simpleDummyRemoval2(stg);
+		//simpleDummyRemoval2(stg);
 		
 		// just make sure the dumy count doesn't increase
 		int d = stg.getTransitions(ConditionFactory.IS_DUMMY).size();
@@ -1551,142 +1686,16 @@ public abstract class STGUtil {
 		return stg;
 	}
 	
-	/**
-	 * This function merges two STGs (same as the standard parallel composition),
-	 * but it only works with signals of the same signature
-	 */
-	public static STG synchronousProduct(STG stg1, STG stg2, boolean removeRedPlaces) {
-		
-		if (stg1==null) return stg2;
-		if (stg2==null) return stg1;
-		if (stg1==stg2) return stg1;
-		
-		STG stg = new STG();
-		
-		
-		Map<Place, Place> old2new1 = new HashMap<Place,Place>();
-		Map<Place, Place> old2new2 = new HashMap<Place,Place>();
-		
-		Map<Transition, Transition> new2old1 = new HashMap<Transition,Transition>();
-		Map<Transition, Transition> new2old2 = new HashMap<Transition,Transition>();
-		
-		Set<SignalEdge> occurs1 = new HashSet<SignalEdge>();
-		Set<SignalEdge> occurs2 = new HashSet<SignalEdge>();
-		
-		// add transition combinations
-		for (Transition t1: stg1.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-			for (Transition t2: stg2.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-				if (STGUtil.sameTransitions(t1, t2)) {
-					
-					// create the transition
-					String name = stg1.getSignalName(t1.getLabel().getSignal());
-					
-					Integer newNum = stg.getSignalNumber(name); // get or create the signal
-					
-					Signature s1 = stg1.getSignature(t1.getLabel().getSignal());
-					Signature s2 = stg2.getSignature(t2.getLabel().getSignal());
-					
-					if (s1!=s2) return null;
-					
-					stg.setSignature(newNum, s1);
-					
-					SignalEdge se = new SignalEdge(newNum, t1.getLabel().getDirection());
-					
-					Transition newTransition = stg.addTransition(se);
-					
-					
-					new2old1.put(newTransition,t1);
-					new2old2.put(newTransition,t2);
-					
-					
-					occurs1.add(t1.getLabel());
-					occurs2.add(t2.getLabel());
-				}
-			}
-		}
-		
-		// now add transitions that do not occur in both STGs 
-		for (Transition t1: stg1.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-			if (!occurs1.contains(t1.getLabel())) {
-				// create the transition
-				String name = stg1.getSignalName(t1.getLabel().getSignal());
-				Integer newNum = stg.getSignalNumber(name); // get or create the signal
-				Signature s1 = stg1.getSignature(t1.getLabel().getSignal());
-				stg.setSignature(newNum, s1);
-				SignalEdge se = new SignalEdge(newNum, t1.getLabel().getDirection());
-				
-				Transition newTransition = stg.addTransition(se);
-				
-				new2old1.put(newTransition, t1);
-			}
-		}
-
-		for (Transition t2: stg2.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-			if (!occurs2.contains(t2.getLabel())) {
-				// create the transition
-				String name = stg2.getSignalName(t2.getLabel().getSignal());
-				Integer newNum = stg.getSignalNumber(name); // get or create the signal
-				Signature s2 = stg2.getSignature(t2.getLabel().getSignal());
-				stg.setSignature(newNum, s2);
-				SignalEdge se = new SignalEdge(newNum, t2.getLabel().getDirection());
-				
-				Transition newTransition = stg.addTransition(se);
-				
-				new2old2.put(newTransition, t2);
-			}
-		}
-		
-		// copy all places
-		for (Place p: stg1.getPlaces()) {
-			Place np = stg.addPlace(p.getLabel(), p.getMarking());
-			old2new1.put(p, np);
-		}
-		
-		for (Place p: stg2.getPlaces()) {
-			Place np = stg.addPlace(p.getLabel(), p.getMarking());
-			old2new2.put(p, np);
-		}
-		
-		// finally, set the weights
-		for (Transition tr: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-			
-			Transition t1 = new2old1.get(tr);
-			if(t1!=null) {
-				for (Node p1: t1.getParents()) {
-					Place p = old2new1.get(p1);
-					tr.setParentValue(p, t1.getParentValue(p1));
-				}
-				for (Node p1: t1.getChildren()) {
-					Place p = old2new1.get(p1);
-					tr.setChildValue(p, t1.getChildValue(p1));
-				}
-			}
-			
-			Transition t2 = new2old2.get(tr);
-			if (t2!=null) {
-				for (Node p2: t2.getParents()) {
-					Place p = old2new2.get(p2);
-					tr.setParentValue(p, t2.getParentValue(p2));
-				}
-				for (Node p2: t2.getChildren()) {
-					Place p = old2new2.get(p2);
-					tr.setChildValue(p, t2.getChildValue(p2));
-				}
-			}
-		}
-		
-		if (removeRedPlaces)
-			removeRedundantPlaces(stg);
-		
-		return stg;
-	}
-	
 	
 	public static STG synchronousProduct(LinkedList<STG> stgs, boolean removeRedPlaces) {
 		STG ret = null;
 		if (stgs.size()==1) return stgs.get(0);
+		
+		// just make a stub for places
+		HashSet<Place> p = new HashSet<Place>();
+		ret = new STG();
 		for (STG stg: stgs) {
-			ret = synchronousProduct(ret, stg, removeRedPlaces);
+			ret = STGCompositionOperations.synchronousProduct(ret, p, p, stg, p, p, removeRedPlaces, p, p);
 		}
 		return ret;
 	}

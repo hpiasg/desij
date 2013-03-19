@@ -100,19 +100,19 @@ public class STGGraphComponent extends mxGraphComponent {
 				add(fireTransition);
 				add(unFireTransition);
 				add(renameSignal);
-				add(injectiveLabelling);
 				
 				contractTransition.addActionListener(this);
 				makeSignalDummy.addActionListener(this);
 				fireTransition.addActionListener(this);
 				unFireTransition.addActionListener(this);
 				renameSignal.addActionListener(this);
-				injectiveLabelling.addActionListener(this);
 			}
 			
 			// actions for all nodes
+			add(injectiveLabelling);
 			add(showSurrounding);
 			showSurrounding.addActionListener(this);
+			injectiveLabelling.addActionListener(this);
 		}
 
 		@Override
@@ -121,7 +121,13 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (e.getSource()==injectiveLabelling) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
-				STGUtil.enforceInjectiveLabelling(component.activeSTG, transitionsToProcess.get(0));
+				if (nodesToProcess.get(0) instanceof Place) {
+					STGUtil.tryZipUp(component.activeSTG, (Place)nodesToProcess.get(0));
+					STGUtil.tryZipDown(component.activeSTG, (Place)nodesToProcess.get(0));
+				} else {
+					STGUtil.enforceInjectiveLabelling(component.activeSTG, transitionsToProcess.get(0));
+				}
+				
 				
 				component.initSTG(activeSTG, component.frame.isShorthand());
 				component.frame.refreshSTGInfo();

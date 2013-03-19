@@ -135,7 +135,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	
 	public final STGEditorAction RESOLVE_INTERNAL = new STGEditorAction("Resolve internal signals", 0, null, 0, this);
 	
-	 
+	
 	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction(
 			"Change signal types", KeyEvent.VK_C, null, 0, this);
 	
@@ -1000,9 +1000,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		STG curSTG = projectNode.getSTG();
 		projectNode.removeAllChildren();
-		 
 		
-		 
+		
 //		class Deco extends BasicDecomposition {
 //			private STGEditorTreeNode parent;
 //			public Deco(STGEditorTreeNode parent) {
@@ -1121,7 +1120,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			projectNode.add(nn);
 			
 			navigationView.updateUI();
-			navigationView.showNode(nn);*/
+			navigationView.showNode(nn);
+			*/
 			
 		} catch (Exception e) {
 			e.printStackTrace();

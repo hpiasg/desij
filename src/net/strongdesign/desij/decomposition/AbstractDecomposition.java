@@ -195,7 +195,7 @@ public abstract class AbstractDecomposition   {
 			Collection<Transition> r=STGUtil.removeRedundantTransitions(stg);
 			result.addAll(r);
 			logging(stg, DecompositionEvent.RED_TRANS_DEL, r);
-		}
+		} 
 
 		if (CLW.instance.REMOVE_REDUNDANT_PLACES.isEnabled()) { 
 			Collection<Place> r=STGUtil.removeRedundantPlaces(stg);

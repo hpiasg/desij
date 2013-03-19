@@ -39,6 +39,7 @@ import net.strongdesign.balsa.breezeparser.BreezeParser;
 import net.strongdesign.balsa.hcexpressionparser.HCExpressionParser;
 import net.strongdesign.balsa.hcexpressionparser.ParseException;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator;
+import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCSTGGenerator;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm;
 import net.strongdesign.balsa.hcexpressionparser.terms.HCTerm.ExpansionType;
@@ -85,8 +86,19 @@ public class ComponentSTGFactory {
             	return null;
             } else {
     			HCTerm up   = t.expand(ExpansionType.UP, scale, parser, false);
+    			HCTerm down   = t.expand(ExpansionType.DOWN, scale, parser, false);
     			
-    			stg = HCInfixOperator.generateComposedSTG(true, up, parser);
+    			HCInfixOperator ud = new HCInfixOperator();
+    			
+    			ud.components.add(up);
+    			ud.components.add(down);
+    			ud.operation = Operation.SEQUENCE;
+    			
+    			HCTerm tt = ud;
+    			if (down==null) tt=up;
+    			
+    			stg = HCInfixOperator.generateComposedSTG(true, tt, parser, 
+    					CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled());
     		}
 			
 		} catch (ParseException e) {
@@ -123,45 +135,86 @@ public class ComponentSTGFactory {
 		
 		TreeMap<String, String> renaming = new TreeMap<String, String>();
 		
-		// do the renaming to the channel names
+		// do the renaming to the STG channel names
 		byte cnt=0;
-		for (Object o : channels) {
-			if ( o instanceof LinkedList<?>) {
-				// rename scalable channel
-				@SuppressWarnings("unchecked")
-				LinkedList<Integer> cl = (LinkedList<Integer>)o;
-				for (int i=0;i<cl.size();i++) {
-					
-					String rFrom = ("r"+(char)('A'+cnt));
-					if (i>0) rFrom += i;
-					String aFrom = ("a"+(char)('A'+cnt));
-					if (i>0) aFrom += i;
-					
-					String input = (""+(char)('A'+cnt));
-					if (i>0) input += i;
-					String output = (""+(char)('A'+cnt));
-					if (i>0) output += i;
-					
-					String internal = (""+(char)('A'+cnt));
-					if (i>0) internal += i;
-					
-					renaming.put(rFrom, "r"+cl.get(i));
-					renaming.put(aFrom, "a"+cl.get(i));
-					renaming.put("i"+input, "i"+compID+input);
-					renaming.put("o"+output, "o"+compID+output);
-					renaming.put("c"+internal, "c"+compID+internal);
-				}
-				
-			} else if (o instanceof Integer) {
-				// rename non-scalable channel
-				renaming.put("r"+(char)('A'+cnt), "r"+(Integer)o);
-				renaming.put("a"+(char)('A'+cnt), "a"+(Integer)o);
-				renaming.put("i"+(char)('A'+cnt), "i"+compID+(char)('A'+cnt));
-				renaming.put("o"+(char)('A'+cnt), "o"+compID+(char)('A'+cnt));
-				renaming.put("c"+(char)('A'+cnt), "c"+compID+(char)('A'+cnt));
+		int chanNum = channels.size();
+		
+		// for each STG signal determine its channel, assign appropriate name
+		Map<String, Integer> signals = stg.getSignalNumbers();
+		
+		for (String sname: signals.keySet()) {
+			
+			// convert name to wire name, channel position, and index
+			String wire = sname.substring(0,1);
+			int channel = sname.charAt(1)-'A';
+			int index = 0;
+			
+			if (sname.length()>2) {
+				index = Integer.valueOf(sname.substring(2));
 			}
-			cnt++;
+			
+			// is it a standard channel?
+			// if yes, form new name with the channel ID
+			
+			if (channel<channels.size()&&(wire.equals("r")||wire.equals("a"))) {
+				Object o = channels.get(channel);
+				
+				if (o instanceof LinkedList<?>) {
+					@SuppressWarnings("unchecked")
+					LinkedList<Integer> cl = (LinkedList<Integer>)o;
+					int chanum = cl.get(index);
+					renaming.put(sname, wire+(Integer)chanum);
+				} else {
+					// rename non-scalable channel
+					renaming.put(sname, wire+(Integer)o);
+				}
+			} else { // if not, the numbering goes from the original name + component ID 
+				renaming.put(sname, sname+"_"+compID);
+			}
 		}
+		
+//		for (Object o : channels) {
+//			
+//			if ( o instanceof LinkedList<?>) {
+//				// rename scalable channel
+//				@SuppressWarnings("unchecked")
+//				LinkedList<Integer> cl = (LinkedList<Integer>)o;
+//				for (int i=0;i<cl.size();i++) {
+//					
+//					String rFrom = ("r"+(char)('A'+cnt));
+//					if (i>0) rFrom += i;
+//					String aFrom = ("a"+(char)('A'+cnt));
+//					if (i>0) aFrom += i;
+//					
+//					String input = (""+(char)('A'+cnt));
+//					if (i>0) input += i;
+//					String output = (""+(char)('A'+cnt));
+//					if (i>0) output += i;
+//					
+//					String internal = (""+(char)('A'+cnt));
+//					if (i>0) internal += i;
+//					
+//					renaming.put(rFrom, "r"+cl.get(i));
+//					renaming.put(aFrom, "a"+cl.get(i));
+//					
+//					renaming.put("i"+input, "i"+compID+input);
+//					renaming.put("o"+output, "o"+compID+output);
+//					renaming.put("c"+internal, "c"+compID+internal);
+//					
+//				}
+//				
+//			} else if (o instanceof Integer) {
+//				// rename non-scalable channel
+//				renaming.put("r"+(char)('A'+cnt), "r"+(Integer)o);
+//				renaming.put("a"+(char)('A'+cnt), "a"+(Integer)o);
+//				
+//				renaming.put("i"+(char)('A'+cnt), "i"+compID+(char)('A'+cnt));
+//				renaming.put("o"+(char)('A'+cnt), "o"+compID+(char)('A'+cnt));
+//				renaming.put("c"+(char)('A'+cnt), "c"+compID+(char)('A'+cnt));
+//			}
+//			
+//			cnt++;
+//		}
 		
 		try {
 			stg.renameSignals(renaming);
