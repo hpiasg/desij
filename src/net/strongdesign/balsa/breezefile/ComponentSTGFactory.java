@@ -133,6 +133,9 @@ public class ComponentSTGFactory {
 		
 		if (CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled()) STGUtil.enforceInjectiveLabelling(stg);
 		
+		// always try to reduce the component
+		STGUtil.reduceSTG(stg);
+		
 		TreeMap<String, String> renaming = new TreeMap<String, String>();
 		
 		// do the renaming to the STG channel names

@@ -319,16 +319,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 				}
 
 				if (reduceSTG.isSelected()) {
-					STGInOutParameter componentParameter = new STGInOutParameter(
-							stg);
-					BasicDecomposition deco = new BasicDecomposition(
-							"basic", stg);
-					
-					try {
-						deco.reduce(componentParameter);
-					} catch (STGException e) {
-						e.printStackTrace();
-					}
+					STGUtil.reduceSTG(stg);
 				}
 
 				frame.addSTG(stg, "generated");

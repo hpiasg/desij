@@ -100,11 +100,14 @@ public class ComponentSTGExpressions {
 		components.put("$BrzWhile", "active B, C, R\n#(rA+;up(B);rR+;#(aR+;down(B);down(R);up(C);down(C);up(B);rR+);"
 				+"nR+;aA+;rA-;down(B);rR-;nR-;aA-)");
 		
-		// components for the internal generators
-		components.put("$BrzActiveEagerFalseVariable", 
-				"scaled D\nactive B, C\n#(A:(B.#||(#(aD+;aD-))))||#(rA+;rC+;#||(#D);aC+;down(C);aA+;down(A))");
 		
 		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
+		
+		// components for the internal generators
+//		components.put("$BrzActiveEagerFalseVariable", 
+//				"scaled D\nactive B, C\n#(A:(B.#||(#(aD+;aD-))))||#(rA+;rC+;#||(#D);aC+;down(C);aA+;down(A))");
+		
+		components.put("$BrzActiveEagerFalseVariable", "$BrzActiveEagerFalseVariable:2"); 
 		
 		components.put("$BrzPassivator", "$BrzPassivator:2");
 	/**/

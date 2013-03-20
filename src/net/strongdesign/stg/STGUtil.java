@@ -41,6 +41,8 @@ import net.strongdesign.balsa.hcexpressionparser.terms.STGCompositionOperations;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJ;
 import net.strongdesign.desij.DesiJException;
+import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.statesystem.StateSystem;
 import net.strongdesign.stg.solvers.RedundantPlaceSolverLP;
 import net.strongdesign.stg.solvers.RedundantPlaceStatistics;
@@ -231,9 +233,13 @@ public abstract class STGUtil {
 		return Reason.OK;
 	}
 	
+	/**
+	 * Delete redundant places and redundant transitions
+	 * @param stg
+	 * @param remover
+	 * @return
+	 */
 	private static Collection<Node> redDel(STG stg, NodeRemover remover) {
-		
-		
 		
 		Collection<Node> result = new HashSet<Node>();
 
@@ -1078,6 +1084,23 @@ public abstract class STGUtil {
 			return t;
 		}
 	}
+	
+	
+	public static void reduceSTG(STG stg) {
+		if (stg==null) return;
+		
+		STGInOutParameter componentParameter = new STGInOutParameter(
+				stg);
+		BasicDecomposition deco = new BasicDecomposition(
+				"basic", stg);
+		
+		try {
+			deco.reduce(componentParameter);
+		} catch (STGException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	
 	/**
 	 * Tries to enforce injective labelling to all transitions
