@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGCreator;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.parser.GParser;
@@ -244,7 +245,12 @@ public class ComponentSTGInternalImplementations {
 	static public STG getInternalImplementation(String expression, int scale) {
 		
 		if (scale==0&&expression.contains(":")&&!expression.split(":")[1].equals("")) {
-			scale = Integer.valueOf(expression.split(":")[1]);
+			
+			try {
+				scale = Integer.parseInt(expression.split(":")[1]);
+			} catch (NumberFormatException e) {
+				scale=1;
+			}
 		}
 		
 		if (expression.startsWith("$BrzWhile")) return brzWhile();
@@ -255,6 +261,20 @@ public class ComponentSTGInternalImplementations {
 		if (expression.startsWith("$BrzPassivator")) return brzPassivator(scale);
 		
 		if (expression.startsWith("NastyPassivator")) return brzNastyPassivator(scale);
+		
+		
+		
+		// other predefined STGs
+		try {
+			if (expression.startsWith("$")) {
+				expression = expression.substring(1);
+			}
+			
+			return STGCreator.getPredefinedSTG(expression);
+		} catch (STGException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		return null;
 	}

@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -460,17 +460,13 @@ public class CLW extends CommandLineWrapper {
 			new CommandLineParameter("hide", "", "", false);
 
 	@Help("When the operation is create, this parameter defines the model. Available models are: art,seq,par,multipar"+
-			"\n\t- for producing Breeze handshake component STGs, use appropriate component names: BRZCall, BRZFetch, ...")
+			"\n\t- for producing Breeze handshake component STGs, use appropriate component names: BrzCall, BrzFetch, ...")
 	public CommandLineParameter MODEL = 
 		new CommandLineParameter("model", "", "", false);
 	
-	@Help("When creating models out of handshake components, the internal handshakes are hidden, i.e. signature changed to internal.")
-	public CommandLineOption HIDE_INTERNALHANDSHAKES = 
-		new CommandLineOption('H', "hide-internal-handshakes", true);
-	
 	@Help("When creating models out of handshake components, the internal handshakes are dummified, i.e. labelled with lambda.")
 	public CommandLineOption DUMMIFY_INTERNALHANDSHAKES = 
-		new CommandLineOption('D', "dummify-internal-handshakes", false);
+		new CommandLineOption('D', "dummify-internal-handshakes", true);
 	
 	@Help("When creating models out of handshake components, the components are generated with CSC.")
 	public CommandLineOption HANDSHAKE_COMPONENT_CSC = 
@@ -663,9 +659,7 @@ public class CLW extends CommandLineWrapper {
 		if ("bisim,check".contains(OPERATION.getValue())) {
 			if (getOtherParameters().size() < 2) 
 				throw new DesiJException("You must specify at least two STGs: specification first then the components");
-			
 		}
-		
 		
 	}
 

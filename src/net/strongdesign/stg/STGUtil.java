@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -19,8 +19,12 @@
 
 package net.strongdesign.stg;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
@@ -180,7 +184,8 @@ public abstract class STGUtil {
 					}
 				}
 				
-			} else return;
+			} else 
+			return;
 			
 		}
 		
@@ -1635,6 +1640,8 @@ public abstract class STGUtil {
 			
 		}
 		
+		System.out.println("Total splits:"+RedundantPlaceStatistics.totalMergePlaceSplits+ " new Ttransition count:"+stg.getNumberOfTransitions());
+		
 		return ret;
 	}
 	
@@ -1709,6 +1716,44 @@ public abstract class STGUtil {
 		return stg;
 	}
 	
+	
+	
+	
+	public static STG petrifySTG(STG stgin, String options) throws IOException, InterruptedException {
+		
+		Process petrify = HelperApplications.startExternalTool(HelperApplications.PETRIFY,options);
+		
+		OutputStreamWriter osw = new OutputStreamWriter(petrify.getOutputStream());
+		
+		osw.write(STGFile.convertToG(stgin));
+		osw.flush();
+		osw.close();
+		
+		BufferedReader bin = new BufferedReader(new InputStreamReader(petrify.getInputStream()));
+		
+		OutputStream er = System.err;
+		if (!CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) er = null;
+		
+		StreamGobbler.createGobbler(petrify.getErrorStream(), "petrify-er", er);
+		
+		STG stg=null;
+		
+		try {
+			stg= STGFile.readerToSTG(bin);
+			
+		} catch (STGException e) {
+			e.printStackTrace();
+		} catch (net.strongdesign.stg.parser.ParseException e) {
+			e.printStackTrace();
+		}
+		
+		petrify.waitFor();
+		petrify.getErrorStream().close();
+		petrify.getInputStream().close();
+		
+		return stg;
+		
+	}
 	
 	public static STG synchronousProduct(LinkedList<STG> stgs, boolean removeRedPlaces) {
 		STG ret = null;

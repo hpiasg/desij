@@ -81,7 +81,9 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 	JTextArea outputText = new JTextArea();
 	JCheckBox reduceSTG = new JCheckBox();
 	JCheckBox originalChoiceExp = new JCheckBox();
-	JCheckBox useCartesianProduct = new JCheckBox();
+	
+	JCheckBox solveCSC = new JCheckBox();
+	
 	JCheckBox enforceInjectiveLabelling = new JCheckBox();
 
 	STGEditorFrame frame;
@@ -108,15 +110,6 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		mp.put("WireFork", "active B\nscaled B\nscale 3\n#[ A : #,(B) ]");
 		
 		mp.put("Sync component", "#(A:B:C)");
-
-		mp.put("Decision Wait (consistent)",
-				"active C\nscaled B,C\nscale 2\n#(rA+; #| (rB+;rC+;aC+;aB+;aA+;rA-;rB-;rC-;aC-;aB-) ; aA-)");
-		
-		mp.put("Decision Wait (inconsistent)",
-				"active C\nscaled B\nscale 2\nset C=2\n#( A : #| ( B:C ) )");
-		
-		mp.put("Decision Wait (realistic)",
-				"active C\nscale 2\n scaled B,C\n#(  #| ((rA+ || rB+); rC+; aC+; (aA+;rA- || aB+;rB-); rC-; aC-; (aB- || aA-) ) )");
 
 		mp.put("Call (inconsistent)", "active B\nscale 2\nscaled A\n#(  #| (A:B))");
 
@@ -169,9 +162,11 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 		originalChoiceExp.setSelected(false);
 		bottomPanel.add(originalChoiceExp);
 
-		useCartesianProduct.setText("Use place sets");
-		useCartesianProduct.setSelected(true);
-		bottomPanel.add(useCartesianProduct);
+		solveCSC.setText("Solve CSC using Petrify");
+		
+		solveCSC.setSelected(CLW.instance.HANDSHAKE_COMPONENT_CSC.isEnabled());
+		
+		bottomPanel.add(solveCSC);
 		
 		enforceInjectiveLabelling.setText("Injective labelling");
 		enforceInjectiveLabelling.setSelected(CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled());
@@ -290,7 +285,7 @@ public class STGGeneratorFrame extends JFrame implements ActionListener {
 						
 						// the final result is the sequential composition of up expansion and
 						// down expansion
-						stg = HCInfixOperator.generateComposedSTG(useCartesianProduct.isSelected(), tt, 
+						stg = HCInfixOperator.generateComposedSTG(solveCSC.isSelected(), tt, 
 								parser, enforceInjectiveLabelling.isSelected());
 						
 					}

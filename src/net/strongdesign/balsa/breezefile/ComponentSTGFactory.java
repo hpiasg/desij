@@ -97,7 +97,8 @@ public class ComponentSTGFactory {
     			HCTerm tt = ud;
     			if (down==null) tt=up;
     			
-    			stg = HCInfixOperator.generateComposedSTG(true, tt, parser, 
+    			stg = HCInfixOperator.generateComposedSTG(
+    					CLW.instance.HANDSHAKE_COMPONENT_CSC.isEnabled(), tt, parser, 
     					CLW.instance.ENFORCE_INJECTIVE_LABELLING.isEnabled());
     		}
 			
@@ -147,19 +148,28 @@ public class ComponentSTGFactory {
 		
 		for (String sname: signals.keySet()) {
 			
-			// convert name to wire name, channel position, and index
-			String wire = sname.substring(0,1);
-			int channel = sname.charAt(1)-'A';
-			int index = 0;
+			int channel = 0;
+			int index=0;
+			String wire = "";
 			
-			if (sname.length()>2) {
-				index = Integer.valueOf(sname.substring(2));
+			if (sname.startsWith("csc")) {
+				// signal names given by petrify CSC resolver
+				
+			} else {
+				// convert name to wire name, channel position, and index
+				
+				wire = sname.substring(0,1);
+				channel = sname.charAt(1)-'A';
+				index = 0;
+				
+				if (sname.length()>2) {
+					index = Integer.valueOf(sname.substring(2));
+				}
 			}
 			
 			// is it a standard channel?
-			// if yes, form new name with the channel ID
-			
 			if (channel<channels.size()&&(wire.equals("r")||wire.equals("a"))) {
+				// if yes, form new name with the channel ID
 				Object o = channels.get(channel);
 				
 				if (o instanceof LinkedList<?>) {
@@ -336,6 +346,7 @@ public class ComponentSTGFactory {
 		
 		BreezeParser parser = new BreezeParser(file);
 		
+		
 		for (Object item: (LinkedList<Object>)parser.ParseBreezeNet()) {
 			AbstractBreezeElement ae = BreezeElementFactory.baseElement(item);
 			// Go through all the breeze part elements, find all the component STGs 
@@ -370,7 +381,6 @@ public class ComponentSTGFactory {
 				ret.put(bpname, mainSTG);
 			}
 		}
-			
 		
 		return ret;
 	}

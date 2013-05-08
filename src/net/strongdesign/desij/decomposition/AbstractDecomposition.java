@@ -192,12 +192,14 @@ public abstract class AbstractDecomposition   {
 		Collection<Node> result = new HashSet<Node>();
 
 		if (CLW.instance.REMOVE_REDUNDANT_TRANSITIONS.isEnabled()) { 
+			
 			Collection<Transition> r=STGUtil.removeRedundantTransitions(stg);
 			result.addAll(r);
 			logging(stg, DecompositionEvent.RED_TRANS_DEL, r);
 		} 
 
 		if (CLW.instance.REMOVE_REDUNDANT_PLACES.isEnabled()) { 
+			
 			Collection<Place> r=STGUtil.removeRedundantPlaces(stg);
 			result.addAll(r);
 			logging(stg, DecompositionEvent.RED_PLACE_DEL, r);

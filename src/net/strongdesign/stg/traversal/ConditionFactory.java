@@ -677,28 +677,28 @@ public abstract class ConditionFactory {
 				return true;
 			
 			//Duplicate transition
-			for (Node p: transition.getChildren()) {
-				for (Node t: p.getParents()) {
-					if (ConditionFactory
-					.getDuplicateTransitionCondition(transition)
-					.fulfilled((Transition)t)) return true;
-				}
-			}
+//			for (Node p: transition.getChildren()) {
+//				for (Node t: p.getParents()) {
+//					if (ConditionFactory
+//					.getDuplicateTransitionCondition(transition)
+//					.fulfilled((Transition)t)) return true;
+//				}
+//			}
+//			
+//			for (Node p: transition.getParents()) {
+//				for (Node t: p.getChildren()) {
+//					if (ConditionFactory
+//					.getDuplicateTransitionCondition(transition)
+//					.fulfilled((Transition)t)) return true;
+//				}
+//			}
 			
-			for (Node p: transition.getParents()) {
-				for (Node t: p.getChildren()) {
-					if (ConditionFactory
-					.getDuplicateTransitionCondition(transition)
-					.fulfilled((Transition)t)) return true;
-				}
-			}
 			
-			// SG: this is highly unoptimal!!!
-//			if (stg.getTransitions(
-//					ConditionFactory
-//					.getDuplicateTransitionCondition(transition))
-//					.size() != 0)
-//				return true;
+			if (stg.getTransitions(
+					ConditionFactory
+					.getDuplicateTransitionCondition(transition))
+					.size() != 0)
+				return true;
 			
 			return false;
 		}
@@ -1996,7 +1996,7 @@ protected static class SignalConcurrencyCondition extends AbstractCondition<Inte
 	
 	/**
 	 * {@link Condition}, which is fulfilled if a transition is structurally 
-	 * contractable, security is not checked, neither if the transition is lambda-lablled. 
+	 * contractable, security is not checked, neither if the transition is lambda-labelled. 
 	 */
 	public static final MultiCondition<Transition> CONTRACTABLE;
 	static {

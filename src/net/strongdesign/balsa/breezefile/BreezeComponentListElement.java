@@ -22,8 +22,8 @@ public class BreezeComponentListElement extends AbstractBreezeElement {
 		
 		while (it.hasNext()) {
 			LinkedList<Object> cur = (LinkedList<Object>)it.next();
-			components.put(number++, new BreezeComponentElement(cur));
-			
+			components.put(number, new BreezeComponentElement(cur, number));
+			number++;
 		}
 		
 	}

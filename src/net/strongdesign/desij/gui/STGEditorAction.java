@@ -36,10 +36,26 @@ public class STGEditorAction extends AbstractAction {
 		super(text);
 		this.text = text;
 		this.listener = listener;
+		
 		if (mnemonic != 0)
 			putValue(Action.MNEMONIC_KEY, mnemonic);
+		
 		if (accelerator != null)
 			putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(accelerator, mask));
+		
+
+	}
+	
+	public STGEditorAction(String text, int mnemonic, int mask, ActionListener listener) {
+		super(text);
+		this.text = text;
+		this.listener = listener;
+		
+		if (mnemonic != 0) {
+			
+			putValue(Action.MNEMONIC_KEY, mnemonic);
+			putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(mnemonic, mask));
+		}
 		
 
 	}

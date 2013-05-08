@@ -1,18 +1,18 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist
- *
+ * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ * 
  * This file is part of DesiJ.
  * 
  * DesiJ is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * DesiJ is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -95,11 +95,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 
 /**
- * @author Mark Schaefer
- */
-/**
- * @author dwist
- *
+ * @author M. Schaefer
+ * @author D. Wist
+ * @author S. Golubcovs
  */
 public class DesiJ {
 
@@ -185,9 +183,9 @@ public class DesiJ {
 			if (!CLW.instance.SILENT.isEnabled())
 				System.out.println(
 						"DesiJ - An STG Decomposer dedicated to the Synthesis of SI Circuits\n" + 
-						"(c) 2004-2007 by Mark Schaefer, University of Augsburg, mark.schaefer@informatik.uni-augsburg.de\n"+
-						"(c) 2008-2012 by Dominic Wist, Hasso-Plattner-Institut, dominic.wist@hpi.uni-potsdam.de\n"+
-						"(c) 2012-2012 by Stanislavs Golubcovs, University of Augsburg, stanislavs.golubcovs@informatik.uni-augsburg.de\n"+
+						"(c) 2004-2007 by Mark Schaefer, University of Augsburg\n"+
+						"(c) 2008-2012 by Dominic Wist, Hasso-Plattner-Institut\n"+
+						"(c) 2012-2013 by Stanislavs Golubcovs, University of Augsburg, stanislavs.golubcovs@informatik.uni-augsburg.de\n"+
 				"DesiJ comes as is with no warranty. Use at your own risk.");
 
 			Date start = new Date();
@@ -221,7 +219,7 @@ public class DesiJ {
 			else if (CLW.instance.OPERATION.getValue().equals("info1"))  
 				info(1);
 			else if (CLW.instance.OPERATION.getValue().equals("info2"))  
-				info(2);		
+				info(2);
 			else if (CLW.instance.OPERATION.getValue().equals("check"))  
 				checkCorrectness(false);
 			else if (CLW.instance.OPERATION.getValue().equals("bisim"))  
@@ -330,12 +328,12 @@ public class DesiJ {
 			
 			FileSupport.saveToDisk(STGFile.convertToG(e.getValue()),fname);
 		}
-	} 
+	}
 
 
 	private static void createSTG() throws STGException, IOException {
 		STG stg=null;
-		if (CLW.instance.MODEL.getValue().startsWith("$Bzr")) {
+		if (CLW.instance.MODEL.getValue().startsWith("Brz")) {
 			stg = ComponentSTGFactory.createSTGComponent(CLW.instance.MODEL.getValue(), 0, null, null);
 		} else {
 			stg = STGCreator.getPredefinedSTG(CLW.instance.MODEL.getValue());
@@ -391,7 +389,7 @@ public class DesiJ {
 	private static void killSTGDummies(STG stg, String fileName, boolean relaxed) throws IOException, STGException, ParseException {
 		
 		RedundantPlaceStatistics.Reset();
-
+		
 		int dum1 = stg.getNumberOfDummies();
 		int pl1 = stg.getNumberOfPlaces();
 
@@ -651,14 +649,10 @@ public class DesiJ {
 
 			System.out.println("\nFilename: " + fileName);
 
-
-
 			int nroArcs = 0;
 			for (Node node : stg.getNodes()) {
 				nroArcs += node.getChildren().size();
 			}
-
-
 
 
 			System.out.println("#Places / #Transitions / #Arcs: " + stg.getNumberOfPlaces() +" / " + stg.getNumberOfTransitions() + " / " + nroArcs);
@@ -994,7 +988,7 @@ public class DesiJ {
 				else // strategy=mg OR strategy=general
 					analyser =
 						new net.strongdesign.desij.decomposition.avoidconflicts.CAGeneral(stg, components, filePrefix);
-						
+				
 				boolean identificationResult = false; // if invalid CONFLICT_TYPE parameter value
 				if (CLW.instance.CONFLICT_TYPE.getValue().endsWith("st"))
 					identificationResult = analyser.identifyIrrCSCConflicts(true);

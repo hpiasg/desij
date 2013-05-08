@@ -58,6 +58,7 @@ import net.strongdesign.desij.decomposition.STGInOutParameter;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
+import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
@@ -65,6 +66,7 @@ import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
 import net.strongdesign.stg.traversal.CollectorFactory;
@@ -79,24 +81,15 @@ import net.strongdesign.util.FileSupport;
 public class STGEditorFrame extends JFrame implements ActionListener, ItemListener {
 	private static final long serialVersionUID = 7606945539229848668L;
 
-	public final STGEditorAction OPEN = new STGEditorAction("Open",
-			KeyEvent.VK_O, 'o', 0, this);
-	public final STGEditorAction NEW = new STGEditorAction("New",
-			KeyEvent.VK_N, 'n', 0, this);
-
-	public final STGEditorAction LAYOUT = new STGEditorAction("Spring layout",
-			KeyEvent.VK_L, 'l', 0, this);
-
-	public final STGEditorAction SAVE = new STGEditorAction("Save",
-			KeyEvent.VK_S, 'S', 0, this);
-	public final STGEditorAction SAVE_AS = new STGEditorAction("Save as",
-			KeyEvent.VK_A, null, 0, this);
+	public final STGEditorAction OPEN = 		new STGEditorAction("Open", KeyEvent.VK_O, 'o', 0, this);
+	public final STGEditorAction NEW = 			new STGEditorAction("New", KeyEvent.VK_N, 'n', 0, this);
+	public final STGEditorAction LAYOUT = 		new STGEditorAction("Spring layout", KeyEvent.VK_L, 'l', 0, this);
 	
-	public final STGEditorAction SAVE_AS_SVG = new STGEditorAction("SVG export",
-			KeyEvent.VK_V, null, 0, this);
+	public final STGEditorAction SAVE = 		new STGEditorAction("Save", KeyEvent.VK_S, 'S', 0, this);
+	public final STGEditorAction SAVE_AS = 		new STGEditorAction("Save as", KeyEvent.VK_A, null, 0, this);
+	public final STGEditorAction SAVE_AS_SVG = 	new STGEditorAction("SVG export", KeyEvent.VK_V, null, 0, this);
 	
-	public final STGEditorAction EXIT = new STGEditorAction("Exit",
-			KeyEvent.VK_X, null, 0, this);
+	public final STGEditorAction EXIT = new STGEditorAction("Exit", KeyEvent.VK_X, null, 0, this);
 
 	public final STGEditorAction INITIAL_PARTITION = new STGEditorAction(
 			"Initial partition", 0, null, 0, this);
@@ -136,19 +129,16 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction RESOLVE_INTERNAL = new STGEditorAction("Resolve internal signals", 0, null, 0, this);
 	
 	
-	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction(
-			"Change signal types", KeyEvent.VK_C, null, 0, this);
-	
+	public final STGEditorAction SIGNAL_TYPE = new STGEditorAction("Change signal types", KeyEvent.VK_C, null, 0, this);
 	public final STGEditorAction GENERATE_STG = new STGEditorAction("Generate STG from expression", 0, null, 0, this);
 	
-	public final STGEditorAction COPY_STG = new STGEditorAction("Copy STG",
-			KeyEvent.VK_Y, 'C', 0, this);
-
-	public final STGEditorAction ABOUT = new STGEditorAction("About JDesi",
-			KeyEvent.VK_A, null, 0, this);
-
+	public final STGEditorAction COPY_STG = new STGEditorAction("Copy STG", KeyEvent.VK_Y, 'C', 0, this);
+	public final STGEditorAction ABOUT = new STGEditorAction("About JDesi", KeyEvent.VK_A, null, 0, this);
 	
 	public JCheckBoxMenuItem IS_SHORTHAND = new JCheckBoxMenuItem("Shorthand notation");
+	
+	public final STGEditorAction FIND_TRANSITION = new STGEditorAction("Find transition", 0, 'f', 0, this);
+	public final STGEditorAction FIND_NEXT = new STGEditorAction("Find next",	KeyEvent.VK_F3, 0, this);
 	
 	public final STGEditorAction LAYOUT1 = new STGEditorAction("Organic",	KeyEvent.VK_1, '1', 0, this);
 	public final STGEditorAction LAYOUT2 = new STGEditorAction("Circle",	KeyEvent.VK_2, '2', 0, this);
@@ -157,7 +147,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction LAYOUT5 = new STGEditorAction("Partition",		KeyEvent.VK_5, '5', 0, this);
 	public final STGEditorAction LAYOUT6 = new STGEditorAction("Stack",			KeyEvent.VK_6, '6', 0, this);
 	public final STGEditorAction LAYOUT7 = new STGEditorAction("DOT layout",    KeyEvent.VK_7, '7', 0, this);
-	
 	public final STGEditorAction LAYOUT8 = new STGEditorAction("Alternative tree",    KeyEvent.VK_8, '8', 0, this);
 	
 	public final static Font STANDARD_FONT = new Font("Arial", Font.PLAIN, 16);
@@ -191,6 +180,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	//private String label;
 
 	private boolean useShorthand = true;
+
+	private String nameToFind = "";
+	private String lastFoundName = "";
+	
 	
 	public JFileChooser getFileChooser() {
 		return fileChooser;
@@ -689,6 +682,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			// if (source == SPRING_LAYOUT) springLayout();
 			if (source == OPEN)
 				open(null);
+			else if (source == FIND_TRANSITION) {
+				findFirstTransition();
+			}
+			else if (source == FIND_NEXT) {
+				findNext();
+			}
 			else if (source == SAVE)
 				save();
 			else if (source == SAVE_AS)
@@ -746,6 +745,83 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		} catch (Exception ee) {
 			ee.printStackTrace();
 		}
+	}
+
+	private void findNext() {
+		
+		if (nameToFind==null||nameToFind.equals("")) return; 
+		
+		STG stg = graphComponent.activeSTG;
+		Transition found = null;
+		
+		if (stg!=null) {
+			
+			Collection<Transition> trans = stg.getTransitions(ConditionFactory.ALL_TRANSITIONS);
+			
+			boolean skipped = false;
+			
+			for (Transition t: trans) {
+				
+				String tname = t.getString(Node.UNIQUE);
+				
+				if (tname.equals(lastFoundName)) {
+					skipped = true;
+					continue;
+				} else 
+					if (!skipped) continue;
+				
+				
+				if (tname.contains(nameToFind)) {
+					lastFoundName = tname;
+					found = t;
+					break;
+				}
+			}
+			
+		}
+		
+		if (found!=null) {
+			graphComponent.selectNodeById(found.getIdentifier());
+		} else
+			JOptionPane.showMessageDialog(null, "Reached end of search");
+	}
+
+	private void findFirstTransition() {
+		
+		
+		
+		nameToFind  = JOptionPane.showInputDialog(null, "Find transition containing: ", nameToFind);
+		
+		if (nameToFind==null||nameToFind.equals("")) return; 
+		
+		STG stg = graphComponent.activeSTG;
+		Transition found = null;
+		
+		if (stg!=null) {
+			
+			// look through transitions
+			Collection<Transition> trans = stg.getTransitions(ConditionFactory.ALL_TRANSITIONS);
+			
+			lastFoundName = "";
+			
+			for (Transition t: trans) {
+				
+				String tname = t.getString(Node.UNIQUE);
+				
+				if (tname.contains(nameToFind)) {
+					lastFoundName = tname;
+					found = t;
+					break;
+				}
+			}
+			
+		}
+		
+		if (found!=null) {
+			graphComponent.selectNodeById(found.getIdentifier());
+		} else
+			JOptionPane.showMessageDialog(null, "Could not find transition named: "+nameToFind);
+		
 	}
 
 	public void setLayout(int i) {	graphComponent.setLayout(i); }

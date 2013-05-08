@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -133,8 +133,21 @@ public class Partition {
 		}
 
 
+//		Set<Integer> used = new HashSet<Integer>();
+//		int counter=1;
+		
 		l: for (Integer newSignal : outputs) {
-
+			
+			
+//			if (used.contains(newSignal)) {
+//				System.out.printf("Reusing signal %d\n", newSignal);
+//			}
+//			used.add(newSignal);
+//			counter++;
+//			if (counter%10==0)
+//				System.out.printf("%d %s size=%d used size=%d\n", counter++, newSignal, outputs.size(), used.size());
+			
+			
 			String newName = stg.getSignalName(newSignal);
 
 			for (List<String> set : partition.partition) {
@@ -181,7 +194,7 @@ public class Partition {
 		catch (PartitioningException e) {
 			// maybe do something against this problem or leave it
 			result = e.getPartitionSoFar();
-		} 
+		}
 		
 		return result;
 	}

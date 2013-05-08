@@ -353,11 +353,19 @@ public class STGGraphComponent extends mxGraphComponent {
 		}
 	}
 	
+	
 	public void setNodeLocationById(Integer id, int x, int y) {
 		Object o = id2Cell.get(id);
 		if (o!=null) {
 			setVertexLocation(o, x, y);
 		}
+	}
+	
+	public void selectNodeById(Integer id) {
+		Object o = id2Cell.get(id);
+		scrollCellToVisible(o, true);
+		selectCellsForEvent(new Object[]{o}, null);
+		
 	}
 	
 	public void storeCoordinates(STGCoordinates coordinates) {

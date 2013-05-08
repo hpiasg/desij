@@ -1,5 +1,5 @@
 /**
- * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
  *
  * This file is part of DesiJ.
  * 
@@ -56,7 +56,7 @@ public abstract class STGCreator {
 				return getArtJorPipeline(nroPipelines, length);
 			}
 			catch (NumberFormatException e) {
-				throw new DesiJException("Could nor parse art parameters. Expected two numbers. " + parameter);
+				throw new DesiJException("Could not parse art parameters. Expected two numbers. " + parameter);
 			} 
 		}
 
@@ -853,10 +853,10 @@ public abstract class STGCreator {
 		STG parallelComposition = STG.parallelComposition(stgs);
 
 
-		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
-			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
-		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
+		if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
+		else
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
 
 		return parallelComposition;
 
@@ -906,11 +906,11 @@ public abstract class STGCreator {
 
 		STG parallelComposition = STG.parallelComposition(stgs);
 		
-		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
-			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
-		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
+		
+		if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
-
+		else
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
 		
 		return parallelComposition;
 
@@ -957,10 +957,10 @@ public abstract class STGCreator {
 
 		STG parallelComposition = STG.parallelComposition(stgs);
 		
-		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
-			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
-		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
+		if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
+		else
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
 
 		return parallelComposition;
 
@@ -1044,10 +1044,10 @@ public abstract class STGCreator {
 		STG parallelComposition = STG.parallelComposition(stgs);
 		
 
-		if (CLW.instance.HIDE_INTERNALHANDSHAKES.isEnabled())
-			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
-		else if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
+		if (CLW.instance.DUMMIFY_INTERNALHANDSHAKES.isEnabled())
 			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.DUMMY);
+		else
+			parallelComposition.setSignature(parallelComposition.getSignalNumbers(hiddenHandshakes), Signature.INTERNAL);
 
 		return parallelComposition;
 

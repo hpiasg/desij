@@ -70,7 +70,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 
 	
 	@Override
-	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce) {
+	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce, boolean solveCSC) {
 		
 		STG stg = new STG();
 		

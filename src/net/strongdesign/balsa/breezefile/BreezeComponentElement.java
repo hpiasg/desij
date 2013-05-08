@@ -7,7 +7,6 @@ public class BreezeComponentElement extends AbstractBreezeElement implements Nam
 
 	
 	private static final long serialVersionUID = -1344287802409223810L;
-	private static int component_counter = 0;
 	
 	boolean isDeclared = true;
 	int ID;
@@ -18,7 +17,7 @@ public class BreezeComponentElement extends AbstractBreezeElement implements Nam
 	public LinkedList<Object> channels = null;
 	
 	@SuppressWarnings("unchecked")
-	public BreezeComponentElement(LinkedList<Object> value) {
+	public BreezeComponentElement(LinkedList<Object> value, int ID) {
 		
 		Iterator<Object> it = value.iterator();
 		symbol = (String)it.next();
@@ -34,7 +33,7 @@ public class BreezeComponentElement extends AbstractBreezeElement implements Nam
 			this.add(cur);
 		}
 		
-		ID = component_counter++;
+		this.ID = ID;
 	}
 
 	public int getID() {

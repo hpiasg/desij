@@ -89,6 +89,7 @@ public class STGEditorNavigation extends JTree implements
 	public final STGEditorAction DUMMY_SURROUNDING = new STGEditorAction("Show surrounding for each dummy", 0 , null, 0, this);
 
 	public final STGEditorAction PETRIFY = new STGEditorAction("Process STG with Petrify", 0 , null, 0, this);
+	public final STGEditorAction PETRIFY_CSC = new STGEditorAction("Use Petrify to solve CSC", 0 , null, 0, this);
 	
 	public final STGEditorAction RELAX_INJECTIVE = new STGEditorAction("Split common paths", 0 , null, 0, this);
 	public final STGEditorAction RELAX_INJECTIVE2 = new STGEditorAction("Split merged places", 0 , null, 0, this);
@@ -313,7 +314,8 @@ public class STGEditorNavigation extends JTree implements
 		
 		if (source == DUMMY_SURROUNDING) dummySurrounding();
 		
-		if (source == PETRIFY) usePetrify();
+		if (source == PETRIFY) usePetrify(null);
+		if (source == PETRIFY_CSC) usePetrify("-csc");
 		
 		if (source == RELAX_INJECTIVE) {
 			TreePath path = getSelectionPaths()[0]; 
@@ -354,7 +356,8 @@ public class STGEditorNavigation extends JTree implements
 		}
 	}
 	
-	public void usePetrify() {
+	public void usePetrify(String options) {
+		if (options==null) options="";
 		
 		TreePath path = getSelectionPaths()[0]; 
 		STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
@@ -362,35 +365,9 @@ public class STGEditorNavigation extends JTree implements
 		
 		try {
 			
-			Process petrify = HelperApplications.startExternalTool(HelperApplications.PETRIFY,"");
 			
-			OutputStreamWriter osw = new OutputStreamWriter(petrify.getOutputStream());
+			STG stg = STGUtil.petrifySTG(stgin, options);
 			
-			osw.write(STGFile.convertToG(stgin));
-			osw.flush();
-			osw.close();
-			
-			BufferedReader bin = new BufferedReader(new InputStreamReader(petrify.getInputStream()));
-			
-			OutputStream er = System.err;
-			if (!CLW.instance.PUNF_MPSAT_GOBBLE.isEnabled()) er = null;
-			
-			StreamGobbler.createGobbler(petrify.getErrorStream(), "petrify-er", er);
-			
-			STG stg = null;
-			
-			try {
-				stg= STGFile.readerToSTG(bin);
-				
-			} catch (STGException e) {
-				e.printStackTrace();
-			} catch (net.strongdesign.stg.parser.ParseException e) {
-				e.printStackTrace();
-			}
-			
-			petrify.waitFor();
-			petrify.getErrorStream().close();
-			petrify.getInputStream().close();
 			
 			if (stg!=null) {
 				frame.addSTG(stg, "Petrified");
@@ -403,9 +380,8 @@ public class STGEditorNavigation extends JTree implements
 		} catch (IOException e) {
 			throw new DesiJException("Error involving petrify: " + e.getMessage());
 		}
-		
-		
 	}
+	
 
 	public void parallelComposition() {
 		

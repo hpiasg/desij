@@ -68,16 +68,16 @@ public class ComponentSTGExpressions {
 		components.put("$BrzCall", "scaled A\nactive B\n#(#|(A:B))");
 		components.put("$BrzCombine", "active B,C\n#(A:(B,C))");
 		components.put("$BrzCombineEqual", "scaled B\nactive B\n#(A:#,(B))");
-		components.put("$BrzUnaryFunc", "active B\n#(A:(B))");
+		components.put("$BrzUnaryFunc", "active B\n#(A:((B).oS.iD))");
 		components.put("$BrzConstant", "#(A)");
-		components.put("$BrzBinaryFunc", "active B,C\n#(A:(B,C))");
-		components.put("$BrzBinaryFuncConstR", "active B\n#(A:(B))");
+		components.put("$BrzBinaryFunc", "active B,C\n#(A:((B,C).oS.iD))");
+		components.put("$BrzBinaryFuncConstR", "active B\n#(A:((B).oS.iD))");
 		
 		// low-level specifications
-		components.put("$BrzCallMux", "scaled A\nactive B\n#(#|(rA+;oA+;iB+;up(B);aA+;rA-;((oA-;iA-) || down(B));aA-))");
+		components.put("$BrzCallMux", "scaled A,S\nactive B\n#(#|(rA+;oS+;iD+;up(B);aA+;rA-;oS-;iD-;down(B);aA-))");
+		components.put("$BrzCallDemux", "scaled A\nactive B\n#(#|(rA+;oS+;iD+;up(B);aA+;rA-;oS-;iD-;down(B);aA-))");
 		
 		components.put("$BrzEncode", "scaled A\nactive B\n#(#|(rA+;(oA+||rB+);aB+;aA+;rA-;rB-;aB-;oA-;aA-))");
-		components.put("$BrzCallDemux", "scaled A\nactive B\n#(#|(rA+;oA+;up(B);aA+;rA-;oA-;down(B);aA-))");
 		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
 		components.put("$BrzLoop", "active B\nrA+;#(B)");
 		components.put("$BrzVariable", "scaled B\n#(rA+;oA+;iA+;aA+;rA-;oA-;iA-;aA-)||(#||(#(B)))");
@@ -110,6 +110,19 @@ public class ComponentSTGExpressions {
 		components.put("$BrzActiveEagerFalseVariable", "$BrzActiveEagerFalseVariable:2"); 
 		
 		components.put("$BrzPassivator", "$BrzPassivator:2");
+		
+		
+		// some other generated STG samples
+		components.put("art", "$art:2,3");
+		components.put("par", "$par:p1");
+		components.put("seq", "$seq:s1");
+		components.put("multipar", "$multipar:2");
+		components.put("multiseq", "$multiseq:2");
+		components.put("seqpartree", "$seqpartree:2");
+		components.put("parseqtree", "$parseqtree:2");
+		components.put("merge", "$merge:mrg");
+		components.put("mix", "$mix:mx");
+		components.put("multimix", "$multimix:2");
 	/**/
 	}
 }

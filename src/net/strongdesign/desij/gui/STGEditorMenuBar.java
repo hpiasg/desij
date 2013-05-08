@@ -93,6 +93,10 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		
 		
 		view.add(frame.IS_SHORTHAND);
+		
+		view.add(frame.FIND_TRANSITION);
+		view.add(frame.FIND_NEXT);
+		
 //		view.add(editor.ZOOM_IN);
 //		view.add(editor.ZOOM_OUT);
 //		view.add(editor.ROTATE_CW);

@@ -1,5 +1,6 @@
 package net.strongdesign.balsa.hcexpressionparser.terms;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -377,14 +378,16 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	
 	
 	// for now, the synchronous product is only defined at the top level of expression
-	public static STG generateComposedSTG(boolean useCartesianProduct, HCTerm exp, HCExpressionParser parser, boolean enforce) {
+	public static STG generateComposedSTG(boolean solveCSC, HCTerm exp, HCExpressionParser parser, boolean enforce) {
+		
 		
 		if ( exp instanceof HCInfixOperator && ((HCInfixOperator)exp).operation == Operation.SYNCPROD) {
+			
 			HCInfixOperator io = (HCInfixOperator)exp;
 			LinkedList<STG> stgs = new LinkedList<STG>();
 			
 			for (HCTerm term : io.components) {
-				stgs.add(generateComposedSTG(useCartesianProduct, term, parser, enforce));
+				stgs.add(generateComposedSTG(solveCSC, term, parser, enforce));
 			}
 			
 			return STGUtil.synchronousProduct(stgs, false);
@@ -398,13 +401,37 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			Set<Place> listOut = new HashSet<Place>();
 
 			stg=((HCSTGGenerator) exp).generateSTG(parser, listIn,
-					listOut, enforce);
+					listOut, enforce, solveCSC);
 
 			// add the initial token
 			for (Place p : listIn) {
 				p.setMarking(1);
 			}
-
+			
+			
+			
+			// do solve CSC conflicts using Petrify
+			if (solveCSC) {
+				try {
+					
+					STG outstg = STGUtil.petrifySTG(stg, "-csc");
+					
+					if (enforce) {
+						STGUtil.enforceInjectiveLabelling(outstg); 
+					}
+					
+					return outstg;
+					
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}
+			
 			return stg;
 		}
 		
@@ -412,7 +439,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 	
 	
 	@Override
-	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce) {
+	public STG generateSTG(HCChannelSenseController sig, Set<Place> inPlaces, Set<Place> outPlaces, boolean enforce, boolean solveCSC) {
 		
 		STG stg=null;
 		
@@ -433,7 +460,7 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 		
 		for (int i=0;i<len;i++) {
 			HCSTGGenerator hc = (HCSTGGenerator)components.get(i);
-			s[i] = hc.generateSTG(sig, fromSets.get(i), toSets.get(i), enforce);
+			s[i] = hc.generateSTG(sig, fromSets.get(i), toSets.get(i), enforce, solveCSC);
 		}
 		
 		/**
