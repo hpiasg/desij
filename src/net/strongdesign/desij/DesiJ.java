@@ -118,7 +118,7 @@ public class DesiJ {
 
 
 	public static void main(String[] args) {
-
+		
 		int exitCode = desiJMain(args);
 
 		if (!CLW.instance.GUI.isEnabled())

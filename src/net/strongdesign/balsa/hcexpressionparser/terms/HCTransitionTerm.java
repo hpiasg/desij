@@ -17,8 +17,8 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) {
 		if (direction.equals("")) { 
 			HCTransitionTerm ret = new HCTransitionTerm();
-			ret.wire = wire;
-			ret.channel = channel; 
+			
+			ret = (HCTransitionTerm) this.clone();
 			
 			if (type==ExpansionType.UP) {
 				ret.direction="+";
@@ -27,6 +27,7 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 			}
 			return ret;
 		} else {
+			
 			if (type==ExpansionType.UP)
 				return this;
 			

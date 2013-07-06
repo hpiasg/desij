@@ -5,7 +5,7 @@ import net.strongdesign.balsa.hcexpressionparser.terms.HCInfixOperator.Operation
 public class HCChannelTerm extends HCTerm {
 	public String channel;
 	
-	public int instanceNumber=0;
+	protected int instanceNumber=0;
 
 	public HCChannelTerm() {
 	}
