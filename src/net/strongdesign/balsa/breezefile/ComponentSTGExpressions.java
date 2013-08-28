@@ -106,7 +106,8 @@ public class ComponentSTGExpressions {
 				"aF+;aA+;rA-;down(B);rR-;aF-;aA-)");
 		
 		
-		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
+//		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
+		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)||(#||(#(C)))");
 		
 		// components for the internal generators
 //		components.put("$BrzActiveEagerFalseVariable", 
@@ -118,6 +119,7 @@ public class ComponentSTGExpressions {
 		
 		
 		// some other generated STG samples
+		components.put("TELEM", "active B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)");
 		components.put("art", "$art:2,3");
 		components.put("par", "$par:p1");
 		components.put("seq", "$seq:s1");
