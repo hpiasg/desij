@@ -57,6 +57,7 @@ public class ComponentSTGExpressions {
 		components.put("$BrzConcur", "scaled B\nactive B\n#(A:#||(B))");
 		
 		components.put("$BrzSequence",          "scaled B\nactive B\n#(A:#;(B))");
+		
 		components.put("$BrzSequenceOptimised", "scaled B\nactive B\n#(A:#;(B))");// TODO: what is the difference?
 		
 		components.put("$BrzFork",       "active B\nscaled B\n#(A:#,(B))");
@@ -83,7 +84,9 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
 		components.put("$BrzLoop", "active B\nrA+;#(B)");
-		components.put("$BrzVariable", "scaled B\n#(rA+;oA+;iA+;aA+;rA-;oA-;iA-;aA-)||(#||(#(B)))");
+		
+		components.put("$BrzVariable", "scaled B\nactive D\n#(A:D)||(#||(#(B)))");
+		
 		components.put("$BrzCase", "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)");
 		
 		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
@@ -101,13 +104,15 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzArbiter", "active C,D,E,F\n#(A:(E.C))||#(B:(F.D))||#(aE | aF)||#(C | D)");
 		
-		components.put("$BrzWhile", "active B, C, R\n" +
+		components.put("$BrzWhile", "active B, C, R, F, T\n" +
 				"#(rA+;up(B);rR+;#(aT+;down(B);rR-;aT-;C;up(B);rR+);"+
 				"aF+;aA+;rA-;down(B);rR-;aF-;aA-)");
 		
 		
 //		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
 		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)||(#||(#(C)))");
+		
+		components.put("TELEM", "active B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)");
 		
 		// components for the internal generators
 //		components.put("$BrzActiveEagerFalseVariable", 
@@ -119,7 +124,6 @@ public class ComponentSTGExpressions {
 		
 		
 		// some other generated STG samples
-		components.put("TELEM", "active B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)");
 		components.put("art", "$art:2,3");
 		components.put("par", "$par:p1");
 		components.put("seq", "$seq:s1");

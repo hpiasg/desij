@@ -1640,7 +1640,7 @@ public abstract class STGUtil {
 			
 		}
 		
-		System.out.println("Total splits:"+RedundantPlaceStatistics.totalMergePlaceSplits+ " new Ttransition count:"+stg.getNumberOfTransitions());
+		System.out.println("Total splits:"+RedundantPlaceStatistics.totalMergePlaceSplits+ " new Transition count:"+stg.getNumberOfTransitions());
 		
 		return ret;
 	}
