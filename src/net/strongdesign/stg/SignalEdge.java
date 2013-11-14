@@ -63,7 +63,7 @@ public class SignalEdge implements Cloneable {
 	}
 	
 	public Object clone() {
-		return new SignalEdge( signal, direction);
+		return new SignalEdge(signal, direction);
 	}
 	
 	@Override

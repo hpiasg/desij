@@ -146,6 +146,7 @@ public class ComponentSTGFactory {
 		// for each STG signal determine its channel, assign appropriate name
 		Map<String, Integer> signals = stg.getSignalNumbers();
 		
+		
 		for (String sname: signals.keySet()) {
 			
 			int channel = 0;
@@ -181,6 +182,9 @@ public class ComponentSTGFactory {
 					// rename non-scalable channel
 					renaming.put(sname, wire+(Integer)o);
 				}
+				
+				
+				
 			} else { // if not, the numbering goes from the original name + component ID 
 				renaming.put(sname, sname+"_"+compID);
 			}
@@ -275,7 +279,7 @@ public class ComponentSTGFactory {
 			}
 			
 			String options=" -d ";
-			
+			if (!CLW.instance.LAMBDARIZE_ON_PCOMP.isEnabled()) options=" -i ";
 			if (CLW.instance.OPTIMIZED_PCOMP.isEnabled()) options+="-p ";
 			
 			Process pcomp = HelperApplications.startExternalTool(HelperApplications.PCOMP, options+" @"+fnames.getAbsolutePath());
@@ -337,10 +341,10 @@ public class ComponentSTGFactory {
 		return ret;
 	}
 	
+	
 	@SuppressWarnings("unchecked")
 	public static Map<String, STG> breeze2stg(String fileName) throws Exception {
 		Map<String, STG> ret = new HashMap<String, STG>();
-		
 		
 		FileReader file = new FileReader(fileName);
 		
@@ -378,6 +382,7 @@ public class ComponentSTGFactory {
 				}
 				
 				mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
+				
 				ret.put(bpname, mainSTG);
 			}
 		}

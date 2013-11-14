@@ -145,12 +145,11 @@ public abstract class AbstractDecomposition   {
 		return false;    
 	}
 
-
 	protected void logging(STG stg, DecompositionEvent event, Object affectedComponents) {
 		logging(stg, filePrefix + File.separator + "stg_" + digits(number), event, affectedComponents);
 		if (event.writeSTG()) ++number;   	
 	}
-
+	
 	@SuppressWarnings("rawtypes")
 	protected void logging(STG stg, String fileName, DecompositionEvent event, Object affectedComponents) {
 
@@ -187,24 +186,10 @@ public abstract class AbstractDecomposition   {
 			System.out.println("Error during logging");
 		}
 	}
+	
 
 	protected Collection<Node> redDel(STG stg) {
-		Collection<Node> result = new HashSet<Node>();
-
-		if (CLW.instance.REMOVE_REDUNDANT_TRANSITIONS.isEnabled()) { 
-			
-			Collection<Transition> r=STGUtil.removeRedundantTransitions(stg);
-			result.addAll(r);
-			logging(stg, DecompositionEvent.RED_TRANS_DEL, r);
-		} 
-
-		if (CLW.instance.REMOVE_REDUNDANT_PLACES.isEnabled()) { 
-			
-			Collection<Place> r=STGUtil.removeRedundantPlaces(stg);
-			result.addAll(r);
-			logging(stg, DecompositionEvent.RED_PLACE_DEL, r);
-		}   
-		return result;
+		return STGUtil.redDel(stg);
 	}
 	
 	public abstract List<Transition> reduce(STGInOutParameter stg) throws STGException;

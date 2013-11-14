@@ -47,6 +47,7 @@ import java.util.Set;
 
 import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.BreezeDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
 import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
@@ -125,6 +126,8 @@ public class DesiJ {
 			System.exit(exitCode);
 	}
 
+	
+	
 	
 	/**
 	 * The real main function of desiJ - abstracted from calling System.exit()
@@ -371,36 +374,23 @@ public class DesiJ {
 	}
 
 
-	private static void reportStatistics(String fileName) {
-		System.out.println(fileName+": Shared path splits: "+RedundantPlaceStatistics.totalSharedPathSplits);
-		System.out.println(fileName+": Merge-place splits: "+RedundantPlaceStatistics.totalMergePlaceSplits);
-		
-		System.out.println(fileName+": Structural checks found: "+RedundantPlaceStatistics.totalStructuralChecks+
-				" shortcut places:"+RedundantPlaceStatistics.totalShortcutPlaces);
-		
-		System.out.println(fileName+": Solver found: "+ RedundantPlaceStatistics.totalFound +"/"+ RedundantPlaceStatistics.totalChecked+
-				" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
-				" running time: "+(double)RedundantPlaceStatistics.totalSolverMills/1000+" s"+
-				" setup time: "+(double)RedundantPlaceStatistics.totalSetupMills/1000+" s"
-				);
-		
-	}
 	
 	private static void killSTGDummies(STG stg, String fileName, boolean relaxed) throws IOException, STGException, ParseException {
 		
-		RedundantPlaceStatistics.Reset();
+		RedundantPlaceStatistics.reset();
 		
 		int dum1 = stg.getNumberOfDummies();
 		int pl1 = stg.getNumberOfPlaces();
 
-		STGUtil.removeDummiesBreeze(stg, relaxed);
+		STGUtil.removeDummiesBreeze(stg, relaxed, false);
+		
 		int dum2 = stg.getNumberOfDummies();
 		System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
 		
 		int pl2 = stg.getNumberOfPlaces();
 		
 		System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
-		reportStatistics(fileName);
+		RedundantPlaceStatistics.reportStatistics(fileName);
 		
 		String name = CLW.instance.OUTFILE.getValue().equals("")?"":CLW.instance.OUTFILE.getValue();
 		
@@ -614,8 +604,8 @@ public class DesiJ {
 
 	private static void removeRedundantPlaces() throws ParseException, IOException, STGException 
 	{
+		RedundantPlaceStatistics.reset();
 		System.out.println("Removing redundant places ");
-		
 		for (String fileName : CLW.instance.getOtherParameters()) {
 
 			STG stg = loadSTG(fileName, true);
@@ -631,7 +621,7 @@ public class DesiJ {
 			System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
 			System.out.println(fileName+": Places before: "+pl1+" after:"+pl2);
 			
-			reportStatistics(fileName);
+			RedundantPlaceStatistics.reportStatistics(fileName);
 
 			FileSupport.saveToDisk(STGFile.convertToG(stg), fileName + ".red.g");
 			System.out.println("done");
@@ -903,8 +893,8 @@ public class DesiJ {
 			}
 
 
-			//memorize internal signals and change signature to output,
-			//they will be set back to internal after decomposition
+			// memorize internal signals and change signature to output,
+			// they will be set back to internal after decomposition
 			Set<Integer> internals = stg.collectUniqueCollectionFromTransitions(
 					ConditionFactory.getSignatureOfCondition(Signature.INTERNAL),
 					CollectorFactory.getSignalNameCollector());
@@ -926,6 +916,8 @@ public class DesiJ {
 				partition = Partition.getFinestPartition(stg,null);
 			else if (partitionString.equals("roughest"))
 				partition = Partition.getRoughestPartition(stg, null);
+			else if (partitionString.equals("common-cause"))
+				partition = Partition.getCommonCausePartition(stg);
 			else if (partitionString.equals("multisignaluse"))
 				partition = Partition.getMultipleSignalUsagePartition(stg);
 			else if (partitionString.equals("avoidcsc"))
@@ -956,6 +948,9 @@ public class DesiJ {
 
 			else if (CLW.instance.VERSION.getValue().equals("basic")) 
 				components = new BasicDecomposition(filePrefix).decompose(stg, partition);
+			
+			else if (CLW.instance.VERSION.getValue().equals("breeze")) 
+				components = new BreezeDecomposition(filePrefix).decompose(stg, partition);
 
 			else if (CLW.instance.VERSION.getValue().equals("tree")) 
 				components = new TreeDecomposition(filePrefix).decompose(stg, partition);
@@ -1098,6 +1093,9 @@ public class DesiJ {
 					}
 				
 			}
+			
+			
+			
 			if (CLW.instance.SYNTHESIS.isEnabled()) {
 				String equationFile = CLW.instance.EQUATIONS.getValue();
 				if (equationFile.isEmpty())
@@ -1157,8 +1155,10 @@ public class DesiJ {
 			System.out.println("Finished operation in "+time +" s");
 			System.out.println("Partitioning time: " + partitionTime +" s");
 			System.out.println("Decomposition time: " + decoTime +" s");
+			
 			if (CLW.instance.AVOID_CONFLICTS.isEnabled())
 				System.out.println("Internal Communication insertion: " + intComTime + " s");
+			
 			if (CLW.instance.SYNTHESIS.isEnabled()) {
 				System.out.println("Synthesis time: " + synTime +" s");
 				System.out.println("Synthesis sucessful for: " + 

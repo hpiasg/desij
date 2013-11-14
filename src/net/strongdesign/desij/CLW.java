@@ -138,7 +138,7 @@ public class CLW extends CommandLineWrapper {
 	
 	@Help("Decomposition algorithm")
 	public  CommandLineParameter VERSION = 
-	new CommandLineParameter("version", "csc-aware,irr-csc-aware,basic,lazy-single,lazy-multi,tree", "tree", false);
+	new CommandLineParameter("version", "csc-aware,irr-csc-aware,basic,lazy-single,lazy-multi,tree,breeze", "tree", false);
 	
 	// *******************************************************************
 
@@ -468,6 +468,10 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineOption DUMMIFY_INTERNALHANDSHAKES = 
 		new CommandLineOption('D', "dummify-internal-handshakes", true);
 	
+	@Help("Produre Balsa-STG without dummy signals (the uncontracted dummies are recovered as internal signals)")
+	public CommandLineOption RECOVER_BREEZE_DUMMY = 
+		new CommandLineOption('d', "recover-breeze-dummy", true);
+	
 	@Help("When creating models out of handshake components, the components are generated with CSC.")
 	public CommandLineOption HANDSHAKE_COMPONENT_CSC = 
 		new CommandLineOption('c', "handshake-component-csc", false);
@@ -500,15 +504,19 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineOption OPTIMIZED_PCOMP =
 		new CommandLineOption('M', "optimized-pcomp", true);
 	
+	@Help("Use optimized parallel composition for breeze files")
+	public CommandLineOption LAMBDARIZE_ON_PCOMP =
+		new CommandLineOption('g', "lambdarize-on-pcomp", true);
+	
 	// *******************************************************************
 	
 	@Help("Use LP solver to find implicit places")
 	public CommandLineOption USE_LP_SOLVE_FOR_IMPLICIT_PLACES =
 		new CommandLineOption('t', "lp-solver", false);
 	
-	@Help("LP solver depth, when searching for implicit places (1 - small (fast), 8 - default (mediorse), 0 - full depth(slow)).")
+	@Help("LP solver depth, when searching for implicit places (1 - small (fast), 10 - default (average), 0 - full depth(slow)).")
 	public  CommandLineInteger IPLACE_LP_SOLVER_DEPTH = 
-		new CommandLineInteger("lp-solver-depth", 0, Integer.MAX_VALUE, 8, false);	
+		new CommandLineInteger("lp-solver-depth", 0, Integer.MAX_VALUE, 10, false);	
 	
 	
 	// *******************************************************************

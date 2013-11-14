@@ -65,7 +65,7 @@ public class Transition extends Node {
 	    	result.append(label.getDirection());	        
 	    
 	    if (unique)
-	        result.append("/"+getIdentifier());
+	        result.append("/"+getIdentifier()+"/"+getLabel().getSignal());
 	     
 	    	    
 	    if (recursive) {
@@ -81,9 +81,10 @@ public class Transition extends Node {
 	    return result.toString();
 	}
 
-
+	@Override
 	public String toString() {
-		return getString(UNIQUE | TYPED );
+		return getString(0);
+//		return getString(UNIQUE | TYPED );
 	}
 	
 	//XXX: clone with original stg??

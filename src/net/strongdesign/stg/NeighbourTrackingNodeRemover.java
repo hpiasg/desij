@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-class NeighbourTrackingNodeRemover implements NodeRemover
+public class NeighbourTrackingNodeRemover implements NodeRemover
 {
 	private final STG stg;
 	private final Collection<Node> neighbours = new ArrayList<Node>();
 	private final Collection<Node> removed = new ArrayList<Node>();
 
-	NeighbourTrackingNodeRemover(STG stg)
+	public NeighbourTrackingNodeRemover(STG stg)
 	{
 		this.stg = stg;
 	}

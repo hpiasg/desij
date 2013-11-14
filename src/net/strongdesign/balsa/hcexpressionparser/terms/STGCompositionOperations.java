@@ -174,7 +174,7 @@ public abstract class STGCompositionOperations {
 		// add transition combinations
 		for (Transition t1: stg1.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
 			for (Transition t2: stg2.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-				if (STGUtil.sameTransitions(t1, t2)) {
+				if (STGUtil.sameTransitions(t1, t2, false)) {
 					
 					// create the transition
 					String name = stg1.getSignalName(t1.getLabel().getSignal());

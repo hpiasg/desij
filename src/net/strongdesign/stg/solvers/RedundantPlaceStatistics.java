@@ -1,5 +1,7 @@
 package net.strongdesign.stg.solvers;
 
+import net.strongdesign.desij.CLW;
+
 public class RedundantPlaceStatistics {
 	static public long totalStructuralChecks; // how much we can find with simple structural checks in total
 	static public long totalShortcutPlaces; // how many shortcut places were found
@@ -12,8 +14,8 @@ public class RedundantPlaceStatistics {
 	static public long totalChecked;       // total number of the redundants found
 	
 	
-	public static void Reset() {
-		
+	public static void reset() {
+		System.out.println("RedundantPlaceStatistics.reset");
 		totalFound = 0;
 		totalSetupMills = 0;
 		totalSolverMills = 0;
@@ -25,5 +27,28 @@ public class RedundantPlaceStatistics {
 		
 	}
 	
+	public static void reportStatistics() {
+		reportStatistics(null);
+		
+	}
+
+	public static void reportStatistics(String fileName) {
+		String prep = fileName;
+		if (prep==null||prep.equals("")) prep=" ";
+		else prep+=": ";
+		
+		System.out.println(prep+"Shared path splits: "+RedundantPlaceStatistics.totalSharedPathSplits);
+		System.out.println(prep+"Merge-place splits: "+RedundantPlaceStatistics.totalMergePlaceSplits);
+		
+		System.out.println(prep+"Structural checks found: "+RedundantPlaceStatistics.totalStructuralChecks+
+				" shortcut places:"+RedundantPlaceStatistics.totalShortcutPlaces);
+		
+		System.out.println(prep+"Solver found: "+ RedundantPlaceStatistics.totalFound +"/"+ RedundantPlaceStatistics.totalChecked+
+				" on depth: "+CLW.instance.IPLACE_LP_SOLVER_DEPTH.getIntValue()+
+				" running time: "+(double)RedundantPlaceStatistics.totalSolverMills/1000+" s"+
+				" setup time: "+(double)RedundantPlaceStatistics.totalSetupMills/1000+" s"
+				);
+		
+	}
 	
 }

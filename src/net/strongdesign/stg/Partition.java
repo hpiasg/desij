@@ -50,9 +50,16 @@ import net.strongdesign.desij.decomposition.partitioning.PartitioningException;
 public class Partition {
 	protected Set<String> signals;
 	protected List<List<String>> partition;
+	
 	protected List<String> actNewSignalSet;
 	boolean started;
 
+	
+	
+	public Set<String> getSignals() {
+		return Collections.unmodifiableSet(signals);
+	}
+	
 	/**
 	 * Constructs an empty partition.	 
 	 */
@@ -183,6 +190,42 @@ public class Partition {
 		return partition;
 	}
 	
+	
+	
+	public static Partition getCommonCausePartition(STG stg) throws STGException {
+		IPartitioningStrategy partitioner =
+			new net.strongdesign.desij.decomposition.partitioning.PartitionerCommonCauseSubnet(stg);
+		
+		Partition result = null;
+		try {
+			result = partitioner.improvePartition(getFinestPartition(stg, null));
+		}
+		catch (PartitioningException e) {
+			// maybe do something against this problem or leave it
+			result = e.getPartitionSoFar();
+		}
+		
+		return result;
+	}
+	
+	
+	public static Partition getBreezePartition(STG stg) throws STGException {
+		IPartitioningStrategy partitioner =
+			new net.strongdesign.desij.decomposition.partitioning.PartitionerBreezePartition(stg);
+		
+		Partition result = null;
+		try {
+			result = partitioner.improvePartition(getFinestPartition(stg, null));
+		}
+		catch (PartitioningException e) {
+			// maybe do something against this problem or leave it
+			result = e.getPartitionSoFar();
+		}
+		return result;
+	}
+	
+	
+	
 	public static Partition getMultipleSignalUsagePartition(STG stg) throws STGException {
 		IPartitioningStrategy partitioner =
 			new net.strongdesign.desij.decomposition.partitioning.PartitionerInputConsolidation(stg);
@@ -211,7 +254,7 @@ public class Partition {
 		catch (PartitioningException e) {
 			// maybe do something against this problem or leave it
 			result = e.getPartitionSoFar();
-		} 
+		}
 		
 		return result;
 	}
@@ -399,7 +442,14 @@ public class Partition {
 
 		//Make syntactical triggers to inputs, outputs of the partition are preserved
 		trigger.removeAll(outputNumbers);
-		newSTG.setSignature(trigger, Signature.INPUT);
+		for (int i: trigger) {
+			// do not turn specification dummies into inputs
+			if (stg.getSignature(i)==Signature.DUMMY&&
+				stg.getTransition(i).getLabel().getDirection()!=EdgeDirection.UP&&
+				stg.getTransition(i).getLabel().getDirection()!=EdgeDirection.DOWN) continue;
+			
+			newSTG.setSignature(i, Signature.INPUT);
+		}
 
 		//Add conflict signals to trigger list
 		//outputs are already in the partition, because it is feasible

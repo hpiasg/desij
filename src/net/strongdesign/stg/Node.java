@@ -57,7 +57,7 @@ public abstract class Node  implements Cloneable {
     public static final int RECURSIVE 	= 4;
     
     
-    /**The STGto which the node belongs*/ 
+    /**The STG to which the node belongs*/ 
     protected STG stg;
     
     /**A unique identifier, i.e. unique for every STG and node type.*/

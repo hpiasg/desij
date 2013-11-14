@@ -117,6 +117,7 @@ public abstract class StateSystems {
 				//if we reach a state by event it is stored within finalState
 				//finalState equaling null after the BFS loop indicates an error
 				Pointer<Pair<State,Event>> finalState = null;
+				
 				//IMPLEMENT more efficiently
 				bfs: while (! bfsQueue.isEmpty()) {
 					

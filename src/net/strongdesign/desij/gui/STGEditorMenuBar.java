@@ -122,13 +122,16 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		JMenu partition = new JMenu(PARTITION);
 		decomposition.add(partition);
 		
-		partition.add(frame.FINEST_PARTITION);
 		partition.add(frame.ROUGHEST_PARTITION);
+		partition.add(frame.COMMON_CAUSE_PARTITION);
+		partition.add(frame.BREEZE_PARTITION);
+		
 		partition.add(frame.MULTISIGNAL_PARTITION);
 		partition.add(frame.AVOIDCSC_PARTITION);
 		partition.add(frame.REDUCECONC_PARTITION);
 		partition.add(frame.LOCKED_PARTITION);
 		partition.add(frame.BEST_PARTITION);
+		partition.add(frame.FINEST_PARTITION);
 		
 		decomposition.add(frame.DELETE_REDUNDANT);
 		
@@ -136,11 +139,13 @@ public class STGEditorMenuBar extends JMenuBar implements ActionListener  {
 		decomposition.add(frame.REDUCE_WITH_LP_SOLVER);
 		decomposition.add(frame.REDUCE_UNSAFE);
 		decomposition.add(frame.REDUCE_BREEZE);
+		decomposition.add(frame.REDUCE_BREEZE_RECOVER);
 		
 		JMenu decomp = new JMenu(frame.DECOMPOSE); 
 		decomposition.add(decomp);
 		
 		decomp.add(frame.DECO_BASIC);
+		decomp.add(frame.DECO_BREEZE);
 		decomp.add(frame.DECO_SINGLE_SIG);
 		decomp.add(frame.DECO_MULTI_SIG);
 		decomp.add(frame.DECO_TREE);

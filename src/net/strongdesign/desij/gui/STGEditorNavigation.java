@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 import javax.swing.JPopupMenu;
@@ -49,35 +50,24 @@ import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJException;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
+import net.strongdesign.desij.decomposition.partitioning.PartitionerBreezePartition;
+import net.strongdesign.desij.decomposition.partitioning.PartitionerCommonCauseSubnet;
 import net.strongdesign.stg.Node;
+import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.STGUtil;
+import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
+import net.strongdesign.stg.solvers.CSCSolver;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.util.FileSupport;
 import net.strongdesign.util.HelperApplications;
 import net.strongdesign.util.Pair;
 import net.strongdesign.util.StreamGobbler;
-
-//import org.jgraph.JGraph;
-//import org.jgraph.event.GraphSelectionEvent;
-//import org.jgraph.event.GraphSelectionListener;
-//import org.jgraph.graph.DefaultCellViewFactory;
-//import org.jgraph.graph.DefaultEdge;
-//import org.jgraph.graph.DefaultGraphCell;
-//import org.jgraph.graph.DefaultGraphModel;
-//import org.jgraph.graph.DefaultPort;
-//import org.jgraph.graph.GraphConstants;
-//import org.jgraph.graph.GraphLayoutCache;
-//import org.jgraph.graph.GraphModel;
-//import org.jgraph.graph.GraphSelectionModel;
-//
-//import com.jgraph.layout.JGraphFacade;
-//import com.jgraph.layout.tree.JGraphTreeLayout;
 
 
 public class STGEditorNavigation extends JTree implements
@@ -90,11 +80,19 @@ public class STGEditorNavigation extends JTree implements
 
 	public final STGEditorAction PETRIFY = new STGEditorAction("Process STG with Petrify", 0 , null, 0, this);
 	public final STGEditorAction PETRIFY_CSC = new STGEditorAction("Use Petrify to solve CSC", 0 , null, 0, this);
+	public final STGEditorAction MPSAT_CSC = new STGEditorAction("Use Punf/Mpsat to solve CSC", 0 , null, 0, this);
+	
+	public final STGEditorAction REPORT_IMPLEMENTABLE = new STGEditorAction("Report implementable signals", 0 , null, 0, this);
+	public final STGEditorAction REPORT_IMPLEMENTABLE_SW = new STGEditorAction("Report implementable sw partitions", 0 , null, 0, this);
+	
+	public final STGEditorAction REPORT_PROBLEMATIC_TRIGGERS = new STGEditorAction("Report problematic triggers", 0, null, 0, this);
+
 	
 	public final STGEditorAction RELAX_INJECTIVE = new STGEditorAction("Split common paths", 0 , null, 0, this);
 	public final STGEditorAction RELAX_INJECTIVE2 = new STGEditorAction("Split merged places", 0 , null, 0, this);
 	
 	public final STGEditorAction SIMPLE_DUMMY_REMOVAL = new STGEditorAction("Simple dummy removal", 0 , null, 0, this);
+	
 	
 	/**
 	 * 
@@ -317,6 +315,187 @@ public class STGEditorNavigation extends JTree implements
 		if (source == PETRIFY) usePetrify(null);
 		if (source == PETRIFY_CSC) usePetrify("-csc");
 		
+		if (source == MPSAT_CSC) solveCSCWithMpsat();
+		
+		
+		if (source == REPORT_IMPLEMENTABLE) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			try {
+				
+				int cnt = stgin.getTransitions(ConditionFactory.ALL_TRANSITIONS).size();
+				int i=0;
+				int success=0;
+				int failure=0;
+				HashSet<Integer> processed = new HashSet<Integer>();
+				HashSet<Integer> succeeded = new HashSet<Integer>();
+				
+				for (Transition transition: stgin.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+					i++;
+					if (stgin.getSignature(transition.getLabel().getSignal())!=Signature.OUTPUT&&
+						stgin.getSignature(transition.getLabel().getSignal())!=Signature.INTERNAL) continue;
+					
+					if (processed.contains(transition.getLabel().getSignal())) continue;
+					
+					
+					Integer signal = transition.getLabel().getSignal(); 
+					processed.add(signal);
+					
+					Partition partition = new Partition();
+					String sigName = stgin.getSignalName(signal);
+					partition.addSignal(sigName);
+					
+					System.out.println("Trying signal:"+sigName+" ("+i+" of "+cnt+") so far succeeded:"+success+" failed:"+failure);
+					
+					for (STG stg: Partition.splitByPartition(stgin, partition)) {
+						
+						STGUtil.removeDummiesBreeze(stg, true, false);
+						
+						try {
+							stg = CSCSolver.solveCSCWithMpsat(stg);
+							
+							if (stg!=null) {
+								System.out.println("Success!");
+								success++;
+								succeeded.add(signal);
+								frame.addSTG(stg, sigName);
+							} else {
+								System.out.println("Failure");
+								failure++;
+							}
+						} catch (IOException e1) {
+							failure++;
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (InterruptedException e1) {
+							failure++;
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						
+					}
+					
+				}
+				
+				System.out.println("succeeded:"+success+" failed:"+failure+" \nSignals:");
+				for (Integer sig: succeeded) {
+					System.out.print(stgin.getSignalName(sig)+" ");
+				}
+				
+				
+			} catch (STGException e1) {
+				e1.printStackTrace();
+			}
+			
+		}
+		
+		if (source == REPORT_PROBLEMATIC_TRIGGERS) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			PartitionerCommonCauseSubnet partition;
+			
+			try {
+				partition = new PartitionerCommonCauseSubnet(stgin);
+				partition.reportProblematicTriggers();
+			} catch (STGException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		if (source == REPORT_IMPLEMENTABLE_SW) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			PartitionerBreezePartition partition;
+			try {
+				partition = new PartitionerBreezePartition(stgin);
+				partition.gatherSignalInfo();
+				
+			} catch (STGException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			
+//			
+//			try {
+//				
+//				int cnt = stgin.getTransitions(ConditionFactory.ALL_TRANSITIONS).size();
+//				int i=0;
+//				int success=0;
+//				int failure=0;
+//				HashSet<Integer> processed = new HashSet<Integer>();
+//				HashSet<Integer> succeeded = new HashSet<Integer>();
+//				
+//				for (Transition transition: stgin.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+//					i++;
+//					if (stgin.getSignature(transition.getLabel().getSignal())!=Signature.OUTPUT&&
+//						stgin.getSignature(transition.getLabel().getSignal())!=Signature.INTERNAL) continue;
+//					
+//					if (processed.contains(transition.getLabel().getSignal())) continue;
+//					
+//					
+//					
+//					Integer signal = transition.getLabel().getSignal(); 
+//					processed.add(signal);
+//					
+//					Partition partition = new Partition();
+//					String sigName = stgin.getSignalName(signal);
+//					partition.addSignal(sigName);
+//					
+//					System.out.println("Trying signal:"+sigName+" ("+i+" of "+cnt+") so far succeeded:"+success+" failed:"+failure);
+//					
+//					for (STG stg: Partition.splitByPartition(stgin, partition)) {
+//						
+//						STGUtil.removeDummiesBreeze(stg, true, false);
+//						
+//						try {
+//							stg = CSCSolver.solveCSCWithMpsat(stg);
+//							
+//							if (stg!=null) {
+//								System.out.println("Success!");
+//								success++;
+//								succeeded.add(signal);
+//								frame.addSTG(stg, sigName);
+//							} else {
+//								System.out.println("Failure");
+//								failure++;
+//							}
+//						} catch (IOException e1) {
+//							failure++;
+//							// TODO Auto-generated catch block
+//							e1.printStackTrace();
+//						} catch (InterruptedException e1) {
+//							failure++;
+//							// TODO Auto-generated catch block
+//							e1.printStackTrace();
+//						}
+//						
+//					}
+//					
+//				}
+//				
+//				System.out.println("succeeded:"+success+" failed:"+failure+" \nSignals:");
+//				for (Integer sig: succeeded) {
+//					System.out.print(stgin.getSignalName(sig)+" ");
+//				}
+//				
+//				
+//			} catch (STGException e1) {
+//				e1.printStackTrace();
+//			}
+			
+		}
+		
 		if (source == RELAX_INJECTIVE) {
 			TreePath path = getSelectionPaths()[0]; 
 			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
@@ -366,11 +545,35 @@ public class STGEditorNavigation extends JTree implements
 		try {
 			
 			
-			STG stg = STGUtil.petrifySTG(stgin, options);
+			STG stg = CSCSolver.petrifySTG(stgin, options);
 			
 			
 			if (stg!=null) {
 				frame.addSTG(stg, "Petrified");
+				frame.setLayout(7);
+			}
+			
+		}
+		catch (InterruptedException e) {
+			throw new DesiJException("Error involving petrify:  " + e.getMessage());
+		} catch (IOException e) {
+			throw new DesiJException("Error involving petrify: " + e.getMessage());
+		}
+	}
+	
+	
+	public void solveCSCWithMpsat() {
+		
+		TreePath path = getSelectionPaths()[0]; 
+		STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+		STG stgin = node.getSTG();
+		
+		try {
+			
+			STG stg = CSCSolver.solveCSCWithMpsat(stgin);
+			
+			if (stg!=null) {
+				frame.addSTG(stg, "Solved CSC (mpsat)");
 				frame.setLayout(7);
 			}
 			
@@ -449,6 +652,8 @@ public class STGEditorNavigation extends JTree implements
 	}
 	
 	public void deleteSelectedNodes() {
+		if (getSelectedNode()==null) return;
+		
 		// find some parent node to show next
 		STGEditorTreeNode next =  getSelectedNode().getParent();
 		
@@ -462,14 +667,16 @@ public class STGEditorNavigation extends JTree implements
 			
 		}
 		
-		if (next==root) {
-			if (root.getChildCount()>0) {
-				next=(STGEditorTreeNode)root.getFirstChild();
-			} else {
-				next=null;
+		if (next!=null) {
+			if (next==root) {
+				if (root.getChildCount()>0) {
+					next=(STGEditorTreeNode)root.getFirstChild();
+				} else {
+					next=null;
+				}
 			}
+			showNode(next);
 		}
-		showNode(next);
 		
 	}
 

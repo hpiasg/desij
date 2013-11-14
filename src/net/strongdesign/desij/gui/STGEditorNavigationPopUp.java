@@ -39,6 +39,11 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 		
 		add(listener.PETRIFY);
 		add(listener.PETRIFY_CSC);
+
+		add(listener.MPSAT_CSC);
+		add(listener.REPORT_IMPLEMENTABLE);
+		add(listener.REPORT_IMPLEMENTABLE_SW);
+		add(listener.REPORT_PROBLEMATIC_TRIGGERS);
 	}
 	
 }

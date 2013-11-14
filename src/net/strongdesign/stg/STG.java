@@ -740,7 +740,8 @@ public final class STG implements Cloneable {
 
 		return result;
 	}
-
+	
+	
 	public void setSignalName(Integer signal, String name) throws STGException {
 		if (signalNames.put(signal, name) != null) {
 			throw new STGException(	"Signal number " + signal + " already assigned to " 
@@ -821,7 +822,7 @@ public final class STG implements Cloneable {
 
 
 	/**
-	 * Retuns all signals of a given signature.
+	 * Returns all signals of a given signature.
 	 * @param sign
 	 * @return
 	 */

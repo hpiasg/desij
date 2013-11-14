@@ -52,7 +52,7 @@ public class BasicDecomposition extends AbstractDecomposition {
 	
 	@Override
 	public List<Transition> reduce(STGInOutParameter stgParam) throws STGException {
-
+		
 		redDel(stgParam.stg);
 		while (true) {
 	
@@ -172,7 +172,9 @@ public class BasicDecomposition extends AbstractDecomposition {
 					logging(stgParam.stg, DecompositionEvent.BACKTRACKING, stgParam.stg.getSignalName(newInput));
 				}
 			}
-		}        
+		}
+		
+		
 	}
 
 }

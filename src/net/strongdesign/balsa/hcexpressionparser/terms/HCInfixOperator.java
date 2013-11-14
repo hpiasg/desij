@@ -15,6 +15,7 @@ import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
+import net.strongdesign.stg.solvers.CSCSolver;
 
 
 public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
@@ -107,13 +108,25 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 					}
 					
 					if (i!=len-1) {
+						
+//						// try to add an internal signal, if it is a channel expansion
+//						if (expUp!=null && t instanceof HCChannelTerm && !(t instanceof HCTransitionTerm)) {
+//							HCChannelTerm cterm = (HCChannelTerm)t;
+//							
+//							HCTransitionTerm tterm = new HCTransitionTerm();
+//							tterm.channel = cterm.channel;
+//							tterm.instanceNumber = cterm.instanceNumber;
+//							tterm.wire = "c";
+//							tterm.direction = "+";
+//							ret.components.add(tterm);
+//						}
+						
 						// add the down-phase as well
 						HCTerm expDown = t.expand(ExpansionType.DOWN, scale, sig, oldChoice);
 						if (expDown!=null) {
 							ret.components.add(expDown);
 						}
 					}
-					
 				}
 				
 				if (ret.components.size()==0) {
@@ -121,7 +134,27 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 				}
 				
 			} else {
-				return components.get(components.size()-1).expand(type, scale, sig, oldChoice);
+				
+//				for (int i=0;i<len-1;i++) {
+//					HCTerm t = components.get(i);
+//					if (t instanceof HCChannelTerm && !(t instanceof HCTransitionTerm)) {
+//						HCChannelTerm cterm = (HCChannelTerm)t;
+//						
+//						
+//						HCTransitionTerm tterm = new HCTransitionTerm();
+//						tterm.channel = cterm.channel;
+//						tterm.instanceNumber = cterm.instanceNumber;
+//						tterm.wire = "c";
+//						tterm.direction = "-";
+//						ret.components.add(tterm);
+//					}
+//				}
+				
+				HCTerm tt = components.get(components.size()-1).expand(type, scale, sig, oldChoice);
+				
+				if (tt!=null)
+					ret.components.add(tt);
+				
 			}
 			
 		} else if (operation==Operation.FOLLOW) {
@@ -414,9 +447,9 @@ public class HCInfixOperator extends HCTerm implements HCSTGGenerator {
 			if (solveCSC) {
 				try {
 					
-					STG outstg = STGUtil.petrifySTG(stg, "-csc");
+					STG outstg = CSCSolver.solveCSCWithPetrify(stg);
 					
-					if (enforce) {
+					if (outstg!=null&&enforce) {
 						STGUtil.enforceInjectiveLabelling(outstg); 
 					}
 					

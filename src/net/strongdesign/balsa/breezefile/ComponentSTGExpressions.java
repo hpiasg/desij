@@ -58,7 +58,8 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzSequence",          "scaled B\nactive B\n#(A:#;(B))");
 		
-		components.put("$BrzSequenceOptimised", "scaled B\nactive B\n#(A:#;(B))");// TODO: what is the difference?
+		// TODO: what is the difference between this and BrzSequence?
+		components.put("$BrzSequenceOptimised", "scaled B\nactive B\n#(A:#;(B))");
 		
 		components.put("$BrzFork",       "active B\nscaled B\n#(A:#,(B))");
 		components.put("$BrzForkPush",   "active B\nscaled B\n#(A:#,(B))");
@@ -89,8 +90,9 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzCase", "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)");
 		
-		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
-				"#(rA+;((rD.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
+
+		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,X,E,F,G,H\n"+
+				"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
 		
 		components.put("$BrzHalt", "rA+");
 		components.put("$BrzNullAdapt", "active A\n#(B:(up(A);down(A)))");
@@ -108,11 +110,17 @@ public class ComponentSTGExpressions {
 				"#(rA+;up(B);rR+;#(aT+;down(B);rR-;aT-;C;up(B);rR+);"+
 				"aF+;aA+;rA-;down(B);rR-;aF-;aA-)");
 		
-		
-//		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
-		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)||(#||(#(C)))");
+		// old
+		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(rB+;#||(#C);aB+;down(B)))");
+		// SELEM, separated
+//		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(A:(up(B);down(B)))||(#||(#(C)))");
+		// TELEM, separated
+//		components.put("$BrzFalseVariable",	"scaled C\nactive B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)||(#||(#(C)))");
 		
 		components.put("TELEM", "active B\n#(rA+;rB+;aB+;aA+;((rB-;aB-)||rA-);aA-)");
+		components.put("TELEM_SCALED", "scaled B\nactive B\n#(rA+; #.(up(B)) ;aA+;rA-;aA-) || #||(#(B;aA-))");
+		components.put("TELEM_SCALED_CSC", "scaled B\nactive B\n#(rA+; #;(up(B);cB+) ;aA+;rA-;aA-) || #||(#(cB+;down(B);cB-;aA-)) || #(#;(cB-);aA-) || #(rA+;cB+;rA-;cB-)");
+		
 		
 		// components for the internal generators
 //		components.put("$BrzActiveEagerFalseVariable", 

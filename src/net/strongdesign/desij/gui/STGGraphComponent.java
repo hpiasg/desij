@@ -27,10 +27,13 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeSet;
 
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -39,14 +42,22 @@ import javax.swing.SwingUtilities;
 
 import net.strongdesign.desij.decomposition.AbstractDecomposition.Reason;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.partitioning.PartitionerBreezePartition;
+import net.strongdesign.desij.decomposition.partitioning.PartitionerCommonCauseSubnet;
+import net.strongdesign.stg.NeighbourTrackingNodeRemover;
 import net.strongdesign.stg.Node;
+import net.strongdesign.stg.NodeRemover;
+import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGUtil;
+import net.strongdesign.stg.SignalEdge;
+import net.strongdesign.stg.SignalValue;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
+import net.strongdesign.stg.traversal.ConditionFactory;
 
 import com.mxgraph.layout.mxCircleLayout;
 import com.mxgraph.layout.mxCompactTreeLayout;
@@ -75,6 +86,7 @@ public class STGGraphComponent extends mxGraphComponent {
 		
 		public JMenuItem contractTransition = new JMenuItem("Contract selected transition"); 
 		public JMenuItem makeSignalDummy = new JMenuItem("Dummify selected signal");
+		public JMenuItem dummifyAllButSelected = new JMenuItem("Dummify all but selected signals"); 
 		
 		public JMenuItem fireTransition = new JMenuItem("Fire selected transition"); 
 		public JMenuItem unFireTransition = new JMenuItem("Unfire selected transition");
@@ -84,9 +96,32 @@ public class STGGraphComponent extends mxGraphComponent {
 		
 		public JMenuItem showSurrounding = new JMenuItem("Show node surrounding"); 
 		
+		public JMenuItem showTransitionInfo = new JMenuItem("Show transition info"); 
+		public JMenuItem showPlaceInfo = new JMenuItem("Show place info"); 
 		
+		public JMenuItem showLockedSignals = new JMenuItem("Show locked signals"); 
+		public JMenuItem showPossibleCSCConflicts = new JMenuItem("Show potential CSC violations"); 
+		public JMenuItem showOutputsWithCSC = new JMenuItem("Show outputs with CSC"); 
+		
+		public JMenuItem showNextSequenceTransition = new JMenuItem("Show next sequence transition"); 
+		public JMenuItem showPrevSequenceTransition = new JMenuItem("Show previous sequence transition");
+		
+		public JMenuItem createComponent = new JMenuItem("Create a component from selected transition(s)");
+		public JMenuItem createLevel2Component = new JMenuItem("Create level 2 component from the selected transition");
+		public JMenuItem createSandwichComponent = new JMenuItem("Create a sandwich component from the selected transition"); 
+		
+		
+		public JMenuItem reportCommonCause = new JMenuItem("Report Common Cause signals");
+		public JMenuItem reportCommonCauseIgnored = new JMenuItem("Report Common Cause signals (with ignore)");
+		
+		
+		public JMenuItem makeExclusive = new JMenuItem("Make selected signals exclusive"); 
+
+
 		public List<Transition> transitionsToProcess = new LinkedList<Transition>();
 		public List<Node> nodesToProcess = new LinkedList<Node>();
+		
+		
 		
 		public STGGraphComponentPopupMenu(STGGraphComponent component, boolean transitions) {
 			super();
@@ -97,32 +132,72 @@ public class STGGraphComponent extends mxGraphComponent {
 			if (transitions) {
 				add(contractTransition);
 				add(makeSignalDummy);
+				add(dummifyAllButSelected);
 				add(fireTransition);
 				add(unFireTransition);
 				add(renameSignal);
+				add(showTransitionInfo);
+				add(showNextSequenceTransition);
+				add(showPrevSequenceTransition);
+				
+				add(createComponent);
+				add(createLevel2Component);
+				add(createSandwichComponent);
+				add(makeExclusive);
+				
+				add(reportCommonCause);
+				add(reportCommonCauseIgnored);
 				
 				contractTransition.addActionListener(this);
 				makeSignalDummy.addActionListener(this);
+				dummifyAllButSelected.addActionListener(this);
+				
 				fireTransition.addActionListener(this);
 				unFireTransition.addActionListener(this);
 				renameSignal.addActionListener(this);
+				showTransitionInfo.addActionListener(this);
+				showNextSequenceTransition.addActionListener(this);
+				showPrevSequenceTransition.addActionListener(this);
+				createComponent.addActionListener(this);
+				createLevel2Component.addActionListener(this);
+				createSandwichComponent.addActionListener(this);
+				makeExclusive.addActionListener(this);
+				reportCommonCause.addActionListener(this);
+				reportCommonCauseIgnored.addActionListener(this);
+				
+			} else { // actions only available for places
+				
+				add(showPlaceInfo);
+				showPlaceInfo.addActionListener(this);
 			}
 			
 			// actions for all nodes
+			add(showLockedSignals);
+			add(showPossibleCSCConflicts);
 			add(injectiveLabelling);
 			add(showSurrounding);
+			add(showOutputsWithCSC);
 			showSurrounding.addActionListener(this);
 			injectiveLabelling.addActionListener(this);
+			showLockedSignals.addActionListener(this);
+			showPossibleCSCConflicts.addActionListener(this);
+			showOutputsWithCSC.addActionListener(this);
 		}
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			
+			if (component.activeSTG==null) return;
+			if (activeSTG==null) return;
+			
+			
 			if (e.getSource()==injectiveLabelling) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
 				if (nodesToProcess.get(0) instanceof Place) {
-					STGUtil.tryZipUp(component.activeSTG, (Place)nodesToProcess.get(0));
+					
+					STGUtil.tryZipUp(component.activeSTG, (Place)nodesToProcess.get(0), null);
+					
 					STGUtil.tryZipDown(component.activeSTG, (Place)nodesToProcess.get(0));
 				} else {
 					STGUtil.enforceInjectiveLabelling(component.activeSTG, transitionsToProcess.get(0));
@@ -164,6 +239,30 @@ public class STGGraphComponent extends mxGraphComponent {
 				component.initSTG(activeSTG, component.frame.isShorthand());
 				component.frame.refreshSTGInfo();
 			}
+			
+			
+			if (e.getSource()==dummifyAllButSelected) {
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				HashSet<Integer> signals = new HashSet<Integer>();
+				
+				for (Transition t: transitionsToProcess) {
+					signals.add(t.getLabel().getSignal());
+				}
+				
+				
+				for (Transition t: activeSTG.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+					
+					if (!signals.contains(t.getLabel().getSignal())) {
+						component.activeSTG.setSignature(t.getLabel().getSignal(), Signature.DUMMY);
+					}
+					
+				}
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+				component.frame.refreshSTGInfo();
+			}
+			
 			
 			if (e.getSource()==fireTransition) {
 				storeCoordinates(component.activeSTG.getCoordinates());
@@ -207,6 +306,434 @@ public class STGGraphComponent extends mxGraphComponent {
 				component.initSTG(activeSTG, component.frame.isShorthand());
 			}
 			
+			
+			if (e.getSource()==showTransitionInfo&&activeSTG!=null) {
+				try {
+				
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					String result = "";
+					Node n = nodesToProcess.get(0);
+					int i=0;
+					
+					TreeSet<String> strings = new TreeSet<String>();
+					for (Entry<Integer, SignalValue> en: partitioner.getTransitionSignalInfo((Transition)n).entrySet()) {
+						strings.add(activeSTG.getSignalName(en.getKey())+"="+en.getValue());
+					}
+					
+					for (String s: strings) {
+						result+=s+" ";
+						i++;
+						if (i%10==0) result+="\n";
+						
+					}
+					result+=".";
+					
+					
+					JOptionPane.showMessageDialog(null,result);
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==reportCommonCause) {
+				try {
+				
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					// create a new cluster from a given transition
+					HashSet<Transition> triggers = new HashSet<Transition>();
+					HashSet<Transition> triggered = new HashSet<Transition>();
+					
+					triggered.add((Transition)transitionsToProcess.get(0));
+					
+					partitioner.gatherPartition(triggers, triggered);
+					
+					HashSet<Integer> processed = new HashSet<Integer>();
+					
+					
+					processed.clear();
+					System.out.println("\nTriggers:");
+					for (Transition tran: triggers) {
+						if (processed.contains(tran.getLabel().getSignal())) continue;
+						processed.add(tran.getLabel().getSignal());
+						System.out.print(" "+activeSTG.getSignalName(tran.getLabel().getSignal()));
+					}
+					
+					processed.clear();
+					System.out.println("\nTriggered:");
+					for (Transition tran: triggered) {
+						if (processed.contains(tran.getLabel().getSignal())) continue;
+						processed.add(tran.getLabel().getSignal());
+						System.out.print(" "+activeSTG.getSignalName(tran.getLabel().getSignal()));
+					}
+					System.out.println();
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			
+			if (e.getSource()==reportCommonCauseIgnored) {
+				try {
+				
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					// create a new cluster from a given transition
+					HashSet<Transition> triggers = new HashSet<Transition>();
+					HashSet<Transition> triggered = new HashSet<Transition>();
+					
+					Integer ignoredSignal = transitionsToProcess.get(0).getLabel().getSignal();
+					
+					triggered.add((Transition)transitionsToProcess.get(0));
+					triggers.add((Transition)transitionsToProcess.get(0));
+					
+					partitioner.gatherPartition(triggers, triggered);
+					
+					HashSet<Integer> processed = new HashSet<Integer>();
+					
+					processed.clear();
+					System.out.println("\nTriggers:");
+					for (Transition tran: triggers) {
+						if (tran.getLabel().getSignal().equals(ignoredSignal)) continue;
+						if (processed.contains(tran.getLabel().getSignal())) continue;
+						processed.add(tran.getLabel().getSignal());
+						System.out.print(" "+activeSTG.getSignalName(tran.getLabel().getSignal()));
+					}
+					
+					processed.clear();
+					System.out.println("\nTriggered:");
+					for (Transition tran: triggered) {
+						if (tran.getLabel().getSignal().equals(ignoredSignal)) continue;
+						if (processed.contains(tran.getLabel().getSignal())) continue;
+						processed.add(tran.getLabel().getSignal());
+						System.out.print(" "+activeSTG.getSignalName(tran.getLabel().getSignal()));
+					}
+					System.out.println();
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			
+			if (e.getSource()==createComponent) {
+				try {
+				
+					Partition partition = new Partition();
+					HashSet<Integer> addedSignals = new HashSet<Integer>();
+					for (Node n: nodesToProcess) {
+						
+						if (!(n instanceof Transition)) continue;
+						Transition t = (Transition)n;
+						
+						
+						if (addedSignals.contains(t.getLabel().getSignal())) continue;
+								
+						if (activeSTG.getSignature(t.getLabel().getSignal()) != Signature.INTERNAL
+						  &&activeSTG.getSignature(t.getLabel().getSignal()) != Signature.OUTPUT) continue;
+						
+						partition.addSignal(activeSTG.getSignalName(t.getLabel().getSignal()));
+						
+						addedSignals.add(t.getLabel().getSignal());
+						
+					}
+					
+					frame.createPartitionNodes(null, activeSTG, activeSTG.getCoordinates(), partition);
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==createSandwichComponent) {
+				try {
+					
+					Transition t = transitionsToProcess.get(0);
+					
+					PartitionerBreezePartition part = new PartitionerBreezePartition(activeSTG);
+					
+					
+					STG newStg = part.createSandwichComponent(t.getLabel().getSignal());
+					
+					frame.addSTG(newStg, activeSTG.getSignalName(t.getLabel().getSignal()));
+					
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+
+			if (e.getSource()==createLevel2Component) {
+				try {
+					
+					Transition t = transitionsToProcess.get(0);
+					
+					PartitionerBreezePartition part = new PartitionerBreezePartition(activeSTG);
+					
+					STG newStg = part.createLevel2Component(t.getLabel().getSignal());
+					
+					frame.addSTG(newStg, activeSTG.getSignalName(t.getLabel().getSignal()));
+					
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==makeExclusive) {
+				try {
+					
+					HashSet<Integer> addedSignals = new HashSet<Integer>();
+					
+					
+					
+					for (Node n: nodesToProcess) {
+						if (!(n instanceof Transition)) continue;
+						
+						Transition t = (Transition)n;
+						if (activeSTG.getSignature(t.getLabel().getSignal()) != Signature.INTERNAL
+							&&activeSTG.getSignature(t.getLabel().getSignal()) != Signature.OUTPUT
+							&&activeSTG.getSignature(t.getLabel().getSignal()) != Signature.INPUT) continue;
+						
+						addedSignals.add(t.getLabel().getSignal());
+					}
+					
+					if (addedSignals.size()<2) throw new Exception("Must select more than one signal");
+					
+					
+					STGUtil.makeSignalsExclusive(activeSTG, addedSignals);
+					
+					component.initSTG(activeSTG, component.frame.isShorthand());
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			
+			
+			if (e.getSource()==showNextSequenceTransition&&activeSTG!=null) {
+				try {
+				
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					Node n = nodesToProcess.get(0);
+					Transition next = partitioner.nextSequenceTransition((Transition)n, null, null, null);
+					if (next==null) {
+						JOptionPane.showMessageDialog(null,"Next not found");
+					} else {
+						JOptionPane.showMessageDialog(null,next);
+					}
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			
+			if (e.getSource()==showNextSequenceTransition&&activeSTG!=null) {
+				try {
+				
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					Node n = nodesToProcess.get(0);
+					Transition next = partitioner.nextSequenceTransition((Transition)n, null, null, null);
+					if (next==null) {
+						JOptionPane.showMessageDialog(null,"Next not found");
+					} else {
+						JOptionPane.showMessageDialog(null,next);
+					}
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==showPrevSequenceTransition&&activeSTG!=null) {
+				try {
+				
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					Node n = nodesToProcess.get(0);
+					Transition prev = partitioner.prevSequenceTransition((Transition)n, null, null, null);
+					if (prev==null) {
+						JOptionPane.showMessageDialog(null,"Previous not found");
+					} else {
+						JOptionPane.showMessageDialog(null,prev);
+					}
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			
+			if (e.getSource()==showPossibleCSCConflicts&&activeSTG!=null) {
+				try {
+					
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					Node n = nodesToProcess.get(0);
+					int i=0;
+					
+					partitioner.outputPossibleCSCConflicts();
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==showOutputsWithCSC&&activeSTG!=null) {
+				try {
+					
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					String result = "";
+					Node n = nodesToProcess.get(0);
+					int i=0;
+					
+					partitioner.outputSignalsWithCSC();
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==showLockedSignals&&activeSTG!=null) {
+				try {
+					
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					String result = "";
+					Node n = nodesToProcess.get(0);
+					int i=0;
+					
+					partitioner.outputLocked();
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+			}
+			
+			if (e.getSource()==showPlaceInfo&&activeSTG!=null) {
+				try {
+					if (partitioner == null) {
+						partitioner = new PartitionerCommonCauseSubnet(activeSTG);
+						partitioner.gatherSignalInfo(activeSTG);
+					}
+					
+					String result = "";
+					Node n = nodesToProcess.get(0);
+					int i=0;
+					
+					TreeSet<String> strings = new TreeSet<String>();
+					for (Entry<Integer, SignalValue> en: partitioner.getPlaceSignalInfo((Place)n).entrySet()) {
+						strings.add(activeSTG.getSignalName(en.getKey())+"="+en.getValue());
+					}
+					
+					for (String s: strings) {
+						result+=s+" ";
+						i++;
+						if (i%10==0) result+="\n";
+						
+					}
+					result+=".";
+					
+					JOptionPane.showMessageDialog(null,result);
+					
+				} catch (STGException e1) {
+					
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					
+					e1.printStackTrace();
+				}
+				
+			}
+			
+			
 			if (e.getSource()==showSurrounding) {
 				storeCoordinates(component.activeSTG.getCoordinates());
 				
@@ -228,39 +755,29 @@ public class STGGraphComponent extends mxGraphComponent {
 	
 	private void showGraphPopupMenu(MouseEvent e) {
 		
-		boolean transitionSelected = (getGraph().getSelectionCell() instanceof TransitionCell);
-		boolean placeSelected =  (getGraph().getSelectionCell() instanceof PlaceCell);
+//		boolean transitionSelected = (getGraph().getSelectionCell() instanceof TransitionCell);
+//		boolean placeSelected =  (getGraph().getSelectionCell() instanceof PlaceCell);
 		
-		if (transitionSelected) {
-			TransitionCell tc = (TransitionCell)getGraph().getSelectionCell();
-			Transition t = (Transition)cell2Node.get(tc);
+		STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, true);
+		Node n = cell2Node.get(getGraph().getSelectionCell());
+		menu.nodesToProcess.add(n);
+		
+		if (n instanceof Transition) menu.transitionsToProcess.add((Transition)n);
+		
+		for (Object o: getGraph().getSelectionCells()) {
 			
-			Point pt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
+			if (getGraph().getSelectionCell()==o) continue;
 			
-			STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, true);
-			
-			menu.transitionsToProcess.add(t);
-			menu.nodesToProcess.add(t);
-			
-			
-			menu.show(this, pt.x, pt.y);
-
-			e.consume();
-		} else if (placeSelected) {
-			PlaceCell pc = (PlaceCell)getGraph().getSelectionCell();
-			Place p = (Place)cell2Node.get(pc);
-			
-			Point pt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
-			
-			STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, false);
-			
-			menu.nodesToProcess.add(p);
-			
-			menu.show(this, pt.x, pt.y);
-
-			e.consume();
-			
+			n = cell2Node.get(o);
+			menu.nodesToProcess.add(n);
+			if (n instanceof Transition) menu.transitionsToProcess.add((Transition)n);
 		}
+		
+		
+		Point pt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), this);
+		menu.show(this, pt.x, pt.y);
+		e.consume();
+		
 	}
 	
 	private static final long serialVersionUID = 7755698755334362626L;
@@ -270,7 +787,8 @@ public class STGGraphComponent extends mxGraphComponent {
 	private final mxGraph graph;
 	protected mxRubberband rubberband;
 	protected STG activeSTG; 
-	
+	public PartitionerCommonCauseSubnet partitioner = null;
+
 	HashMap<mxCell, Node> cell2Node;
 	Map<Node, mxCell> node2Cell;
 	Map<Integer, mxCell> id2Cell;
@@ -413,7 +931,8 @@ public class STGGraphComponent extends mxGraphComponent {
 			id2Cell.clear();
 			
 			activeSTG = stg; // remember the STG being shown 
-			
+			partitioner = null;
+
 			if (stg==null) return;
 			
 			STGCoordinates coordinates=stg.getCoordinates();

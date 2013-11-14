@@ -52,9 +52,11 @@ import net.strongdesign.balsa.breezefile.ComponentSTGFactory;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.decomposition.AbstractDecomposition;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.BreezeDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
+import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
@@ -69,6 +71,7 @@ import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.export.SVGExport;
 import net.strongdesign.stg.parser.ParseException;
+import net.strongdesign.stg.solvers.RedundantPlaceStatistics;
 import net.strongdesign.stg.traversal.CollectorFactory;
 import net.strongdesign.stg.traversal.ConditionFactory;
 import net.strongdesign.util.FileSupport;
@@ -97,6 +100,13 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			"Finest partition", 0, null, 0, this);
 	public final STGEditorAction ROUGHEST_PARTITION = new STGEditorAction(
 			"Roughest partition", 0, null, 0, this);
+	
+	public final STGEditorAction COMMON_CAUSE_PARTITION = new STGEditorAction(
+			"Common cause partition", 0, null, 0, this);
+	
+	public final STGEditorAction BREEZE_PARTITION = new STGEditorAction(
+			"Breeze partition", 0, null, 0, this);
+	
 	public final STGEditorAction MULTISIGNAL_PARTITION = new STGEditorAction(
 			"Signal re-use heuristic", 0, null, 0, this);
 	public final STGEditorAction AVOIDCSC_PARTITION = new STGEditorAction(
@@ -116,10 +126,14 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final STGEditorAction REDUCE_SAFE = new STGEditorAction("Reduce Component (safe)", 0, null, 0, this);
 	public final STGEditorAction REDUCE_WITH_LP_SOLVER = new STGEditorAction("Reduce Component (with solver)", 0, null, 0, this);
 	public final STGEditorAction REDUCE_UNSAFE = new STGEditorAction("Reduce Component (unsafe)", 0, null, 0, this);
+	public final STGEditorAction REDUCE_BREEZE_RECOVER = new STGEditorAction("Reduce breeze (recover uncontracted)", 0, null, 0, this);
 	public final STGEditorAction REDUCE_BREEZE = new STGEditorAction("Reduce breeze", 0, null, 0, this);
 	
 	public final STGEditorAction DECOMPOSE = new STGEditorAction("Decompose", 0, null, 0, this);
+	
 	public final STGEditorAction DECO_BASIC = new STGEditorAction("Basic", 0, null, 0, this);
+	public final STGEditorAction DECO_BREEZE = new STGEditorAction("Breeze", 0, null, 0, this);
+	
 	public final STGEditorAction DECO_SINGLE_SIG = new STGEditorAction("Single signal", 0, null, 0, this);
 	public final STGEditorAction DECO_MULTI_SIG = new STGEditorAction("Multi signal", 0, null, 0, this);
 	public final STGEditorAction DECO_TREE = new STGEditorAction("Tree", 0, null, 0, this);
@@ -414,6 +428,38 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	// }
 	//
 	
+	
+	public void createPartitionNodes(STGEditorTreeNode parent, STG stg, STGCoordinates coordinates, Partition partition) throws STGException {
+		if (parent==null) {
+			parent = navigationView.getProjectNode();
+		}
+		
+		for (STG s : Partition.splitByPartition(stg, partition)) {
+			
+			StringBuilder signalNames = new StringBuilder();
+			for (Integer sig : s.collectUniqueCollectionFromTransitions(
+					ConditionFactory.getSignatureOfCondition(Signature.OUTPUT),
+					CollectorFactory.getSignalCollector()))
+				
+				signalNames.append(" "+stg.getSignalName(sig));
+			for (Integer sig : s.collectUniqueCollectionFromTransitions(
+					ConditionFactory.getSignatureOfCondition(Signature.INTERNAL),
+					CollectorFactory.getSignalCollector()))
+				
+				signalNames.append(" "+stg.getSignalName(sig));
+
+			STGEditorTreeNode nn = new STGEditorTreeNode(
+					signalNames.toString(), s, true);
+			
+			stg.copyCoordinates(coordinates);
+			
+			parent.add(nn);
+		}
+		
+		navigationView.updateUI();
+		
+	}
+	
 	public void initialPartition(Object source) throws STGException {
 		
 		STGEditorTreeNode projectNode = navigationView.getProjectNode();
@@ -429,6 +475,9 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		String partitionString = "";
 		if (source==FINEST_PARTITION) partitionString = "finest";
 		if (source==ROUGHEST_PARTITION) partitionString = "roughest";
+		if (source==COMMON_CAUSE_PARTITION) partitionString = "common-cause";
+		if (source==BREEZE_PARTITION) partitionString = "breeze-partition";
+		
 		if (source==MULTISIGNAL_PARTITION) partitionString = "multisignaluse";
 		if (source==AVOIDCSC_PARTITION) partitionString = "avoidcsc";
 		if (source==REDUCECONC_PARTITION) partitionString = "reduceconc";
@@ -446,6 +495,12 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			projectNode.partition = Partition.getFinestPartition(curSTG,null);
 		else if (source==ROUGHEST_PARTITION)
 			projectNode.partition = Partition.getRoughestPartition(curSTG, null);
+		else if (source==COMMON_CAUSE_PARTITION)
+			projectNode.partition = Partition.getCommonCausePartition(curSTG);
+		else if (source==BREEZE_PARTITION)
+			projectNode.partition = Partition.getBreezePartition(curSTG);
+		
+		
 		else if (source==MULTISIGNAL_PARTITION)
 			projectNode.partition = Partition.getMultipleSignalUsagePartition(curSTG);
 		else if (source==AVOIDCSC_PARTITION)
@@ -459,26 +514,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		else
 			return;
 		
-		for (STG s : Partition.splitByPartition(curSTG, projectNode.partition)) {
-
-			StringBuilder signalNames = new StringBuilder();
-			for (Integer sig : s.collectUniqueCollectionFromTransitions(
-					ConditionFactory.getSignatureOfCondition(Signature.OUTPUT),
-					CollectorFactory.getSignalCollector()))
-				signalNames.append(" "+curSTG.getSignalName(sig));
-
-			STGEditorTreeNode nn = new STGEditorTreeNode(
-					signalNames.toString(), s, true);
-			
-			nn.getSTG().copyCoordinates(projectNode.getSTG().getCoordinates());
-			
-			initComponents.add(nn);
-			//navigationView.addNode(nn, signalNames.toString());
-		}
+		createPartitionNodes(initComponents, curSTG, projectNode.getSTG().getCoordinates(), projectNode.partition);
 		
-		navigationView.updateUI();
+		navigationView.showNode(initComponents);		
 		
-		navigationView.showNode(initComponents);
 	}
 
 	//
@@ -581,7 +620,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 				
 				addSTG(stg, fileName);
 				
-
+				
 			} catch (ParseException e) {
 				JOptionPane.showMessageDialog(this, "Could not parse file: "
 						+ fileName+"\n"+ e.getMessage(), "JDesi Error", JOptionPane.ERROR_MESSAGE);
@@ -704,6 +743,8 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			}
 			else if (source == FINEST_PARTITION||
 					source == ROUGHEST_PARTITION||
+					source == COMMON_CAUSE_PARTITION||
+					source == BREEZE_PARTITION||
 					source == MULTISIGNAL_PARTITION||
 					source == AVOIDCSC_PARTITION||
 					source == REDUCECONC_PARTITION||
@@ -715,6 +756,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 					source == DECO_MULTI_SIG||
 					source == DECO_SINGLE_SIG||
 					source == DECO_BASIC||
+					source == DECO_BREEZE||
 					source == DECO_TREE||
 					source == DECO_CSC_AWARE||
 					source == DECO_ICSC_AWARE) {
@@ -728,8 +770,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 				 reduceWithLPSolver();
 			} else if (source == REDUCE_UNSAFE) {
 				 reduceUnsafe();
+			} else if (source == REDUCE_BREEZE_RECOVER) {
+				 reduceBreeze(true);
 			} else if (source == REDUCE_BREEZE) {
-				 reduceBreeze();
+				 reduceBreeze(false);
 			} else if (source == ABOUT) {
 				new STGEditorAbout(this).setVisible(true);
 			}
@@ -787,8 +831,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	}
 
 	private void findFirstTransition() {
-		
-		
 		
 		nameToFind  = JOptionPane.showInputDialog(null, "Find transition containing: ", nameToFind);
 		
@@ -1020,12 +1062,13 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			navigationView.updateUI();
 			navigationView.showNode(nn);
 			
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private void reduceBreeze() {
+	private void reduceBreeze(boolean recover) {
 		
 		STGEditorTreeNode currentNode = navigationView.getSelectedNode();
 		
@@ -1041,7 +1084,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		
 		try {
 			
-			STGUtil.removeDummiesBreeze(stg, true);
+			STGUtil.removeDummiesBreeze(stg, true, recover);
 			
 			STGEditorTreeNode nn = new STGEditorTreeNode("reduced", stg, true);
 			nn.getSTG().copyCoordinates((STGCoordinates)currentNode.getSTG().getCoordinates());
@@ -1063,7 +1106,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		STGEditorTreeNode projectNode = navigationView.getProjectNode();
 
 		if (!projectNode.isSTG()) {
-			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Reduce",
+			JOptionPane.showMessageDialog(this, "No STG selected", "DesiJ - Decompose",
 			JOptionPane.ERROR_MESSAGE);
 			return;
 		}
@@ -1135,6 +1178,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			stg.setSignature(internals, Signature.OUTPUT);
 			
 			if (source==DECO_BASIC) deco = new BasicDecomposition("basic");
+			if (source==DECO_BREEZE) deco = new BreezeDecomposition("breeze");
 			if (source==DECO_SINGLE_SIG) deco = new LazyDecompositionSingleSignal("lazy_single");
 			if (source==DECO_MULTI_SIG) deco = new LazyDecompositionMultiSignal("lazy_multi");
 			if (source==DECO_TREE) deco = new TreeDecomposition("tree");
@@ -1162,6 +1206,42 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 							&& internals.contains(signal))
 						component.setSignature(signal, Signature.INTERNAL);
 			}
+			
+			
+			
+			if (CLW.instance.AVOID_CONFLICTS.isEnabled()) {
+				
+				ComponentAnalyser analyser = null;
+				if (CLW.instance.INSERTION_STRATEGY.getValue().equals("norecalc"))
+					analyser =
+						new net.strongdesign.desij.decomposition.avoidconflicts.CAAvoidRecalculation(stg, components, "avoidCSC");
+				else // strategy=mg OR strategy=general
+					analyser =
+						new net.strongdesign.desij.decomposition.avoidconflicts.CAGeneral(stg, components, "avoidCSC");
+				
+				boolean identificationResult = false; // if invalid CONFLICT_TYPE parameter value
+				if (CLW.instance.CONFLICT_TYPE.getValue().endsWith("st"))
+					identificationResult = analyser.identifyIrrCSCConflicts(true);
+				else if (CLW.instance.CONFLICT_TYPE.getValue().equals("general"))
+					identificationResult = analyser.identifyIrrCSCConflicts(false);
+				
+				if (identificationResult)
+				{
+					if (!analyser.avoidIrrCSCConflicts()) 
+					{
+						throw new STGException("At least one irreducible CSC conflict cannot be avoided!");
+					}
+					if (CLW.instance.SHOW_CONFLICTS.isEnabled()) 
+						analyser.showWithConflicts();
+					for (STG comp: components)
+						analyser.refinePlaceHolderTransitions(comp);
+				}
+				
+			}
+			
+			
+			
+			
 			
 			String deco_name  = deco.getClass().getSimpleName();
 			
@@ -1200,7 +1280,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			*/
 			
 		} catch (Exception e) {
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, e.getMessage(), "DesiJ - Decompose", 
+					JOptionPane.ERROR_MESSAGE);
+			
+//			e.printStackTrace();
 		}
 	 }
 
