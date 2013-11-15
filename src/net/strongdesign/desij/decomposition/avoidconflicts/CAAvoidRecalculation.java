@@ -28,6 +28,7 @@ import java.io.IOException;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJ;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.Place;
@@ -37,7 +38,6 @@ import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
-import net.strongdesign.stg.Partition;
 import net.strongdesign.util.Pair;
 
 

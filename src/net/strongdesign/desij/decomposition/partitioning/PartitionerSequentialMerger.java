@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Signature;
@@ -93,8 +92,8 @@ public class PartitionerSequentialMerger implements IPartitioningStrategy, IComp
 		
 		componentOutputs = new ArrayList<Collection<Integer>>(oldPartition.getPartition().size());
 		
-		for (List<String> signals : oldPartition.getPartition())
-			componentOutputs.add(specification.getSignalNumbers(signals)); 
+		for (PartitionComponent signals : oldPartition.getPartition())
+			componentOutputs.add(specification.getSignalNumbers(signals.getSignals())); 
 		
 		
 		relevantSignals = new ArrayList<Collection<Integer>>(componentOutputs.size());

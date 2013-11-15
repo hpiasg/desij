@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Collection;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Signature;

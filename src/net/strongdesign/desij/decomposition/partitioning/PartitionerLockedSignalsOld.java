@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.traversal.ConditionFactory;
@@ -56,8 +55,8 @@ public class PartitionerLockedSignalsOld implements IPartitioningStrategy, IComp
 		if (oldPartition.getPartition().size() < 2) return oldPartition;
 		
 		componentOutputs = new ArrayList<Collection<Integer>>(oldPartition.getPartition().size());
-		for (List<String> signals : oldPartition.getPartition())
-			componentOutputs.add(specification.getSignalNumbers(signals));
+		for (PartitionComponent signals : oldPartition.getPartition())
+			componentOutputs.add(specification.getSignalNumbers(signals.getSignals()));
 		
 		MaximalCompatibleFinder mcFinder = new MaximalCompatibleFinder(componentOutputs.size(), this);
 		Collection<Collection<Integer>> partitionCandidate = getOptimalPartition(mcFinder);

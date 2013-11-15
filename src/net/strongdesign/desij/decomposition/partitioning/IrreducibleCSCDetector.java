@@ -36,7 +36,6 @@ import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.util.Pair;
 

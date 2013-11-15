@@ -31,7 +31,6 @@ import java.util.Set;
 
 import org.junit.Assert;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 // import net.strongdesign.stg.STGFile;
@@ -41,6 +40,7 @@ import net.strongdesign.stg.STGUtil;
 import net.strongdesign.stg.traversal.CollectorFactory;
 import net.strongdesign.stg.traversal.ConditionFactory;
 
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
 import net.strongdesign.desij.CLW;
 

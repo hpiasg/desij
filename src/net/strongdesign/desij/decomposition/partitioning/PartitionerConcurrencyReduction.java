@@ -27,7 +27,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Signature;
@@ -69,8 +68,8 @@ public class PartitionerConcurrencyReduction implements IPartitioningStrategy {
 		componentOutputs = new ArrayList<Collection<Integer>>(oldPartition.getPartition().size());
 		improvedBlocks = new HashMap<Collection<Integer>, Collection<Collection<Integer>>>();		
 		
-		for (List<String> signals : oldPartition.getPartition())
-			componentOutputs.add(specification.getSignalNumbers(signals)); 
+		for (PartitionComponent signals : oldPartition.getPartition())
+			componentOutputs.add(specification.getSignalNumbers(signals.getSignals())); 
 		
 		for (Collection<Integer> block : componentOutputs) {
 			if (block.size() < 2) continue; // not splittable

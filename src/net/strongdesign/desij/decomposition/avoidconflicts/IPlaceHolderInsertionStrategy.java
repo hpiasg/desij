@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Collection;
 import java.util.Iterator;
 
-import net.strongdesign.stg.Partition;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Transition;

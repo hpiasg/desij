@@ -8,7 +8,7 @@ import java.util.List;
 import net.strongdesign.desij.CLW;
 import net.strongdesign.desij.DesiJ;
 import net.strongdesign.desij.Messages;
-import net.strongdesign.stg.Partition;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGUtil;

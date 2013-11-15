@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import net.strongdesign.stg.Node;
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;

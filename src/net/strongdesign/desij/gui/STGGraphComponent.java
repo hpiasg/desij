@@ -42,12 +42,12 @@ import javax.swing.SwingUtilities;
 
 import net.strongdesign.desij.decomposition.AbstractDecomposition.Reason;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.desij.decomposition.partitioning.PartitionerBreezePartition;
 import net.strongdesign.desij.decomposition.partitioning.PartitionerCommonCauseSubnet;
 import net.strongdesign.stg.NeighbourTrackingNodeRemover;
 import net.strongdesign.stg.Node;
 import net.strongdesign.stg.NodeRemover;
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCoordinates;

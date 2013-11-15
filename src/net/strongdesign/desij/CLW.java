@@ -202,6 +202,8 @@ public class CLW extends CommandLineWrapper {
 	@Help( "Partition of output signals for components" +
 			"\n\t- finest: total decomposition (one output per component)" +
 			"\n\t- roughest: one component (i.e. specification without unnecessary signals)" +
+			"\n\t- common-cause: common cause partition -- experimental partition for breeze files" +
+			"\n\t- sw-heuristics: sandwich heuristics -- experimental partition for breeze files" +
 			"\n\t- multisignaluse: merge components using the same signals" +
 			"\n\t- avoidcsc: integrate outputs that avoid irreducible CSC conflicts in the components" +
 			"\n\t- reduceconc: reduce concurrency between outputs for some component" +
@@ -644,11 +646,8 @@ public class CLW extends CommandLineWrapper {
 		
 		setPredef();
 		
-		
-		
 		if (! GUI.isEnabled() && files.isEmpty() && ! "create".contains(OPERATION.getValue()))
 			throw new DesiJException("You must specify at least one input file.");
-			
 		
 		if (! REMOVE_REDUNDANT_PLACES.isEnabled())
 			System.err.println("Warning: It is not recommended to disable deletion of redundant places. The results will" +

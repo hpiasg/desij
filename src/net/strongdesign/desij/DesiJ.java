@@ -51,6 +51,7 @@ import net.strongdesign.desij.decomposition.BreezeDecomposition;
 import net.strongdesign.desij.decomposition.LazyDecompositionMultiSignal;
 import net.strongdesign.desij.decomposition.LazyDecompositionSingleSignal;
 import net.strongdesign.desij.decomposition.avoidconflicts.ComponentAnalyser;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.desij.decomposition.tree.CscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.IrrCscAwareDecomposition;
 import net.strongdesign.desij.decomposition.tree.TreeDecomposition;
@@ -66,7 +67,6 @@ import net.strongdesign.statesystem.simulation.RelationPropagator.PropagationExc
 import net.strongdesign.statesystem.simulation.Simulation;
 import net.strongdesign.stg.Marking;
 import net.strongdesign.stg.Node;
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGAdapterFactory;
 import net.strongdesign.stg.STGCreator;
@@ -918,6 +918,9 @@ public class DesiJ {
 				partition = Partition.getRoughestPartition(stg, null);
 			else if (partitionString.equals("common-cause"))
 				partition = Partition.getCommonCausePartition(stg);
+			else if (partitionString.equals("sw-heuristics"))
+				partition = Partition.getBreezePartition(stg);
+			
 			else if (partitionString.equals("multisignaluse"))
 				partition = Partition.getMultipleSignalUsagePartition(stg);
 			else if (partitionString.equals("avoidcsc"))

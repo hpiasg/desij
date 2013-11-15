@@ -21,17 +21,21 @@
  * Created on 29.09.2004
  *
  */
-package net.strongdesign.stg;
+package net.strongdesign.desij.decomposition.partitioning;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
+import net.strongdesign.stg.EdgeDirection;
+import net.strongdesign.stg.Node;
+import net.strongdesign.stg.STG;
+import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.Signature;
+import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.traversal.*;
 import net.strongdesign.util.FileSupport;
 
-import net.strongdesign.desij.decomposition.partitioning.IPartitioningStrategy;
-import net.strongdesign.desij.decomposition.partitioning.PartitioningException;
 
 /**
  * A Partition represents a partition of the output signals of 
@@ -49,9 +53,9 @@ import net.strongdesign.desij.decomposition.partitioning.PartitioningException;
  */
 public class Partition {
 	protected Set<String> signals;
-	protected List<List<String>> partition;
+	protected Set<PartitionComponent> partition;
 	
-	protected List<String> actNewSignalSet;
+	protected PartitionComponent actNewSignalSet;
 	boolean started;
 
 	
@@ -64,16 +68,17 @@ public class Partition {
 	 * Constructs an empty partition.	 
 	 */
 	public Partition() {
-		partition = new LinkedList<List<String>>();
+		partition = new HashSet<PartitionComponent>();
+		
 		signals = new HashSet<String>();
 		started = false;
 	}
 
 	public String toString() {
 		String result = new String();
-		for (List<String> actPartition : partition)
+		for (PartitionComponent actPartition : partition)
 			result = result + actPartition;
-
+		
 		return result;
 	}
 
@@ -112,8 +117,8 @@ public class Partition {
 			partition = new Partition();	
 		}
 		else {
-			for (List<String> block : partition.getPartition()) {
-				outputs.removeAll(stg.getSignalNumbers(block));
+			for (PartitionComponent block : partition.getPartition()) {
+				outputs.removeAll(stg.getSignalNumbers(block.getSignals()));
 			}
 		}
 		
@@ -134,8 +139,8 @@ public class Partition {
 			partition = new Partition();	
 		}
 		else {
-			for (List<String> p : partition.getPartition()) {
-				outputs.removeAll(stg.getSignalNumbers(p));
+			for (PartitionComponent p : partition.getPartition()) {
+				outputs.removeAll(stg.getSignalNumbers(p.getSignals()));
 			}
 		}
 
@@ -157,12 +162,14 @@ public class Partition {
 			
 			String newName = stg.getSignalName(newSignal);
 
-			for (List<String> set : partition.partition) {
-				for (String oldSignal : set) {
+			for (PartitionComponent set : partition.partition) {
+				for (String oldSignal : set.getSignals()) {
+					
 					//look for conflict
 					List<Set<Node>> oldParents = stg.collectFromTransitions(
 							ConditionFactory.getSignalOfCondition(stg.getSignalNumber(oldSignal)), 
 							CollectorFactory.getParentsCollector());
+					
 					List<Set<Node>> newParents = stg.collectFromTransitions(
 							ConditionFactory.getSignalOfCondition(newSignal), 
 							CollectorFactory.getParentsCollector());
@@ -173,9 +180,9 @@ public class Partition {
 
 					//if yes add to same signal set and proceed with next signal
 					for (Set<Node> o : newParents)
-						for (Node t :  o)
+						for (Node t : o)
 							if (oP.contains(t))  {
-								set.add(newName);
+								set.addSignal(newName);
 								partition.signals.add(newName);
 								continue l;								
 							}
@@ -313,13 +320,14 @@ public class Partition {
 	 * Returns the current partition.
 	 * @return The current partition.
 	 */
-	public List<List<String>> getPartition() {
+	public Set<PartitionComponent> getPartition() {
 		return partition;
 	}
 
 	/**Starts a new signal set.*/
 	public void beginSignalSet() {
-		actNewSignalSet = new LinkedList<String>();
+		actNewSignalSet = new PartitionComponent();
+		
 		partition.add(actNewSignalSet);	
 		started = true;
 	}
@@ -329,7 +337,7 @@ public class Partition {
 		if ( signals.contains(signal) ) throw new STGException("Invalid signal partition. Signal " + signal +" occured twice.");
 		if (! started) beginSignalSet();
 		signals.add(signal);
-		actNewSignalSet.add(signal);		
+		actNewSignalSet.addSignal(signal);		
 	}
 
 
@@ -345,8 +353,8 @@ public class Partition {
 	public Collection<Collection<String>> getReversePartition(STG stg)  {
 		Collection<Collection<String>> result = new LinkedList<Collection<String>>();
 
-		for (Collection<String> comp : partition)  {
-			result.add(getReversePartition(comp, stg));
+		for (PartitionComponent comp : partition)  {
+			result.add(getReversePartition(comp.getSignals(), stg));
 		}
 
 		return result;
@@ -388,7 +396,7 @@ public class Partition {
 	 * 
 	 */
 	public boolean correctPartitionOf(STG stg) {
-		Set<Integer> stgSignals = stg.collectUniqueCollectionFromTransitions(ConditionFactory.getSignatureOfCondition(Signature.OUTPUT), CollectorFactory.getSignalCollector());
+		Set<Integer> stgSignals = stg.collectUniqueCollectionFromTransitions(ConditionFactory.LOCAL_TRANSITIONS, CollectorFactory.getSignalCollector());
 
 		return signals.equals(stg.getSignalNames(stgSignals));      
 	}
@@ -413,14 +421,16 @@ public class Partition {
 	 * TODO - check for output/lambda conflict for out-det
 	 */
 	public boolean feasiblePartitionOf(STG stg) {
-		for (List<String> partSet : partition)
-			for (String currentOutput : partSet) 
+		for (PartitionComponent partSet : partition)
+			for (String currentOutput : partSet.getSignals()) 
 				for (Transition transition : stg.getTransitions(ConditionFactory.getSignalOfCondition(
 						stg.getSignalNumber(currentOutput)))) {
+					
 					MultiCondition<Transition> mc = new MultiCondition<Transition>(MultiCondition.AND);
 					mc.addCondition(ConditionFactory.getStructuralConflictCondition(transition));
 					mc.addCondition(ConditionFactory.getSignatureOfCondition(Signature.OUTPUT));
-					if (! partSet.containsAll(stg.getSignalNames(stg.collectFromTransitions(
+					
+					if (! partSet.getSignals().containsAll(stg.getSignalNames(stg.collectFromTransitions(
 							mc, CollectorFactory.getSignalCollector()  ))  ))
 						return false;
 				}
@@ -429,17 +439,18 @@ public class Partition {
 	}
 
 
-	public static STG getInitialComponent(STG stg, List<String> outputs)  {
+	public static STG getInitialComponent(STG stg, PartitionComponent component)  {
 		//Start with a copy of the original STG			
 		STG newSTG = stg.clone();
 
-		Collection<Integer> outputNumbers = stg.getSignalNumbers(outputs);
+		Collection<Integer> outputNumbers = stg.getSignalNumbers(component.getSignals());
+		
 		//Find syntactical triggers and return their signals
 		Collection<Integer> trigger = newSTG.collectUniqueFromTransitions(
 				ConditionFactory.getSignalOfCondition(outputNumbers), 
 				CollectorFactory.getTriggerSignal());
-
-
+		
+		
 		//Make syntactical triggers to inputs, outputs of the partition are preserved
 		trigger.removeAll(outputNumbers);
 		for (int i: trigger) {
@@ -458,10 +469,10 @@ public class Partition {
 				ConditionFactory.getSignalOfCondition(outputNumbers), 
 				CollectorFactory.getConflictSignalCollector()))
 			trigger.addAll(l);	
-
+		
 		//convert all other signals (neither trigger nor conflict signal) to dummies
 		for (Integer signal : newSTG.getSignals())
-			if (! (trigger.contains(signal) || outputs.contains(signal)))
+			if (! (trigger.contains(signal) || component.getSignals().contains(signal)))
 				newSTG.setSignature(signal, Signature.DUMMY);
 
 		return newSTG;
@@ -472,7 +483,7 @@ public class Partition {
 		List<STG> result = new LinkedList<STG>();
 
 		//for every partition, generate corresponding STG
-		for (List<String> signals : partition.getPartition()) 
+		for (PartitionComponent signals : partition.getPartition()) 
 			result.add(getInitialComponent(stg, signals));
 		return result;
 	}

@@ -22,7 +22,6 @@ package net.strongdesign.desij.decomposition.partitioning;
 import java.util.Collection;
 import java.util.List;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STGException;
 
 /**

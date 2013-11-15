@@ -29,7 +29,8 @@ import net.strongdesign.desij.decomposition.AbstractDecomposition;
 import net.strongdesign.desij.decomposition.BasicDecomposition;
 import net.strongdesign.desij.decomposition.DecompositionEvent;
 import net.strongdesign.desij.decomposition.STGInOutParameter;
-import net.strongdesign.stg.Partition;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
+import net.strongdesign.desij.decomposition.partitioning.PartitionComponent;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.Signature;
@@ -78,10 +79,10 @@ public abstract class AbstractTreeDecomposition extends AbstractDecomposition {
 		
 		//Determine the signals which should be contracted in every component
 		//and add the outputs of the components to the leafs		
-		for (Collection<String> actSignals : partition.getPartition()) {
+		for (PartitionComponent actSignals : partition.getPartition()) {
 			leafs.add( new Pair<Collection<Integer>, Collection<Integer>>( 
-						stg.getSignalNumbers(Partition.getReversePartition(actSignals, stg)),
-						stg.getSignalNumbers(actSignals)));
+						stg.getSignalNumbers(Partition.getReversePartition(actSignals.getSignals(), stg)),
+						stg.getSignalNumbers(actSignals.getSignals())));
 		}
 		
 		//the initial decomposition tree

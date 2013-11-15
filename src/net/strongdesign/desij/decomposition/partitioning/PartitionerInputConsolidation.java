@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 
@@ -63,8 +62,8 @@ public class PartitionerInputConsolidation implements IPartitioningStrategy, ICo
 		
 		componentOutputs = new ArrayList<Collection<Integer>>(oldPartition.getPartition().size());
 		
-		for (List<String> signals : oldPartition.getPartition())
-			componentOutputs.add(specification.getSignalNumbers(signals)); 
+		for (PartitionComponent signals : oldPartition.getPartition())
+			componentOutputs.add(specification.getSignalNumbers(signals.getSignals())); 
 		
 		
 		relevantSignals = new ArrayList<Collection<Integer>>(componentOutputs.size());

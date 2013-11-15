@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.HashSet;
 
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.Transition;

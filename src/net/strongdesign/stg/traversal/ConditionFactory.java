@@ -806,7 +806,6 @@ public abstract class ConditionFactory {
 	}
 	
 	
-	
 	protected static class SignatureOf<T extends Transition> extends AbstractCondition<T> {
 		protected List<Signature> signatures;
 		

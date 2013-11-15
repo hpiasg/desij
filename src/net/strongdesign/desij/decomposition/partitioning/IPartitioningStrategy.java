@@ -19,7 +19,6 @@
 
 package net.strongdesign.desij.decomposition.partitioning;
 
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STGException;
 
 /**

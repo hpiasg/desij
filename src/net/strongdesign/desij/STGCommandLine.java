@@ -30,8 +30,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import net.strongdesign.desij.decomposition.partitioning.Partition;
+import net.strongdesign.desij.decomposition.partitioning.PartitionComponent;
 import net.strongdesign.stg.Node;
-import net.strongdesign.stg.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
@@ -165,7 +166,7 @@ public class STGCommandLine extends CommandLineTool<STG> {
 			
 			desc = "Created partition of " + action;
 			return new MainMenu(Partition.getInitialComponent(stg,
-					(List<String>) action));
+					(PartitionComponent) action));
 			
 		}
 

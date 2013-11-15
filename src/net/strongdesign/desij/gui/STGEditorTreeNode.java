@@ -21,7 +21,7 @@ package net.strongdesign.desij.gui;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import net.strongdesign.stg.Partition;
+import net.strongdesign.desij.decomposition.partitioning.Partition;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGUtil;
 
