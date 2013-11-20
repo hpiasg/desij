@@ -99,8 +99,6 @@ public class CSCSolver {
 			
 
 			try {
-				
-				
 				STG stg= STGFile.readerToSTG(new FileReader(mpsatOut));
 				
 				if (tmpSTG.exists()) tmpSTG.delete();

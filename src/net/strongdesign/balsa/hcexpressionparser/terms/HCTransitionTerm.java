@@ -13,6 +13,8 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 	public String wire="";
 	public String direction="";
 	
+	public boolean isDead = false;
+	
 	@Override
 	public HCTerm expand(ExpansionType type, int scale, HCChannelSenseController sig, boolean oldChoice) {
 		if (direction.equals("")) { 
@@ -103,9 +105,13 @@ public class HCTransitionTerm extends HCChannelTerm implements HCSTGGenerator {
 		
 		Place inp = stg.addPlace("p", 0);
 		Place outp = stg.addPlace("p", 0);
+		
 		inp.setChildValue(t, 1);
 		t.setChildValue(outp, 1);
-		inPlaces.add(inp);
+		
+		if (!isDead)
+			inPlaces.add(inp);
+		
 		outPlaces.add(outp);
 		
 		return stg;

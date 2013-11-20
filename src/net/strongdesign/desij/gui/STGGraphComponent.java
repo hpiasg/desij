@@ -453,12 +453,16 @@ public class STGGraphComponent extends mxGraphComponent {
 						
 						if (addedSignals.contains(t.getLabel().getSignal())) continue;
 								
-						if (activeSTG.getSignature(t.getLabel().getSignal()) != Signature.INTERNAL
-						  &&activeSTG.getSignature(t.getLabel().getSignal()) != Signature.OUTPUT) continue;
+						if (activeSTG.getSignature(t.getLabel().getSignal()) == Signature.INTERNAL
+						  ||activeSTG.getSignature(t.getLabel().getSignal()) == Signature.OUTPUT) {
+							
+							partition.addSignal(activeSTG.getSignalName(t.getLabel().getSignal()));
+							addedSignals.add(t.getLabel().getSignal());
+						} else if (activeSTG.getSignature(t.getLabel().getSignal()) == Signature.INPUT) {
+							
+							partition.addInput(activeSTG.getSignalName(t.getLabel().getSignal()));
+						}
 						
-						partition.addSignal(activeSTG.getSignalName(t.getLabel().getSignal()));
-						
-						addedSignals.add(t.getLabel().getSignal());
 						
 					}
 					

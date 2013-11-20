@@ -32,7 +32,9 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 		add(listener.DELETE_SELECTED);
 		add(listener.PARALLEL_COMPOSITION);
 		add(listener.SYNCHRONOUS_PRODUCT);
+		
 		add(listener.DUMMY_SURROUNDING);
+		
 		add(listener.RELAX_INJECTIVE);
 		add(listener.RELAX_INJECTIVE2);
 		add(listener.SIMPLE_DUMMY_REMOVAL);
@@ -44,6 +46,8 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 		add(listener.REPORT_IMPLEMENTABLE);
 		add(listener.REPORT_IMPLEMENTABLE_SW);
 		add(listener.REPORT_PROBLEMATIC_TRIGGERS);
+		
+		add(listener.DUMMIFY_RECURRING_SIGNALS);
 	}
 	
 }

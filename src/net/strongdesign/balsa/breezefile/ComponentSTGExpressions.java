@@ -83,18 +83,20 @@ public class ComponentSTGExpressions {
 		components.put("$BrzEncode", "scaled A,C\nactive B,C,D,E\n#(#|(A:(rC.aD.rB.aB.rE)))");
 		
 		
-		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
-		components.put("$BrzLoop", "active B\nrA+;#(B)");
+//		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
+		components.put("$BrzWireFork", "active B\nscaled B\n#(rA+;#||(rB+;~aB+);aA+;rA-;#||(rB-;aB-);aA-)");
+		//
+		
+		components.put("$BrzLoop", "active B\n#(rA+;#(B);~aA+;rA-;aA-)");
 		
 		components.put("$BrzVariable", "scaled B\nactive D\n#(A:D)||(#||(#(B)))");
 		
 		components.put("$BrzCase", "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)");
 		
-
 		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,X,E,F,G,H\n"+
 				"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
 		
-		components.put("$BrzHalt", "rA+");
+		components.put("$BrzHalt", "#(rA+;~aA+;rA-;aA-)");
 		components.put("$BrzNullAdapt", "active A\n#(B:(up(A);down(A)))");
 		
 		// using synchronous product

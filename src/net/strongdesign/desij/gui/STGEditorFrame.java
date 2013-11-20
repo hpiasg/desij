@@ -499,8 +499,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			projectNode.partition = Partition.getCommonCausePartition(curSTG);
 		else if (source==BREEZE_PARTITION)
 			projectNode.partition = Partition.getBreezePartition(curSTG);
-		
-		
 		else if (source==MULTISIGNAL_PARTITION)
 			projectNode.partition = Partition.getMultipleSignalUsagePartition(curSTG);
 		else if (source==AVOIDCSC_PARTITION)
@@ -1238,9 +1236,6 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 				}
 				
 			}
-			
-			
-			
 			
 			
 			String deco_name  = deco.getClass().getSimpleName();

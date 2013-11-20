@@ -19,8 +19,7 @@ public class PartitionComponent {
 		return Collections.unmodifiableSet(inputs);
 	}
 	
-	
-	
+	// TODO: rename to "addLocal"?
 	public boolean addSignal(String name) {
 		// if a signal is added, it is not among the inputs anymore
 		inputs.remove(name);

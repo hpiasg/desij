@@ -331,6 +331,7 @@ public class Partition {
 		partition.add(actNewSignalSet);	
 		started = true;
 	}
+	
 
 	/**Adds a new signal to the current signal set,*/
 	public void addSignal(String signal) throws STGException {
@@ -340,6 +341,13 @@ public class Partition {
 		actNewSignalSet.addSignal(signal);		
 	}
 
+	/**
+	 * Add a signal as input
+	 */
+	public void addInput(String signal) throws STGException {
+		if (!started) beginSignalSet();
+		actNewSignalSet.addInput(signal);		
+	}
 
 
 
@@ -450,6 +458,8 @@ public class Partition {
 				ConditionFactory.getSignalOfCondition(outputNumbers), 
 				CollectorFactory.getTriggerSignal());
 		
+		
+		trigger.addAll( stg.getSignalNumbers(component.getInputs()));
 		
 		//Make syntactical triggers to inputs, outputs of the partition are preserved
 		trigger.removeAll(outputNumbers);

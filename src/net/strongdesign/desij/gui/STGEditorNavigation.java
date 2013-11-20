@@ -34,8 +34,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
@@ -60,6 +63,7 @@ import net.strongdesign.stg.STGCoordinates;
 import net.strongdesign.stg.STGException;
 import net.strongdesign.stg.STGFile;
 import net.strongdesign.stg.STGUtil;
+import net.strongdesign.stg.SignalEdge;
 import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.solvers.CSCSolver;
@@ -94,6 +98,7 @@ public class STGEditorNavigation extends JTree implements
 	public final STGEditorAction SIMPLE_DUMMY_REMOVAL = new STGEditorAction("Simple dummy removal", 0 , null, 0, this);
 	
 	
+	public final STGEditorAction DUMMIFY_RECURRING_SIGNALS = new STGEditorAction("Dummify recurring signals", 0, null, 0, this);
 	/**
 	 * 
 	 */
@@ -403,7 +408,7 @@ public class STGEditorNavigation extends JTree implements
 			try {
 				partition = new PartitionerCommonCauseSubnet(stgin);
 				partition.reportProblematicTriggers();
-			} catch (STGException e1) {
+			} catch (Exception e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
@@ -533,6 +538,38 @@ public class STGEditorNavigation extends JTree implements
 			frame.addSTG(stg, "Simplified");
 			
 		}
+		
+		if (source == DUMMIFY_RECURRING_SIGNALS) {
+			
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			STG stg = stgin.clone();
+			
+			// count all signal occurrences
+			HashMap<SignalEdge, Integer> map = new HashMap<SignalEdge, Integer>();
+			for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+				if (stg.getSignature(t.getLabel().getSignal()) == Signature.DUMMY) continue;
+				
+				Integer sum = map.get(t.getLabel());
+				if (sum==null) sum=0;
+				
+				map.put(t.getLabel(), sum+1);
+			}
+			
+			
+			for (Entry<SignalEdge, Integer> en: map.entrySet()) {
+				// dummify occurrences that occur more than once
+				if (en.getValue()>1) {
+					stg.setSignature(en.getKey().getSignal(), Signature.DUMMY);
+				}
+			}
+			
+			frame.addSTG(stg, "No recurring");
+			
+		}
+		
 	}
 	
 	public void usePetrify(String options) {

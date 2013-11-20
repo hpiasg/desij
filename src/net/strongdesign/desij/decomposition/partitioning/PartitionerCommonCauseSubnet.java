@@ -342,17 +342,9 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 	/*
 	 * Return true, if post sets are equivalent (signal edge wise)
 	 */
-	boolean comparePostsets(Set<Transition> upEdge, Set<Transition> downEdge) {
-		for (Transition t1: upEdge) {
-			for (Transition t2: upEdge) {
-				if (t1==t2) continue;
-				
-				if (!comparePostsets(t1,  t2)) return false;
-			}
-		}
-		
-		for (Transition t1: downEdge) {
-			for (Transition t2: downEdge) {
+	boolean comparePostsets(Set<Transition> edges) {
+		for (Transition t1: edges) {
+			for (Transition t2: edges) {
 				if (t1==t2) continue;
 				
 				if (!comparePostsets(t1,  t2)) return false;
@@ -362,25 +354,68 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 		return true;
 	}
 	
-	public void reportProblematicTriggers() {
+	void reportSolution(Set<Transition> edges) throws Exception {
+		
+		for (Transition t1: edges) {
+			for (Transition t2: edges) {
+				if (t1==t2) continue;
+				
+				if (!comparePostsets(t1,  t2)) {
+					HashMap<Integer, SignalValue> t1val  = getTransitionSignalInfo(t1);
+					HashMap<Integer, SignalValue> t2val  = getTransitionSignalInfo(t2);
+					HashSet<Integer> common = new HashSet<Integer>();
+					
+					common.addAll(t1val.keySet());
+					common.retainAll(t2val.keySet());
+					//common.retainAll(stg.getSignals(Signature.INPUT));
+					
+					boolean found = false;
+					System.out.print("Conflict between "+ t1.getString(Node.UNIQUE)+" and "+t2.getString(Node.UNIQUE)+":");
+					// now find signals with different values
+					for (Integer dsig: common) {
+						if (!t1val.get(dsig).equals(t2val.get(dsig))) {
+							System.out.print(" "+stg.getSignalName(dsig));;
+							found=true;
+						}
+					}
+					
+					if (!found) System.out.print("unsolved!");
+					System.out.println();
+				}
+			}
+		}
+		
+	}
+	
+	
+	public void reportProblematicTriggers() throws Exception {
+		
+		gatherSignalInfo(stg);
+		
 		for (Integer sig: stg.getSignals()) {
 			// find an input signal
 			if (stg.getSignature(sig)==Signature.DUMMY) continue;
 			
 			// collect sets of transitions for two edges
-			HashSet<Transition> upEdge = new HashSet<Transition>();
-			HashSet<Transition> downEdge = new HashSet<Transition>();
+			HashSet<Transition> upEdges = new HashSet<Transition>();
+			HashSet<Transition> downEdges = new HashSet<Transition>();
 			// collect all edges
 			for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
 				if (!t.getLabel().getSignal().equals(sig)) continue;
-				if (t.getLabel().getDirection() == EdgeDirection.UP) upEdge.add(t);
-				if (t.getLabel().getDirection() == EdgeDirection.DOWN) downEdge.add(t);
+				if (t.getLabel().getDirection() == EdgeDirection.UP) upEdges.add(t);
+				if (t.getLabel().getDirection() == EdgeDirection.DOWN) downEdges.add(t);
 			}
 			
 			// compare postsets
-			if (!comparePostsets(upEdge, downEdge)) {
+			boolean ups = comparePostsets(upEdges);
+			boolean downs = comparePostsets(downEdges);
+			if (!ups||!downs) {
 				String sname = stg.getSignalName(sig);
 				System.out.println("Signal "+sname+" is problematic");
+				
+				// report possible solution
+				if (!ups) reportSolution(upEdges);
+				if (!ups) reportSolution(downEdges);
 			}
 		}
 	}
