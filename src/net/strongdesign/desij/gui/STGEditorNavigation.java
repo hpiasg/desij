@@ -99,6 +99,9 @@ public class STGEditorNavigation extends JTree implements
 	
 	
 	public final STGEditorAction DUMMIFY_RECURRING_SIGNALS = new STGEditorAction("Dummify recurring signals", 0, null, 0, this);
+	
+	public final STGEditorAction REMOVE_DEAD_TRANSITIONS = new STGEditorAction("Remove dead transitions", 0, null, 0, this);
+	
 	/**
 	 * 
 	 */
@@ -353,7 +356,7 @@ public class STGEditorNavigation extends JTree implements
 					String sigName = stgin.getSignalName(signal);
 					partition.addSignal(sigName);
 					
-					System.out.println("Trying signal:"+sigName+" ("+i+" of "+cnt+") so far succeeded:"+success+" failed:"+failure);
+					System.out.println("Trying signal: "+sigName+" ("+i+" of "+cnt+") so far succeeded:"+success+" failed:"+failure);
 					
 					for (STG stg: Partition.splitByPartition(stgin, partition)) {
 						
@@ -513,6 +516,19 @@ public class STGEditorNavigation extends JTree implements
 			frame.addSTG(stg, "Relaxed");
 		}
 		
+		
+		if (source == REMOVE_DEAD_TRANSITIONS) {
+			TreePath path = getSelectionPaths()[0]; 
+			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
+			STG stgin = node.getSTG();
+			graphComponent.storeCoordinates(stgin.getCoordinates());
+			
+			STG stg = stgin.clone();
+			
+			STGUtil.removeDeadTransitions(stg);
+			frame.addSTG(stg, "Removed dead");
+		}
+		
 		if (source == RELAX_INJECTIVE2) {
 			TreePath path = getSelectionPaths()[0]; 
 			STGEditorTreeNode node= (STGEditorTreeNode)path.getLastPathComponent();
@@ -586,7 +602,10 @@ public class STGEditorNavigation extends JTree implements
 			
 			
 			if (stg!=null) {
-				frame.addSTG(stg, "Petrified");
+				String name = "Petrified";
+				if (options.contains("-csc")) name = "Solved CSC (Petrify)";
+				
+				frame.addSTG(stg, name);
 				frame.setLayout(7);
 			}
 			
@@ -610,7 +629,7 @@ public class STGEditorNavigation extends JTree implements
 			STG stg = CSCSolver.solveCSCWithMpsat(stgin);
 			
 			if (stg!=null) {
-				frame.addSTG(stg, "Solved CSC (mpsat)");
+				frame.addSTG(stg, "Solved CSC (Mpsat)");
 				frame.setLayout(7);
 			}
 			

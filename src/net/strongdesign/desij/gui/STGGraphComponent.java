@@ -109,6 +109,8 @@ public class STGGraphComponent extends mxGraphComponent {
 		public JMenuItem createComponent = new JMenuItem("Create a component from selected transition(s)");
 		public JMenuItem createLevel2Component = new JMenuItem("Create level 2 component from the selected transition");
 		public JMenuItem createSandwichComponent = new JMenuItem("Create a sandwich component from the selected transition"); 
+	
+		public JMenuItem applyZipUpOperation = new JMenuItem("Apply ZipUp operation to the selected place"); 
 		
 		
 		public JMenuItem reportCommonCause = new JMenuItem("Report Common Cause signals");
@@ -168,6 +170,8 @@ public class STGGraphComponent extends mxGraphComponent {
 			} else { // actions only available for places
 				
 				add(showPlaceInfo);
+				add(applyZipUpOperation);
+				applyZipUpOperation.addActionListener(this);
 				showPlaceInfo.addActionListener(this);
 			}
 			
@@ -229,6 +233,23 @@ public class STGGraphComponent extends mxGraphComponent {
 				component.initSTG(activeSTG, component.frame.isShorthand());
 				component.frame.refreshSTGInfo();
 			}
+			
+			if (e.getSource()==applyZipUpOperation) {
+				
+				storeCoordinates(component.activeSTG.getCoordinates());
+				
+				try {
+					
+					STGUtil.tryZipUp(activeSTG, (Place)nodesToProcess.get(0), null);
+					
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+				
+				component.initSTG(activeSTG, component.frame.isShorthand());
+				component.frame.refreshSTGInfo();
+			}
+			
 			
 			if (e.getSource()==makeSignalDummy) {
 				storeCoordinates(component.activeSTG.getCoordinates());
@@ -527,7 +548,6 @@ public class STGGraphComponent extends mxGraphComponent {
 					HashSet<Integer> addedSignals = new HashSet<Integer>();
 					
 					
-					
 					for (Node n: nodesToProcess) {
 						if (!(n instanceof Transition)) continue;
 						
@@ -556,7 +576,6 @@ public class STGGraphComponent extends mxGraphComponent {
 			}
 			
 			
-			
 			if (e.getSource()==showNextSequenceTransition&&activeSTG!=null) {
 				try {
 				
@@ -568,9 +587,9 @@ public class STGGraphComponent extends mxGraphComponent {
 					Node n = nodesToProcess.get(0);
 					Transition next = partitioner.nextSequenceTransition((Transition)n, null, null, null);
 					if (next==null) {
-						JOptionPane.showMessageDialog(null,"Next not found");
+						JOptionPane.showMessageDialog(null, "Next not found");
 					} else {
-						JOptionPane.showMessageDialog(null,next);
+						JOptionPane.showMessageDialog(null, next);
 					}
 					
 				} catch (STGException e1) {
@@ -759,11 +778,11 @@ public class STGGraphComponent extends mxGraphComponent {
 	
 	private void showGraphPopupMenu(MouseEvent e) {
 		
-//		boolean transitionSelected = (getGraph().getSelectionCell() instanceof TransitionCell);
-//		boolean placeSelected =  (getGraph().getSelectionCell() instanceof PlaceCell);
 		
-		STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, true);
 		Node n = cell2Node.get(getGraph().getSelectionCell());
+		
+		STGGraphComponentPopupMenu menu = new STGGraphComponentPopupMenu(this, n instanceof Transition);
+		
 		menu.nodesToProcess.add(n);
 		
 		if (n instanceof Transition) menu.transitionsToProcess.add((Transition)n);

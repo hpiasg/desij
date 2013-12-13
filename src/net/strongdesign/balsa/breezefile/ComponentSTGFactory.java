@@ -382,6 +382,16 @@ public class ComponentSTGFactory {
 				}
 				
 				mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
+				// after the main parallel composition remove structurally dead transitions?
+				STGUtil.removeDeadTransitions(mainSTG);
+				
+				// after the parallel composition, selectively remove channel signal transitions, 
+				// if the -g option is given
+				
+				if (!CLW.instance.LAMBDARIZE_ON_PCOMP.isEnabled())
+					STGUtil.removeDummiesBreeze(mainSTG, true, CLW.instance.RECOVER_BREEZE_DUMMY.isEnabled());
+				
+				
 				
 				ret.put(bpname, mainSTG);
 			}

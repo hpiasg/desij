@@ -694,9 +694,24 @@ public final class STG implements Cloneable {
 			loops+=par.size();
 		}
 		
+		// internal signals : "IS"
+		// internal transitions : "IT"
+		int IT = 0;
+		for (Transition t: getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			if (getSignature(t.getLabel().getSignal())==Signature.INTERNAL) {
+				IT++;
+			}
+		}
+		int IS = 0;
+		for (Integer sig: getSignals()) {
+			if (getSignature(sig)==Signature.INTERNAL) {
+				IS++;
+			}
+		}
+		
 		String aws="";
 		if (aw>0) aws+="("+aw+")";
-		return " A:"+arcs+aws+" L:"+loops+" T:"+getNumberOfTransitions()+" P:"+getNumberOfPlaces()+" D:"+getNumberOfDummies();
+		return " A:"+arcs+aws+" L:"+loops+" T:"+getNumberOfTransitions()+" P:"+getNumberOfPlaces()+" D:"+getNumberOfDummies()+" IT:"+IT+" IS:"+IS;
 	}
 	
 	// *******************************************************************

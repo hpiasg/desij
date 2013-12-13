@@ -24,32 +24,29 @@ public class BreezeDecomposition extends BasicDecomposition {
 		
 		//  String fileNamePrefix = decoPara.filePrefix;
 		this.specification = stg; // specification file --> for determination of initial dummies during OutDet Decomposition
-
+		
 		//valid Partition?
-		if (CLW.instance.ALLOW_INCOMPLETE_PARTITION.isEnabled()) { 
+		if (CLW.instance.ALLOW_INCOMPLETE_PARTITION.isEnabled()) 
 			if (! partition.correctSubPartitionOf(stg))
 				throw new STGException("Incorrect subpartition");
-		}
-
-		else if (! partition.correctPartitionOf(stg)) 
+		
+		else if (! partition.correctPartitionOf(stg))
 			throw new STGException("Incorrect complete partition (try -" + 
 					CLW.instance.ALLOW_INCOMPLETE_PARTITION.getShortName() + " option for incomplete partition)");
-
+		
 		if (! partition.feasiblePartitionOf(stg) ) throw new STGException(Messages.getString("ParametrizedDecomposition.invalid_partition")); 
-
+		
 		// try to get rid of specification dummies(?)
 		STGUtil.removeDummiesBreeze(stg, true, true);
 		
 		
-		
 		//Partitionen generieren
 		List<STG> components = Partition.splitByPartition(stg, partition);
-
+		
 		//for the results
 		List<STG> result= new LinkedList<STG>();
 
 		//und aufrufen
-
 		for (STG component : components) {
 			StringBuilder signalNames = new StringBuilder();
 			for (String s : component.getSignalNames(component.getSignals(Signature.OUTPUT)))
@@ -58,12 +55,12 @@ public class BreezeDecomposition extends BasicDecomposition {
 			logging(stg, signalNames.toString(), DecompositionEvent.NEW_COMPONENT, signalNames);
 
 			STGInOutParameter componentParameter = new STGInOutParameter(component);
-			
 			STGUtil.removeDummiesBreeze(componentParameter.stg, true, false);
-			System.out.println(stg.getSignature(stg.getSignalNumber("a458")));
-			result.add(componentParameter.stg);
 			
+			result.add(componentParameter.stg);
+			System.out.print(".");
 		}
+		System.out.println("\n");
 		return result;
 	}	
 }

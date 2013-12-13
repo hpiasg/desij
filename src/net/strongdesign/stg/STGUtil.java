@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.rmi.server.SkeletonNotFoundException;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
@@ -83,6 +84,41 @@ public abstract class STGUtil {
 			return contractDummies(new TransitionQueueWithTreeMap(stg), stg);
 		else
 			return contractDummies(new TransitionQueueWithArrayList(stg), stg);
+	}
+	
+	
+	public static void removeDeadTransitions(STG stg)
+	{
+		
+		while (true) {
+			
+			HashSet<Transition> dead = new HashSet<Transition>();
+			
+			// gather dead transitions  
+			for (Place p: stg.getPlaces()) {
+				if (p.getMarking()>0) continue;
+				if (p.getParents().size()>0) continue;
+				
+				// all postset transitions are dead
+				for (Node n: p.getChildren()) {
+					dead.add((Transition)n);
+				}
+			}
+			
+			if (dead.isEmpty()) break;
+			
+			for (Transition t: dead) {
+				HashSet<Node> parents = new HashSet<Node>();
+				parents.addAll(t.getParents());
+				
+				for(Node n: parents) {
+					if (n.getChildren().size()==1) stg.removeNode(n);
+				}
+				stg.removeTransition(t);
+			}
+		}
+		
+		
 	}
 	
 	private static int contractDummies(TransitionQueue queue, STG stg) throws STGException
@@ -151,81 +187,91 @@ public abstract class STGUtil {
 	}
 	
 	
-	private static HashSet<Integer> dummifyInternalChannelSignals(STG stg, HashSet<Integer> exceptionList) throws STGException {
-		
+//	
+//	private static HashSet<Integer> dummifyInternalChannelSignals(STG stg, HashSet<Integer> exceptionList) throws STGException {
+//		
+//		PartitionerCommonCauseSubnet partitioner = new PartitionerCommonCauseSubnet(stg);
+//		
+//		HashSet<Integer> ret = new HashSet<Integer>();
+//		
+//		if (exceptionList==null) exceptionList = new HashSet<Integer>();
+//		
+//		for (Integer sig: stg.getSignals()) {
+//			
+//			if (exceptionList.contains(sig)) continue;
+//			if (stg.getSignature(sig)!=Signature.INTERNAL) continue;
+//			
+//			String channelName = stg.getSignalName(sig);
+//			if (!isChannelName(channelName)) continue;
+//			
+//			HashSet<Transition> triggers = new HashSet<Transition>();
+//			HashSet<Transition> triggered = new HashSet<Transition>();
+//			Transition transition = null;
+//			
+//			// for a given signal, find its first transition
+//			for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+//				if (t.getLabel().getSignal().equals(sig)) {
+//					transition=t;
+//					break;
+//				}
+//			}
+//			if (transition==null) continue;
+//			
+//			triggered.add(transition);
+//			triggers.add(transition);
+//			partitioner.gatherPartition(triggers, triggered);
+//			
+//			HashSet<Integer> triggerSigs = new HashSet<Integer>();
+//			for (Transition t: triggers) {
+//				if (t.getLabel().getSignal().equals(sig)) continue;
+//				triggerSigs.add(t.getLabel().getSignal());
+//			}
+//			HashSet<Integer> triggeredSigs = new HashSet<Integer>();
+//			for (Transition t: triggered) {
+//				if (t.getLabel().getSignal().equals(sig)) continue;
+//				triggeredSigs.add(t.getLabel().getSignal());
+//			}
+//			
+//			if (triggeredSigs.size()+triggerSigs.size()>10) continue;
+//			
+//			
+//			
+//			stg.setSignature(sig, Signature.DUMMY);
+//			ret.add(sig);
+//		}
+//		
+//		return ret;
+//	}
+
+	
+	/**
+	 * Try to lambdarize insignificant channel signals (internal signals only)
+	 * - follow the exception list (signals that are not to be lambdarized)
+	 * - avoid growing large components
+	 */
+	public static HashSet<Integer> removeChannelsBreeze(STG stg, Set<Integer> exceptionList) throws STGException {
 		PartitionerCommonCauseSubnet partitioner = new PartitionerCommonCauseSubnet(stg);
-		
 		HashSet<Integer> ret = new HashSet<Integer>();
 		
-		if (exceptionList==null) exceptionList = new HashSet<Integer>();
+		// try to remove existing dummies (if any)
+		removeDummiesBreeze(stg, true);
 		
-		for (Integer sig: stg.getSignals()) {
+		HashSet<Integer> signals = new HashSet<Integer>();
+		signals.addAll(stg.getSignals());
+		
+		int size = signals.size();
+		int cur = 0;
+		
+		for (Integer sig: signals) {
+			cur++;
 			
 			if (exceptionList.contains(sig)) continue;
 			if (stg.getSignature(sig)!=Signature.INTERNAL) continue;
 			
 			String channelName = stg.getSignalName(sig);
-			if (!isChannelName(channelName)) continue;
 			
-			HashSet<Transition> triggers = new HashSet<Transition>();
-			HashSet<Transition> triggered = new HashSet<Transition>();
-			Transition transition = null;
-			
-			// for a given signal, find its first transition
-			for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
-				if (t.getLabel().getSignal().equals(sig)) {
-					transition=t;
-					break;
-				}
-			}
-			if (transition==null) continue;
-			
-			triggered.add(transition);
-			triggers.add(transition);
-			partitioner.gatherPartition(triggers, triggered);
-			
-			HashSet<Integer> triggerSigs = new HashSet<Integer>();
-			for (Transition t: triggers) {
-				if (t.getLabel().getSignal().equals(sig)) continue;
-				triggerSigs.add(t.getLabel().getSignal());
-			}
-			HashSet<Integer> triggeredSigs = new HashSet<Integer>();
-			for (Transition t: triggered) {
-				if (t.getLabel().getSignal().equals(sig)) continue;
-				triggeredSigs.add(t.getLabel().getSignal());
-			}
-			
-			if (triggeredSigs.size()+triggerSigs.size()>10) continue;
-			
-			
-			
-			stg.setSignature(sig, Signature.DUMMY);
-			ret.add(sig);
-		}
-		
-		return ret;
-	}
-
-	
-	/**
-	 * Converting internal signals into dummies, signalwise removal
-	 */
-	public static void removeChannelsBreeze(STG stg, boolean relaxed, boolean recoverUncontracted) throws STGException {
-		PartitionerCommonCauseSubnet partitioner = new PartitionerCommonCauseSubnet(stg);
-		
-		// first, try to remove existing dummies
-		removeDummiesBreeze(stg, relaxed);
-		
-		HashSet<Integer> signals = new HashSet<Integer>();
-		signals.addAll(stg.getSignals());
-		int size = signals.size();
-		int cur = 0;
-		for (Integer sig: signals) {
-			cur++;
-			
-			if (stg.getSignature(sig)!=Signature.INTERNAL) continue;
-			String channelName = stg.getSignalName(sig);
-			if (!isChannelName(channelName)) continue;
+			// TODO: only lambdarize channel signals? 
+			// if (!isChannelName(channelName)) continue;
 			
 			HashSet<Transition> triggers = new HashSet<Transition>();
 			HashSet<Transition> triggered = new HashSet<Transition>();
@@ -263,22 +309,24 @@ public abstract class STGUtil {
 			}
 			// only common signals are remaining
 			common.retainAll(triggeredSigs);
+			// do not contract problematic signals
+			common.removeAll(exceptionList);
+			
+			if (triggeredSigs.size()+triggerSigs.size()-2*common.size()>8) continue;
+			if (triggeredSigs.size()-common.size()>4) continue;
+			if (triggerSigs.size()-common.size()>4) continue;
 			
 			
-			
-			if (triggeredSigs.size()+triggerSigs.size()-2*common.size()>10) continue;
-			if (triggeredSigs.size()-common.size()>5) continue;
-			if (triggerSigs.size()-common.size()>5) continue;
-			
-			
-			// dummify all common signals, that occur in both triggers and triggered
+			// dummify all common signals, that occur in both triggers and triggered sets
 			stg.setSignature(common, Signature.DUMMY);
+			ret.addAll(common);
 			
-			if (cur%15==0)
-			 removeDummiesBreeze(stg, relaxed);
+			STGUtil.relaxInjectiveSplitSharedPath2(stg);
+			simpleDummyRemoval2(stg);
+			tryZipUpAll(stg);
 		}
 		
-		removeDummiesBreeze(stg, relaxed);
+		return ret;
 	}
 	
 	/**
@@ -291,44 +339,45 @@ public abstract class STGUtil {
 	public static void removeDummiesBreeze(STG stg, boolean relaxed, boolean recoverUncontracted) throws STGException {
 		
 		if (recoverUncontracted) {
-			removeChannelsBreeze(stg, relaxed, recoverUncontracted);
-//			// create a list of problematic dummies
-//			HashSet<Integer> problematic = new HashSet<Integer>();
-//			
-//			boolean good = true;
-//			
-//			// find out problematic signals
-//			do {
-//				STG stgClone = stg.clone();
-//				// dummify all channel signals
-//				HashSet<Integer> dummified = dummifyInternalChannelSignals(stgClone, problematic);
-//				
-//				good = true;
-//				
-//				// first, contract just to find the problematic dummies 
-//				removeDummiesBreeze(stgClone, relaxed);
-//				
-//				for (Transition t: stgClone.getTransitions(ConditionFactory.IS_DUMMY)) {
-//					
-//					if (dummified.contains(t.getLabel().getSignal())) {
-//						problematic.add(t.getLabel().getSignal());
-//						good = false;
-//					}
-//				}
-//				
-//			} while (!good);
-//			
-//			// finally, remove dummies   
-//			dummifyInternalChannelSignals(stg, problematic);
-//			removeDummiesBreeze(stg, relaxed);
-//			// rename signals, which were left as problematic (so they don't look like channel names anymore)
+			
+			// create a list of problematic dummies
+			HashSet<Integer> problematic = new HashSet<Integer>();
+			
+			boolean good = true;
+			
+			// find out problematic signals
+			do {
+				STG stgClone = stg.clone();
+				// dummify all channel signals
+				HashSet<Integer> dummified = removeChannelsBreeze(stgClone, problematic);
+				
+				good = true;
+				
+				// first, contract just to find the problematic dummies 
+				removeDummiesBreeze(stgClone, true);
+				
+				for (Transition t: stgClone.getTransitions(ConditionFactory.IS_DUMMY)) {
+					
+					if (dummified.contains(t.getLabel().getSignal())) {
+						problematic.add(t.getLabel().getSignal());
+						good = false;
+					}
+				}
+				
+			} while (!good);
+			
+			// finally, remove dummies   
+			removeChannelsBreeze(stg, problematic);
+			removeDummiesBreeze(stg, true);
+			
+			// rename signals, which were left as problematic (so they don't look like channel names anymore)
 //			HashMap<String, String> rename = new HashMap<String, String>();
 //			for (Integer sig: problematic) {
 //				String oldName = stg.getSignalName(sig);
 //				rename.put(oldName, "c_"+oldName);
 //			}
-//			
 //			stg.renameSignals(rename);
+			
 			
 		} else {
 			removeDummiesBreeze(stg, relaxed);
@@ -365,23 +414,38 @@ public abstract class STGUtil {
 			Collection<Node> n = 
 				redDel(stg, new NeighbourTrackingNodeRemover(stg));
 			
-			if (dum2==0) return; // nothing more to contract
+			if (dum2==0) {
+				// nothing more to contract, still try to do final basic improvements
+				tryZipUpAll(stg);
+				redDel(stg, new NeighbourTrackingNodeRemover(stg));
+				return; 
+			}
 			
 			
 			if (!n.isEmpty()) continue;
 			
 			// if fails to do any relaxations, then return
 			if (relaxed) {
+				
 				if (!STGUtil.relaxInjectiveSplitSharedPath2(stg)) {
 //					System.out.println("relax1 failed");
-					if (!STGUtil.relaxInjectiveSplitMergePlaces(stg)) {
-//						System.out.println("relax2 failed");
+					
+					if (tryZipUpAll(stg)==0) {
+//						System.out.println("merge failed");
 						return;
 					}
+					
+//					
+//					if (!STGUtil.relaxInjectiveSplitMergePlaces(stg)) {
+////						System.out.println("relax2 failed");
+//						
+//						if (tryZipUpAll(stg)==0) {
+//							return;
+//						}
+//					}
 				}
 				
-			} else 
-			return;
+			} else return;
 			
 		}
 		
@@ -396,7 +460,6 @@ public abstract class STGUtil {
 		if (stg.getSignature(transition.getLabel().getSignal()) != Signature.DUMMY) {
 			DesiJ.logFile.debug("Contraction of " + transition.getString(Node.UNIQUE) + " is not possible because it is not a dummy");
 			return Reason.SYNTACTIC;
-			
 		}
 
 		if ( ! ConditionFactory.SECURE_CONTRACTION.fulfilled(transition)) {
@@ -451,20 +514,17 @@ public abstract class STGUtil {
 		
 		Collection<Node> result = new HashSet<Node>();
 
-		if (CLW.instance.REMOVE_REDUNDANT_TRANSITIONS.isEnabled()) { 
-			Collection<Transition> r=STGUtil.removeRedundantTransitions(stg, remover);
-			result.addAll(r);
-			DesiJ.logFile.debug("Remove all redundant transitions: " + r.toString());
-		}
-
 		if (CLW.instance.REMOVE_REDUNDANT_PLACES.isEnabled()) { 
 			Collection<Place> r=STGUtil.removeRedundantPlaces(stg, remover);
 			result.addAll(r);
 			DesiJ.logFile.debug("Remove all redundant places: " + r.toString());
 		}
 		
-		
-		tryZipUpAll(stg);
+		if (CLW.instance.REMOVE_REDUNDANT_TRANSITIONS.isEnabled()) { 
+			Collection<Transition> r=STGUtil.removeRedundantTransitions(stg, remover);
+			result.addAll(r);
+			DesiJ.logFile.debug("Remove all redundant transitions: " + r.toString());
+		}
 		
 		return result;
 	}
@@ -886,8 +946,27 @@ public abstract class STGUtil {
 					&&
 					t1.getLabel().getDirection()==t2.getLabel().getDirection());
 		}
+	}
+	
+	
+	/**
+	 * Returns true, if both nodes have identical postsets
+	 * @param n1
+	 * @param n2
+	 * @return
+	 */
+	public static boolean samePostsets(Node n1, Node n2) {
 		
+		if (n1.getChildren().size()!=n2.getChildren().size()) return false;
 		
+		if (!n1.getChildren().containsAll(n2.getChildren())) return false;
+		if (!n2.getChildren().containsAll(n1.getChildren())) return false;
+		
+		for (Node test : n1.getChildren())
+			if (n1.getChildValue(test) != n2.getChildValue(test))
+				return false;
+		
+		return true;
 	}
 	
 	/**
@@ -1005,7 +1084,6 @@ public abstract class STGUtil {
 		}
 		
 		
-		
 		// remove all merged nodes, apart from the ones indexed 0
 		for (int i=1;i<pfrom.size();i++) {
 			Node n = pfrom.get(i);
@@ -1055,6 +1133,10 @@ public abstract class STGUtil {
 	 */
 	public static boolean tryZipUp(STG stg, Place place, NodeRemover remover) {
 		
+		// check that the presets of merged transitions are not dummies
+		// WARNING: when variable is false, this may be in conflict with the merge-place splitting operation  
+		boolean checkDummyPreset=false;
+		
 		if (place.getParents().size()<=1) return false;
 		
 		LinkedList<Node> trans = new LinkedList<Node>();
@@ -1066,50 +1148,89 @@ public abstract class STGUtil {
 		for (Node t1: trans) {
 			
 			// there must be no dummy transitions in the immediate preset transitions
-			boolean foundDummy = false;
-			for (Node tmpPlace: t1.getParents()) {
-				for (Node tt: tmpPlace.getParents()) {
-					if (stg.getSignature(((Transition)tt).getLabel().getSignal())==Signature.DUMMY) {
-						foundDummy = true;
-						break;
+			// (unless we are about to merge dummy transitions)
+			
+			boolean foundDummy1 = false;
+			// if both transitions are dummy, do not avoid their merging based on pre-set transitions
+			if (checkDummyPreset&&t1.getSTG().getSignature(((Transition)t1).getLabel().getSignal())!=Signature.DUMMY)
+				for (Node tmpPlace: t1.getParents()) {
+					for (Node tt: tmpPlace.getParents()) {
+						if (stg.getSignature(((Transition)tt).getLabel().getSignal())==Signature.DUMMY) {
+							foundDummy1 = true;
+							break;
+						}
 					}
 				}
-			}
-			if (foundDummy) continue;
 			
+			if (foundDummy1) continue;
 			
-			for (Node t2: trans) {
+	t2loop:	for (Node t2: trans) {
 				if (t1==t2) continue;
+				
+				
 				if (!sameTransitions((Transition)t1, (Transition)t2, true)) continue;
+				
+				// there must be no dummy transitions in the immediate preset transitions
+				// to avoid conflicts with the merge place splitting
+				// however, splitting dummy transitions is not allowed, so we don't care about presets, when t1 and t2 are dummies 
+				
+				boolean foundDummy2 = false;
+				
+				// if both transitions are dummy, do not avoid their merging based on pre-set transitions
+				if (checkDummyPreset&&t2.getSTG().getSignature(((Transition)t2).getLabel().getSignal())!=Signature.DUMMY)
+					for (Node tmpPlace: t2.getParents()) {
+						for (Node tt: tmpPlace.getParents()) {
+							if (stg.getSignature(((Transition)tt).getLabel().getSignal())==Signature.DUMMY) {
+								foundDummy2 = true;
+								break;
+							}
+						}
+					}
+				
+				if (foundDummy2) continue;
+				
 				
 				// both transitions must have the same post-set
 				if (!isSamePostset(t1, t2)) continue;
 				
 				
-				// there must be no dummy transitions in the immediate preset transitions
-				// to avoid conflicts with the merge place splitting
-				foundDummy = false;
-				for (Node tmpPlace: t2.getParents()) {
-					for (Node tt: tmpPlace.getParents()) {
-						if (stg.getSignature(((Transition)tt).getLabel().getSignal())==Signature.DUMMY) {
-							foundDummy = true;
-							break;
-						}
-					}
+				// find common preset places
+				HashSet<Node> common = new HashSet<Node>();
+				common.addAll(t1.getParents());
+				common.retainAll(t2.getParents());
+				
+				// each common preset place has to have the same weight towards t1 and t2
+				for (Node p: common) {
+					if (p.getChildValue(t1)!=p.getChildValue(t2))
+						continue t2loop;
 				}
-				if (foundDummy) continue;
 				
+				// find non-common preset places
+				HashSet<Node> t1par = new HashSet<Node>();
+				HashSet<Node> t2par = new HashSet<Node>();
+				t1par.addAll(t1.getParents());
+				t2par.addAll(t2.getParents());
 				
+				t1par.removeAll(common);
+				t2par.removeAll(common);
 				
-				if (t1.getParents().size()!=1||t2.getParents().size()!=1) continue;
-				Place p1 = (Place)t1.getParents().iterator().next();
-				Place p2 = (Place)t2.getParents().iterator().next();
+				if (t1par.size()!=1||t2par.size()!=1) continue;
+				
+				Place p1 = (Place)t1par.iterator().next();
+				Place p2 = (Place)t2par.iterator().next();
 				
 				if (p1==p2) continue;
 				
-				if (place.getParentValue(t1)!=place.getParentValue(t2)) continue;
+				// W(p_{1},t_{1})=W(p_{2},t_{2})=1
+				if (t1.getParentValue(p1)!=1) continue;
 				if (t1.getParentValue(p1)!=t2.getParentValue(p2)) continue;
 				
+				
+				if (place.getParentValue(t1)!=place.getParentValue(t2)) continue;
+				
+				// TODO: allow common postset for p1, p2?
+				// |\post{p_1}|=|\post{p_2}|=1
+				 
 				if (p1.getChildren().size()!=1||p2.getChildren().size()!=1) continue;
 				
 				// presets of p1 and p2 must be disjoint
@@ -1139,6 +1260,7 @@ public abstract class STGUtil {
 				zippedSomething = true;
 				
 				tryZipUp(stg, p1, remover);
+				
 			}
 		}
 		
@@ -1163,9 +1285,7 @@ public abstract class STGUtil {
 	
 	/**
 	 * Special type of injective labelling, it tries to go forwards from a split-place
-	 * TODO: can we do this type of enforcing??
-	 * @param stg
-	 * @param tran
+	 * This operation may hide some details of an STG and change it's behaviour!
 	 */
 	public static boolean tryZipDown(STG stg, Place place) {
 		
@@ -1500,157 +1620,157 @@ public abstract class STGUtil {
 		}
 	}
 	
-	/**
-	 * Function relaxes injective labelling by splitting shared paths 
-	 * @param stg - the stg to work on
-	 */
-	public static boolean relaxInjectiveSplitSharedPath(STG stg) {
-		boolean ret = false;
-		
-		simpleDummyRemoval2(stg);
-		
-		Collection<Place> places = new HashSet<Place>();
-		places.addAll(stg.getPlaces());
-		
-		
-		// do the optimisation that is opposite to enforcing injective labelling
-		for (Place place: places) {
-			
-			// the primitive case of the shared path optimisation
-			//if (true||CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
-			{
-				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
-					Place place2 = place;
-					
-					boolean failed = false;
-					
-					while (!failed&&place2.getChildren().size()==1) {
-						
-						if (place2.getMarking()>0) failed=true;
-						
-						Transition t = (Transition)place2.getChildren().iterator().next();
-						
-						if (place2.getChildValue(t)!=1) failed=true;
-						
-						// do not allow dummy transitions on the path
-						if (ConditionFactory.IS_DUMMY.fulfilled(t)) { failed=true; break; }
-						
-						if (t.getParents().size()!=1||t.getChildren().size()!=1) {
-							failed=true;
-							break;
-						} else {
-							Place np = (Place)t.getChildren().iterator().next();
-							// do not allow self-loop transitions
-							if (np!=place2)
-								place2 = (Place)t.getChildren().iterator().next();
-							else
-								failed=true;
-							
-							if (t.getChildValue(place2)!=1) failed=true;
-
-						}
-						
-						// do not allow places with many parent transitions (apart from the first place)
-						if (place2.getParents().size()>1) failed=true;
-					}
-					
-					Set<Node> parents  = new HashSet<Node>();
-					parents.addAll(place.getParents());
-					
-					Set<Node> children = new HashSet<Node>();
-					children.addAll(place2.getChildren());
-					
-					Set<Node> test = new HashSet<Node>();
-					test.addAll(parents);
-					test.addAll(children);
-					
-					Map<Transition, Place> tp = new HashMap<Transition, Place>();
-					Map<Place, Transition> pt = new HashMap<Place, Transition>();
-					
-					
-					if (parents.size()!=children.size()) failed=true;
-					
-					// check pre-sets and post-sets do not intersect 
-					if (!failed&&parents.size()+children.size()==test.size()) {
-						
-						for (Node t1: place.getParents()) {
-							
-							if (t1.getChildren().size()!=2) continue;
-							if (t1.getChildValue(place)!=1) continue;
-							
-							Iterator<Node> it = t1.getChildren().iterator();
-							Place p = (Place) it.next();
-							if (p==place) p = (Place) it.next();
-							
-							// for now only very primitive cases are considered
-							if (p.getMarking()>0) continue;
-							
-							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) continue;
-							
-							Transition t2 = (Transition) p.getChildren().iterator().next();
-							if (place2.getChildValue(t2)!=1) continue;
-							
-							
-							if (parents.contains(t1)&&children.contains(t2)) {
-								tp.put((Transition)t1,p);
-								pt.put(p, t2);
-								
-								parents.remove(t1);
-								children.remove(t2);
-							}
-						}
-					}
-					
-					if (parents.size()!=0) failed=true;
-					if (children.size()!=0) failed=true;
-					
-					
-					if (!failed) {
-						// 
-						
-
-						for (Entry<Transition, Place> e: tp.entrySet()) {
-							
-							Transition t1 = e.getKey();
-							Transition t2 = pt.get(e.getValue());
-							
-							if (
-								stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY
-								||
-								stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY
-								)
-							{
-								RedundantPlaceStatistics.totalSharedPathSplits++;
-								
-								// we do have some changes
-								ret=true;
-								
-								if (place.getParents().size()>1) {
-									
-									Place p1 = stg.addPlace("p", 0);
-									Place p2 = stg.addPlace("p", 0);
-									
-									t1.setChildValue(p1, 1);
-									p2.setChildValue(t2, 1);
-									
-									t1.setChildValue(place, 0);
-									place2.setChildValue(t2, 0);
-									
-									copyPath(stg, place, place2, p1, p2);
-									
-								}
-								
-								stg.removePlace(e.getValue());
-							}
-						}
-					}
-				}
-			}
-			
-		}
-		
-		return ret;
-	}
+//	/**
+//	 * Function relaxes injective labelling by splitting shared paths 
+//	 * @param stg - the stg to work on
+//	 */
+//	public static boolean relaxInjectiveSplitSharedPath(STG stg) {
+//		boolean ret = false;
+//		
+//		simpleDummyRemoval2(stg);
+//		
+//		Collection<Place> places = new HashSet<Place>();
+//		places.addAll(stg.getPlaces());
+//		
+//		
+//		// do the optimisation that is opposite to enforcing injective labelling
+//		for (Place place: places) {
+//			
+//			// the primitive case of the shared path optimisation
+//			//if (true||CLW.instance.SHARED_SHORTCUT_PLACE.isEnabled()) 
+//			{
+//				if (place.getMarking()==0&&place.getParents().size()>1&&place.getChildren().size()==1) {
+//					Place place2 = place;
+//					
+//					boolean failed = false;
+//					
+//					while (!failed&&place2.getChildren().size()==1) {
+//						
+//						if (place2.getMarking()>0) failed=true;
+//						
+//						Transition t = (Transition)place2.getChildren().iterator().next();
+//						
+//						if (place2.getChildValue(t)!=1) failed=true;
+//						
+//						// do not allow dummy transitions on the path
+//						if (ConditionFactory.IS_DUMMY.fulfilled(t)) { failed=true; break; }
+//						
+//						if (t.getParents().size()!=1||t.getChildren().size()!=1) {
+//							failed=true;
+//							break;
+//						} else {
+//							Place np = (Place)t.getChildren().iterator().next();
+//							// do not allow self-loop transitions
+//							if (np!=place2)
+//								place2 = (Place)t.getChildren().iterator().next();
+//							else
+//								failed=true;
+//							
+//							if (t.getChildValue(place2)!=1) failed=true;
+//
+//						}
+//						
+//						// do not allow places with many parent transitions (apart from the first place)
+//						if (place2.getParents().size()>1) failed=true;
+//					}
+//					
+//					Set<Node> parents  = new HashSet<Node>();
+//					parents.addAll(place.getParents());
+//					
+//					Set<Node> children = new HashSet<Node>();
+//					children.addAll(place2.getChildren());
+//					
+//					Set<Node> test = new HashSet<Node>();
+//					test.addAll(parents);
+//					test.addAll(children);
+//					
+//					Map<Transition, Place> tp = new HashMap<Transition, Place>();
+//					Map<Place, Transition> pt = new HashMap<Place, Transition>();
+//					
+//					
+//					if (parents.size()!=children.size()) failed=true;
+//					
+//					// check pre-sets and post-sets do not intersect 
+//					if (!failed&&parents.size()+children.size()==test.size()) {
+//						
+//						for (Node t1: place.getParents()) {
+//							
+//							if (t1.getChildren().size()!=2) continue;
+//							if (t1.getChildValue(place)!=1) continue;
+//							
+//							Iterator<Node> it = t1.getChildren().iterator();
+//							Place p = (Place) it.next();
+//							if (p==place) p = (Place) it.next();
+//							
+//							// for now only very primitive cases are considered
+//							if (p.getMarking()>0) continue;
+//							
+//							if (!ConditionFactory.MARKED_GRAPH_PLACE.fulfilled(p)) continue;
+//							
+//							Transition t2 = (Transition) p.getChildren().iterator().next();
+//							if (place2.getChildValue(t2)!=1) continue;
+//							
+//							
+//							if (parents.contains(t1)&&children.contains(t2)) {
+//								tp.put((Transition)t1,p);
+//								pt.put(p, t2);
+//								
+//								parents.remove(t1);
+//								children.remove(t2);
+//							}
+//						}
+//					}
+//					
+//					if (parents.size()!=0) failed=true;
+//					if (children.size()!=0) failed=true;
+//					
+//					
+//					if (!failed) {
+//						// 
+//						
+//
+//						for (Entry<Transition, Place> e: tp.entrySet()) {
+//							
+//							Transition t1 = e.getKey();
+//							Transition t2 = pt.get(e.getValue());
+//							
+//							if (
+//								stg.getSignature(t1.getLabel().getSignal())==Signature.DUMMY
+//								||
+//								stg.getSignature(t2.getLabel().getSignal())==Signature.DUMMY
+//								)
+//							{
+//								RedundantPlaceStatistics.totalSharedPathSplits++;
+//								
+//								// we do have some changes
+//								ret=true;
+//								
+//								if (place.getParents().size()>1) {
+//									
+//									Place p1 = stg.addPlace("p", 0);
+//									Place p2 = stg.addPlace("p", 0);
+//									
+//									t1.setChildValue(p1, 1);
+//									p2.setChildValue(t2, 1);
+//									
+//									t1.setChildValue(place, 0);
+//									place2.setChildValue(t2, 0);
+//									
+//									copyPath(stg, place, place2, p1, p2);
+//									
+//								}
+//								
+//								stg.removePlace(e.getValue());
+//							}
+//						}
+//					}
+//				}
+//			}
+//			
+//		}
+//		
+//		return ret;
+//	}
 
 	
 	public static boolean isSimplePath(Place p1, Place p2) {
@@ -1693,7 +1813,7 @@ public abstract class STGUtil {
 		
 		//simpleDummyRemoval2(stg);
 		
-		// just make sure the dumy count doesn't increase
+		// just make sure the dummy count doesn't increase
 		int d = stg.getTransitions(ConditionFactory.IS_DUMMY).size();
 			
 		Collection<Place> places = new HashSet<Place>();
@@ -2144,6 +2264,7 @@ public abstract class STGUtil {
 		
 		return toReturn;
 	}
+	
 //
 //	/**
 //	 * very quick simplification, removes simple dummy transitions
@@ -2234,7 +2355,6 @@ public abstract class STGUtil {
 		
 		for (Transition t: transitions) {
 			simpleDummyRemoval2(stg, t);
-			
 		}
 		
 	}

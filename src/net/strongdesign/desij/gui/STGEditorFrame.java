@@ -166,10 +166,10 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 	public final static Font STANDARD_FONT = new Font("Arial", Font.PLAIN, 16);
 	public final static Font SMALL_FONT = new Font("Arial", Font.PLAIN, 12);
 	
-	public final static Color INPUT = new Color(255, 200, 200);
-	public final static Color OUTPUT = new Color(200, 200, 255);
-	public final static Color INTERNAL = new Color(200, 255, 200);
-	public final static Color DUMMY = new Color(200, 200, 200);
+	public final static Color INPUT     = new Color(255, 200, 200);
+	public final static Color OUTPUT    = new Color(200, 200, 255);
+	public final static Color INTERNAL  = new Color(200, 255, 200);
+	public final static Color DUMMY     = new Color(200, 200, 200);
 	public static final Color NAV_COLOR = new Color(255, 255, 200);
 	
 	private final STGGraphComponent graphComponent;
@@ -447,7 +447,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 					CollectorFactory.getSignalCollector()))
 				
 				signalNames.append(" "+stg.getSignalName(sig));
-
+			
 			STGEditorTreeNode nn = new STGEditorTreeNode(
 					signalNames.toString(), s, true);
 			
@@ -758,20 +758,20 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 					source == DECO_TREE||
 					source == DECO_CSC_AWARE||
 					source == DECO_ICSC_AWARE) {
-				
+					
 				decompose(source);
 			} else if (source == DELETE_REDUNDANT) {
-				 deleteRedundant();
+				deleteRedundant();
 			} else if (source == REDUCE_SAFE) {
-				 reduceSafe();
+				reduceSafe();
 			} else if (source == REDUCE_WITH_LP_SOLVER) {
-				 reduceWithLPSolver();
+				reduceWithLPSolver();
 			} else if (source == REDUCE_UNSAFE) {
-				 reduceUnsafe();
+				reduceUnsafe();
 			} else if (source == REDUCE_BREEZE_RECOVER) {
-				 reduceBreeze(true);
+				reduceBreeze(true);
 			} else if (source == REDUCE_BREEZE) {
-				 reduceBreeze(false);
+				reduceBreeze(false);
 			} else if (source == ABOUT) {
 				new STGEditorAbout(this).setVisible(true);
 			}
@@ -1162,7 +1162,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 		AbstractDecomposition deco = null;
 		
 		// 2. run reduce on it, add it to the tree
-
+		
 		try {
 			
 			//memorize internal signals and change signature to output,
@@ -1170,8 +1170,7 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			Set<Integer> internals = stg.collectUniqueCollectionFromTransitions(
 					ConditionFactory.getSignatureOfCondition(Signature.INTERNAL),
 					CollectorFactory.getSignalNameCollector());
-
-
+			
 			//change internals to outputs
 			stg.setSignature(internals, Signature.OUTPUT);
 			
@@ -1191,7 +1190,26 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			stg.addUndoMarker(BEFORE_ALL);
 			
 			if (projectNode.partition==null) {
-				projectNode.partition = Partition.getFinestPartition(projectNode.getSTG(),null);
+				
+				if (CLW.instance.PARTITION.getValue().equals("roughest"))
+					projectNode.partition = Partition.getRoughestPartition(curSTG, null);
+				else if (CLW.instance.PARTITION.getValue().equals("common-cause"))
+					projectNode.partition = Partition.getCommonCausePartition(curSTG);
+				else if (CLW.instance.PARTITION.getValue().equals("sw-heuristics"))
+					projectNode.partition = Partition.getBreezePartition(curSTG);
+				else if (CLW.instance.PARTITION.getValue().equals("multisignaluse"))
+					projectNode.partition = Partition.getMultipleSignalUsagePartition(curSTG);
+				else if (CLW.instance.PARTITION.getValue().equals("avoidcsc"))
+					projectNode.partition = Partition.getCSCAvoidancePartition(curSTG);
+				else if (CLW.instance.PARTITION.getValue().equals("reduceconc"))
+					projectNode.partition = Partition.getPartitionConcurrencyReduction(curSTG);
+				else if (CLW.instance.PARTITION.getValue().equals("lockedsignals"))
+					projectNode.partition = Partition.getLockedSignalsPartition(curSTG);
+				else if (CLW.instance.PARTITION.getValue().equals("best"))
+					projectNode.partition = Partition.getBestPartition(curSTG);
+				else
+					projectNode.partition = Partition.getFinestPartition(projectNode.getSTG(),null);
+				
 			}
 			
 			components = deco.decompose(stg, projectNode.partition);
@@ -1240,29 +1258,61 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 			
 			String deco_name  = deco.getClass().getSimpleName();
 			
-			STGEditorTreeNode initComponents = new STGEditorTreeNode(deco_name);
+			// largest component data
+			int maxTran = 0;
+			int maxDummy = 0;
+			STG maxSTG = null;
+			for (STG s : components) {
+				int curTran = 0;
+				int curDummy = 0;
+				for (Transition t: s.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+					curTran++;
+					if (s.getSignature(t.getLabel().getSignal())==Signature.DUMMY) {
+						curDummy++;
+					}
+				}
+				
+				if (curTran>maxTran) {
+					maxTran=curTran;
+					maxDummy=curDummy;
+					maxSTG = s;
+				}
+			}
+			
+			
+			String add = " Largest comp. transitions:"+maxTran;
+			if (maxDummy>0) {
+				add+=" ("+maxDummy+")";
+			}
+			
+			STGEditorTreeNode initComponents = new STGEditorTreeNode(deco_name+add);
 			projectNode.add(initComponents);
 			
 			for (STG s : components) {
 				StringBuilder signalNames = new StringBuilder();
+				
 				for (Integer sig : s.collectUniqueCollectionFromTransitions(
 						ConditionFactory.getSignatureOfCondition(Signature.OUTPUT),
 						CollectorFactory.getSignalCollector()))
 					signalNames.append(" "+curSTG.getSignalName(sig));
 
+				String pre = "";
+				if (maxSTG == s) pre = "* "; 
+					
 				STGEditorTreeNode nn = new STGEditorTreeNode(
-						signalNames.toString(), s, true);
+						pre+signalNames.toString(), s, true);
 				
 				nn.getSTG().copyCoordinates(projectNode.getSTG().getCoordinates());
 				
 				
 				
 				initComponents.add(nn);
+				
+				STGDotLayout.doLayout(s);
 				//navigationView.addNode(nn, signalNames.toString());
 			}
 			
 			navigationView.updateUI();
-			
 			navigationView.showNode(initComponents);
 			
 			

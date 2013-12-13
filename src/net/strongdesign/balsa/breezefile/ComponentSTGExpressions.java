@@ -56,7 +56,10 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzConcur", "scaled B\nactive B\n#(A:#||(B))");
 		
-		components.put("$BrzSequence",          "scaled B\nactive B\n#(A:#;(B))");
+		components.put("$BrzSequence",   "scaled B\nactive B\n#(A:#;(B))");
+		//components.put("$BrzSequence",   "scaled B\nactive B\n#(rA+.#.(rB+.aB+.cB+.rB-.aB-).aA+.rA-.#.(cB-).aA-)");
+		
+		
 		
 		// TODO: what is the difference between this and BrzSequence?
 		components.put("$BrzSequenceOptimised", "scaled B\nactive B\n#(A:#;(B))");
@@ -93,7 +96,7 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzCase", "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)");
 		
-		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,X,E,F,G,H\n"+
+		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
 				"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
 		
 		components.put("$BrzHalt", "#(rA+;~aA+;rA-;aA-)");

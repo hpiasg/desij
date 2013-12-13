@@ -48,6 +48,7 @@ public class STGEditorNavigationPopUp extends JPopupMenu {
 		add(listener.REPORT_PROBLEMATIC_TRIGGERS);
 		
 		add(listener.DUMMIFY_RECURRING_SIGNALS);
+		add(listener.REMOVE_DEAD_TRANSITIONS);
 	}
 	
 }

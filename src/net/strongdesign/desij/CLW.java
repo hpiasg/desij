@@ -102,7 +102,7 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- reddel: Removed redundant places and save the result as <filename>.red.g" +	
 			"\n\t- create: Create a predefined STG model. When using this the model parameter is mandantory." +	
 			"\n\t- show: Converts the STG to a ps File and automatically displays it." +
-			"\n\t- breeze: Convert given Breeze file *.breeze to a cluster STG")
+			"\n\t- breeze: Convert given Breeze file *.breeze to a Balsa-STG")
 			
 	public  CommandLineParameter OPERATION = 
 		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,killdummiesrelaxed,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show,breeze", "decompose", false);
@@ -506,7 +506,7 @@ public class CLW extends CommandLineWrapper {
 	public CommandLineOption OPTIMIZED_PCOMP =
 		new CommandLineOption('M', "optimized-pcomp", true);
 	
-	@Help("Use optimized parallel composition for breeze files")
+	@Help("Lambdarize channel transitions when forming Balsa-STG")
 	public CommandLineOption LAMBDARIZE_ON_PCOMP =
 		new CommandLineOption('g', "lambdarize-on-pcomp", true);
 	

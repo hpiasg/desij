@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 import net.strongdesign.stg.EdgeDirection;
 import net.strongdesign.stg.Node;
@@ -218,7 +220,7 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 	
 	
 	/**
-	 * Return the next sequence transition
+	 * Return the previous sequence transition
 	 */
 	public Transition prevSequenceTransition(Transition initTransition, Integer signal, SignalValue value, HashSet<Place> visited) {
 		
@@ -315,8 +317,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 	}
 	
 	
-	
-	
 	boolean comparePostsets(Transition t1, Transition t2) {
 		
 		HashSet<SignalEdge> ppost1 = new HashSet<SignalEdge>();
@@ -354,43 +354,240 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 		return true;
 	}
 	
+	
+	boolean isChoiceTransition(Transition t) {
+		
+		if (stg.getSignature(t.getLabel().getSignal())==Signature.DUMMY) return false;
+		
+		for (Node n: t.getParents()) {
+			if (n.getChildren().size()>1) return true;
+		}
+		
+		return false;
+	}
+	
 	void reportSolution(Set<Transition> edges) throws Exception {
 		
-		for (Transition t1: edges) {
-			for (Transition t2: edges) {
-				if (t1==t2) continue;
-				
-				if (!comparePostsets(t1,  t2)) {
-					HashMap<Integer, SignalValue> t1val  = getTransitionSignalInfo(t1);
-					HashMap<Integer, SignalValue> t2val  = getTransitionSignalInfo(t2);
-					HashSet<Integer> common = new HashSet<Integer>();
-					
-					common.addAll(t1val.keySet());
-					common.retainAll(t2val.keySet());
-					//common.retainAll(stg.getSignals(Signature.INPUT));
-					
-					boolean found = false;
-					System.out.print("Conflict between "+ t1.getString(Node.UNIQUE)+" and "+t2.getString(Node.UNIQUE)+":");
-					// now find signals with different values
-					for (Integer dsig: common) {
-						if (!t1val.get(dsig).equals(t2val.get(dsig))) {
-							System.out.print(" "+stg.getSignalName(dsig));;
-							found=true;
-						}
-					}
-					
-					if (!found) System.out.print("unsolved!");
-					System.out.println();
+//		solution that finds closest choice signal
+//		seems to be not reliable, but might just work...
+		
+		// for each transition, accumulate preset transitions until the choice transition is found
+		
+		for (Transition tran: edges) {
+			HashSet<Transition> processed = new HashSet<Transition>();
+			HashSet<Transition> oldPreset = new HashSet<Transition>();
+			
+			
+			for (Node n: tran.getParents()) {
+				for (Node n2: n.getParents()) {
+					oldPreset.add((Transition)n2);
 				}
 			}
+			
+			boolean found = false;
+			
+			HashSet<Transition> newPreset = new HashSet<Transition>();
+			
+			do {
+				for (Transition tt: oldPreset) {
+					for (Node n: tt.getParents()) {
+						for (Node n2: n.getParents()) {
+							
+							Transition t2 = (Transition)n2;
+							
+							if (processed.contains(t2)) continue;
+							
+							if (isChoiceTransition(t2)) {
+								found=true;
+								System.out.print("Solution for "+tran.getString(Transition.UNIQUE)+": "+stg.getSignalName(t2.getLabel().getSignal()));
+								break;
+							}
+							
+							newPreset.add((Transition)n2);
+						}
+						
+						if (found) break;
+					}
+					if (found) break;
+				}
+				
+				if (found) break;
+				
+				processed.addAll(oldPreset);
+				
+				oldPreset=newPreset;
+				newPreset = new HashSet<Transition>();
+				
+			} while (!oldPreset.isEmpty());
+			
+			if (!found) {
+				System.out.println(" solution not found for "+tran.getString(Transition.UNIQUE));
+			} else 
+				System.out.println("");
 		}
+// 		solution using gathered signal info (so far doesn't work very well)
+//		for (Transition t1: edges) {
+//			for (Transition t2: edges) {
+//				if (t1==t2) continue;
+//				
+//				if (!comparePostsets(t1,  t2)) {
+//					HashMap<Integer, SignalValue> t1val  = getTransitionSignalInfo(t1);
+//					HashMap<Integer, SignalValue> t2val  = getTransitionSignalInfo(t2);
+//					HashSet<Integer> common = new HashSet<Integer>();
+//					
+//					common.addAll(t1val.keySet());
+//					common.retainAll(t2val.keySet());
+//					//common.retainAll(stg.getSignals(Signature.INPUT));
+//					
+//					boolean found = false;
+//					System.out.print("Conflict between "+ t1.getString(Node.UNIQUE)+" and "+t2.getString(Node.UNIQUE)+":");
+//					// now find signals with different values
+//					for (Integer dsig: common) {
+//						if (!t1val.get(dsig).equals(t2val.get(dsig))) {
+//							System.out.print(" "+stg.getSignalName(dsig));;
+//							found=true;
+//						}
+//					}
+//					
+//					if (!found) System.out.print("unsolved!");
+//					System.out.println();
+//				}
+//			}
+//		}
 		
 	}
 	
-	
-	public void reportProblematicTriggers() throws Exception {
+	Set<Transition> gatherUniqueEdgeTransitions() {
+		Set<Transition> collector = new HashSet<Transition>();
 		
-		gatherSignalInfo(stg);
+		Map<SignalEdge, Integer> map = new HashMap<SignalEdge, Integer>();
+		
+		for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			if (stg.getSignature(t.getLabel().getSignal())==Signature.DUMMY) continue;
+			
+			Integer cur = map.get(t.getLabel());
+			if (cur==null) cur=0;
+			
+			map.put(t.getLabel(), cur+1);
+		}
+		
+		for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+			if (stg.getSignature(t.getLabel().getSignal())==Signature.DUMMY) continue;
+			
+			if (map.get(t.getLabel()).equals(1)) {
+				collector.add(t);
+			}
+		}
+		
+		return collector;
+	}
+	
+	void findSolution(Set<Transition> edges, Set<Transition> unique, Map<Transition, Integer> collector) {
+		
+//		solution that finds closest choice signal
+//		also check all the unique transitions on the way
+		
+		
+		 
+		
+		// for each transition, accumulate preset transitions until the choice transition is found
+		
+		for (Transition tran: edges) {
+			HashSet<Transition> processed = new HashSet<Transition>();
+			HashSet<Transition> oldPreset = new HashSet<Transition>();
+			
+			// gather data about unique occurrences of a signal
+			HashMap<Integer, Integer> processedSignals = new HashMap<Integer, Integer>();
+			
+			for (Node n: tran.getParents()) {
+				for (Node n2: n.getParents()) {
+					oldPreset.add((Transition)n2);
+				}
+			}
+			
+			boolean found = false;
+			
+			HashSet<Transition> newPreset = new HashSet<Transition>();
+			
+			do {
+				for (Transition tt: oldPreset) {
+					for (Node n: tt.getParents()) {
+						for (Node n2: n.getParents()) {
+							
+							Transition t2 = (Transition)n2;
+							
+							if (processed.contains(t2)) continue;
+							
+							// gather unique signal occurrences
+							if (unique.contains(t2)) {
+								Integer cur = processedSignals.get(t2.getLabel().getSignal());
+								if (cur==null) cur=0;
+								processedSignals.put(t2.getLabel().getSignal(), cur+1);
+							}
+							
+							// same signal is met
+							if (t2.getLabel().getSignal().equals(tran.getLabel().getSignal())) {
+								// same signal as tran is met, check the list of unique transition edges
+								// can we find some unique signal that only occurs once?
+								for (Entry<Integer, Integer> en: processedSignals.entrySet()) {
+									if (en.getValue().equals(1)) {
+										found=true;
+										collector.put(tran, en.getKey());
+										break;
+									}
+								}
+								
+								// if yes, this should be a solution
+								if (found) break;
+							}
+								
+							if (isChoiceTransition(t2)) {
+								found=true;
+								
+								for (Entry<Integer, Integer> en: processedSignals.entrySet()) {
+									if (en.getValue().equals(1)) {
+										found=true;
+										collector.put(tran, en.getKey());
+										break;
+									}
+								}
+								
+								// if yes, this should be a solution
+								if (found) break;
+								
+								// final attempt, if hasn't found among unique
+								collector.put(tran, t2.getLabel().getSignal());
+								break;
+							}
+							
+							newPreset.add(t2);
+						}
+						
+						if (found) break;
+					}
+					if (found) break;
+				}
+				
+				if (found) break;
+				
+				processed.addAll(oldPreset);
+				
+				oldPreset=newPreset;
+				newPreset = new HashSet<Transition>();
+				
+			} while (!oldPreset.isEmpty());
+			
+			if (!found) {
+				collector.put(tran, null);
+			}
+		}
+	}
+	
+	
+	public Map<Transition, Integer> solveProblematicTriggers() {
+		
+		HashMap<Transition, Integer> ret = new HashMap<Transition, Integer>();
+		Set<Transition> unique = gatherUniqueEdgeTransitions();
 		
 		for (Integer sig: stg.getSignals()) {
 			// find an input signal
@@ -409,15 +606,62 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 			// compare postsets
 			boolean ups = comparePostsets(upEdges);
 			boolean downs = comparePostsets(downEdges);
-			if (!ups||!downs) {
-				String sname = stg.getSignalName(sig);
-				System.out.println("Signal "+sname+" is problematic");
-				
-				// report possible solution
-				if (!ups) reportSolution(upEdges);
-				if (!ups) reportSolution(downEdges);
+			
+			String sname = stg.getSignalName(sig);
+			// report possible solution
+			if (!ups) findSolution(upEdges, unique, ret);
+			if (!downs) findSolution(downEdges, unique, ret);
+		}
+		
+		return ret;
+	}
+
+	public void reportProblematicTriggers() throws Exception {
+		
+		Map<Transition, Integer> solution = solveProblematicTriggers();
+		
+		for (Entry<Transition, Integer> en: solution.entrySet()) {
+			Transition tran = en.getKey();
+			Integer sig = en.getValue();
+			
+			if (sig!=null) {
+				System.out.println("Solution for "+tran.getString(Transition.UNIQUE)+": "+stg.getSignalName(sig));
+			} else {
+				System.out.println("Solution for "+tran.getString(Transition.UNIQUE)+": not found");
 			}
 		}
+		
+//		for (Integer sig: stg.getSignals()) {
+//			// find an input signal
+//			if (stg.getSignature(sig)==Signature.DUMMY) continue;
+//			
+//			// collect sets of transitions for two edges
+//			HashSet<Transition> upEdges = new HashSet<Transition>();
+//			HashSet<Transition> downEdges = new HashSet<Transition>();
+//			// collect all edges
+//			for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
+//				if (!t.getLabel().getSignal().equals(sig)) continue;
+//				if (t.getLabel().getDirection() == EdgeDirection.UP) upEdges.add(t);
+//				if (t.getLabel().getDirection() == EdgeDirection.DOWN) downEdges.add(t);
+//			}
+//			
+//			// compare postsets
+//			boolean ups = comparePostsets(upEdges);
+//			boolean downs = comparePostsets(downEdges);
+//			String sname = stg.getSignalName(sig);
+//			if (!ups)
+//				System.out.println("Edge "+sname+"+ is problematic");
+//			
+//			if (!downs)
+//				System.out.println("Edge "+sname+"- is problematic");
+//			
+//			if (!ups||!downs) {
+//				
+//				// report possible solution
+//				if (!ups) reportSolution(upEdges);
+//				if (!downs) reportSolution(downEdges);
+//			}
+//		}
 	}
 	
 	/**
@@ -449,9 +693,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 					propagateSignalInfoUp(n, signal, value, visited, false);
 				
 			}
-
-			
-			
 		} else if (fromNode instanceof Place) {
 			
 			Place fromPlace = (Place)fromNode;
@@ -507,8 +748,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 			
 		}
 	}
-	
-	
 	
 	void propagateSignalInfoDown(Node fromNode, int signal, SignalValue value, HashSet<Place> visited, boolean isFirst) throws Exception {
 		
@@ -579,7 +818,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 					if (visited.contains(fromPlace)) return;
 				
 				visited.add(fromPlace);
-
 			}
 			
 			placeVal.put(signal, value);
@@ -587,7 +825,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 			for (Node n: fromPlace.getChildren()) {
 				propagateSignalInfoDown(n, signal, value, visited, false);
 			}
-			
 		}
 	}
 	
@@ -838,9 +1075,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 		return false;
 	}
 	
-	
-	
-	
 	/**
 	 * Returns true, if signals are locked, 
 	 * returns false if not locked or not known 
@@ -943,7 +1177,7 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 //	boolean isDivisor(Transition transition) {
 //		
 //	}
-	                                            
+	
 	public void outputLocked() {
 		for( Integer sig1 : stg.getSignals()) {
 			for (Integer sig2: stg.getSignals()) {
@@ -1027,7 +1261,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 			signals.add(t.getLabel().getSignal());
 		}
 		
-		
 		for (Transition t: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
 			int signal = t.getLabel().getSignal();
 			
@@ -1041,8 +1274,6 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 		
 		return ret;
 	}
-	
-	
 	
 	
 	public void gatherPartition(HashSet<Transition> triggers, HashSet<Transition> triggered) {
@@ -1067,6 +1298,10 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 //		LinkedList<HashSet<Transition>> clusters = new LinkedList<HashSet<Transition>>();
 		
 		Partition newPartition = new Partition();
+		
+		
+		Map<Transition, Integer> additionalSolved = solveProblematicTriggers();
+		
 		
 		// go through each output transition, add its cluster
 		for (Transition transition: stg.getTransitions(ConditionFactory.ALL_TRANSITIONS)) {
@@ -1102,10 +1337,24 @@ public class PartitionerCommonCauseSubnet implements IPartitioningStrategy {
 				for (Integer signal: signals) {
 					newPartition.addSignal(stg.getSignalName(signal));
 				}
+				
+				// add additional signals for solving potential conflicts in syntactical triggers
+				for (Transition tr: triggers) {
+					if (triggered.contains(tr)&&stg.getSignature(tr.getLabel().getSignal())!=Signature.INPUT) continue;
+					
+					// also add all additional input signals
+					for (Entry<Transition, Integer> en: additionalSolved.entrySet()) {
+						Transition tran = en.getKey();
+						Integer asig = en.getValue();
+						
+						if (tran.getLabel().getSignal().equals(tr.getLabel().getSignal())&&asig!=null) {
+							newPartition.addInput(stg.getSignalName(asig));
+						}
+					}
+				}
 			}
-			
 		}
-		
+
 		return newPartition;
 		
 	}
