@@ -1032,14 +1032,20 @@ public class DesiJ {
 
 
 
-				String componentName = fileName+ "__final_" +signalNames +".g";
+				String componentName = signalNames.toString();
+				componentName=componentName.substring(0,Math.min(componentName.length(), 50));
+				
+				componentName= fileName+ "__final_" +componentName+".g";
+				
 				if (CLW.instance.WRITE_RG.isEnabled()) {
 					STG sgc  = STGUtil.generateReachabilityGraph(component);
 					DesiJ.logFile.info(" - Final component is the reachability graph: " + componentName);
 					FileSupport.saveToDisk(STGFile.convertToG(sgc), fileName+ "__final_rg_" +signalNames +".g");
 				}
-				else
+				else {
+					
 					FileSupport.saveToDisk(STGFile.convertToG(component), componentName);
+				}
 				
 
 				if (CLW.instance.SYNTHESIS.isEnabled()) {
