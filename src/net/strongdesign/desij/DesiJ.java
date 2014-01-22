@@ -317,17 +317,11 @@ public class DesiJ {
 		
 		for (Entry<String,STG> e: bmap.entrySet()) {
 			String fname;
+			fname = e.getKey();
 			
-			if (CLW.instance.OUTFILE.equals("")) {
-				fname = e.getKey()+".g";
-			} else {
-				
-				fname=CLW.instance.OUTFILE.getValue();
-				
-				if (bmap.size()>1) {
-					fname = e.getKey()+fname;
-				}
-			}
+			if (CLW.instance.OUTFILE!=null) fname=CLW.instance.OUTFILE.getValue();
+			if (bmap.size()>1) fname+=e.getKey();
+			fname+=".g";
 			
 			FileSupport.saveToDisk(STGFile.convertToG(e.getValue()),fname);
 		}
