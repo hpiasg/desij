@@ -34,6 +34,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -1216,11 +1217,27 @@ public class STGEditorFrame extends JFrame implements ActionListener, ItemListen
 
 			// set internals back, but only those which are produced in a component and not used as input from
 			// another component
+			Map<String, Integer> signalOccurrences = new HashMap<String, Integer>();
 			for (STG component : components) {
-				for (Integer signal : component.getSignals())
-					if (component.getSignature(signal) == Signature.OUTPUT
-							&& internals.contains(signal))
+				for (Integer signal : component.getSignals()) {
+					String sname = component.getSignalName(signal);
+					Integer num = signalOccurrences.get(sname);
+					if (num==null) num=0;
+					signalOccurrences.put(sname, num+1);
+				}
+			}
+			
+			for (STG component : components) {
+				for (Integer signal : component.getSignals()) {
+					
+					String sname = component.getSignalName(signal);
+					Integer num = signalOccurrences.get(sname);
+					
+					if (num<2&&
+						component.getSignature(signal) == Signature.OUTPUT
+						&& internals.contains(signal))
 						component.setSignature(signal, Signature.INTERNAL);
+				}
 			}
 			
 			

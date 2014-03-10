@@ -38,6 +38,7 @@ import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -972,11 +973,27 @@ public class DesiJ {
 
 			// set internals back, but only those which are produced in a component and not used as input from
 			// another component
+			Map<String, Integer> signalOccurrences = new HashMap<String, Integer>();
 			for (STG component : components) {
-				for (Integer signal : component.getSignals())
-					if (component.getSignature(signal) == Signature.OUTPUT
+				for (Integer signal : component.getSignals()) {
+					String sname = component.getSignalName(signal);
+					Integer num = signalOccurrences.get(sname);
+					if (num==null) num=0;
+					signalOccurrences.put(sname, num+1);
+				}
+					
+			}
+			
+			for (STG component : components) {
+				for (Integer signal : component.getSignals()) {
+					
+					String sname = component.getSignalName(signal);
+					Integer num = signalOccurrences.get(sname);
+					
+					if (num<2&&component.getSignature(signal) == Signature.OUTPUT
 							&& internals.contains(signal))
 						component.setSignature(signal, Signature.INTERNAL);
+				}
 			}
 			
 			int newInternals = 0;
