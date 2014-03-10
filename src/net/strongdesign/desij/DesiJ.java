@@ -321,7 +321,9 @@ public class DesiJ {
 			
 			if (CLW.instance.OUTFILE!=null) fname=CLW.instance.OUTFILE.getValue();
 			if (bmap.size()>1) fname+=e.getKey();
-			fname+=".g";
+			
+			if (!fname.endsWith(".g"))
+				fname+=".g";
 			
 			FileSupport.saveToDisk(STGFile.convertToG(e.getValue()),fname);
 		}
@@ -425,7 +427,11 @@ public class DesiJ {
 			if (fileName.endsWith("breeze")) {
 				
 				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
-					String fname = e.getKey()+".g";
+					
+					String fname = e.getKey();
+					if (!fname.endsWith(".g"))
+						fname+=".g";
+					
 					stg = e.getValue();
 					killSTGDummies(stg, fname, false);
 				}
@@ -451,7 +457,11 @@ public class DesiJ {
 			if (fileName.endsWith("breeze")) {
 				
 				for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
-					String fname = e.getKey()+".g";
+					
+					String fname = e.getKey();
+					if (!fname.endsWith(".g")) 
+						fname += ".g";
+					
 					stg = e.getValue();
 					killSTGDummies(stg, fname, true);
 				}
