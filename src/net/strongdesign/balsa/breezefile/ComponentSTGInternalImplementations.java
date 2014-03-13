@@ -20,6 +20,7 @@
 package net.strongdesign.balsa.breezefile;
 
 import java.io.StringReader;
+import java.util.Collection;
 import java.util.LinkedList;
 
 import net.strongdesign.stg.EdgeDirection;
@@ -27,8 +28,11 @@ import net.strongdesign.stg.Place;
 import net.strongdesign.stg.STG;
 import net.strongdesign.stg.STGCreator;
 import net.strongdesign.stg.STGException;
+import net.strongdesign.stg.SignalEdge;
+import net.strongdesign.stg.Signature;
 import net.strongdesign.stg.Transition;
 import net.strongdesign.stg.parser.GParser;
+import net.strongdesign.stg.traversal.ConditionFactory;
 
 /**
  * This class provides internal implementation for some components 
@@ -111,6 +115,77 @@ public class ComponentSTGInternalImplementations {
 		}
 		
 		stg.removePlace(place);
+		
+		return stg;
+	}
+	
+	
+	static public STG brzSequence(int scale) {
+		String expression = "scaled B\nactive B\n#(A:#;(B))";
+		
+		// initial model to work with
+		STG stg = ComponentSTGFactory.getSTGFromExpression(expression, scale);
+		
+		Collection<Transition> trans = new LinkedList<Transition>();
+		trans.addAll(stg.getTransitions(ConditionFactory.ALL_TRANSITIONS));
+		
+		for (Transition t: trans) {
+			String str = stg.getSignalName(t.getLabel().getSignal());
+			EdgeDirection edge = t.getLabel().getDirection();
+			
+			if (edge==EdgeDirection.UP&&str.startsWith("aB")) {
+				// insert oC
+				int num=0;
+				if (!str.equals("aB")) 
+					num = Integer.valueOf(str.substring(2));
+				
+				String snum = "";
+				if (num>0) snum+=num;
+				
+				if (num==scale-1) continue;
+				
+				Place p = (Place)t.getChildren().iterator().next();
+				t.setChildValue(p, 0);
+				
+				Place np = stg.addPlace("p", 0);
+				t.setChildValue(np, 1);
+				
+				int newSig = stg.getSignalNumber("oC"+snum);
+				stg.setSignature(newSig, Signature.OUTPUT);
+				SignalEdge sed = new SignalEdge(newSig, EdgeDirection.UP);
+				Transition newTran = stg.addTransition(sed);
+				np.setChildValue(newTran, 1);
+				newTran.setChildValue(p, 1);
+				
+			}
+			
+			if (edge==EdgeDirection.DOWN&&str.startsWith("rA")) {
+				
+				Place p = (Place)t.getChildren().iterator().next();
+				t.setChildValue(p, 0);
+				Transition lastT = t;
+				for (int num=0;num<scale-1;num++) {
+					
+					String snum = "";
+					if (num>0) snum+=num;
+					
+					
+					Place np = stg.addPlace("p", 0);
+					lastT.setChildValue(np, 1);
+					
+					int newSig = stg.getSignalNumber("oC"+snum);
+					SignalEdge sed = new SignalEdge(newSig, EdgeDirection.DOWN);
+					Transition newTran = stg.addTransition(sed);
+					
+					np.setChildValue(newTran, 1);
+					
+					lastT = newTran;
+				}
+				
+				lastT.setChildValue(p, 1);
+			}
+			
+		}
 		
 		return stg;
 	}
@@ -254,6 +329,7 @@ public class ComponentSTGInternalImplementations {
 		}
 		
 		if (expression.startsWith("$BrzWhile")) return brzWhile();
+		if (expression.startsWith("$BrzSequence")) return brzSequence(scale);
 		
 		if (expression.startsWith("$BrzActiveEagerFalseVariable")) return brzActiveEagerFalseVariable(scale);
 		if (expression.startsWith("$BrzFalseVariable")) return brzFalseVariable(scale);
