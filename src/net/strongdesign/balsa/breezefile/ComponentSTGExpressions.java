@@ -56,9 +56,9 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzConcur", "scaled B\nactive B\n#(A:#||(B))");
 		
-		//components.put("$BrzSequence",   "scaled B\nactive B\n#(A:#;(B))");
+		components.put("$BrzSequence",   "scaled B\nactive B\n#(A:#;(B))");
 //		components.put("$BrzSequence",   "scaled B,C\nactive B,C\n#(rA+.#.(rB+.aB+.rC+.rB-.aB-).aA+.rA-.#.(rC-).aA-)");
-		components.put("$BrzSequence",   "scaled B,C\nactive B,C\n#(rA+.#.(rB+.aB+.oC+.rB-.aB-).aA+.rA-.#.(oC-).aA-)");
+//		components.put("$BrzSequence",   "scaled B,C\nactive B,C\n#(rA+.#.(rB+.aB+.oC+.rB-.aB-).aA+.rA-.#.(oC-).aA-)");
 		
 		
 		
