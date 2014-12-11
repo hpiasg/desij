@@ -3,3 +3,5 @@ bin
 *.*~
 .recommenders
 dependency-reduced-pom.xml
+target
+.settings
