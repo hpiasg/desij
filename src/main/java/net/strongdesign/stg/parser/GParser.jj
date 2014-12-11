@@ -1,0 +1,447 @@
+/**
+ * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ *
+ * This file is part of DesiJ.
+ * 
+ * DesiJ is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DesiJ is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* GParser.jj Building an STG from .g-file */
+options {
+  LOOKAHEAD = 2;
+  CHOICE_AMBIGUITY_CHECK = 2;
+  OTHER_AMBIGUITY_CHECK = 1;
+  STATIC = false;
+  DEBUG_PARSER = false;
+  DEBUG_LOOKAHEAD = false;
+  DEBUG_TOKEN_MANAGER = false;
+  ERROR_REPORTING = false;
+  JAVA_UNICODE_ESCAPE = false;
+  UNICODE_INPUT = false;
+  IGNORE_CASE = false;
+  USER_TOKEN_MANAGER = false;
+  USER_CHAR_STREAM = false;
+  BUILD_PARSER = true;
+  BUILD_TOKEN_MANAGER = true;
+  SANITY_CHECK = true;
+  FORCE_LA_CHECK = true;
+  JDK_VERSION = "1.5";
+}
+
+PARSER_BEGIN(GParser)
+
+
+package net.strongdesign.stg.parser;
+
+
+import net.strongdesign.stg.*;
+import net.strongdesign.desij.*;
+import net.strongdesign.stg.traversal.*;
+import java.util.*;
+import java.awt.Point;
+
+
+public class GParser {
+	private STG result;
+	private Map<String, Node> nodes = new HashMap<String, Node>();
+  	private Node source;
+  	private Map<String, Token> signals = new HashMap<String,Token>();
+  	private Map<String, Integer> signalNames = new HashMap<String,Integer>();
+  	private int currentSignalNumber = 0;
+  	Map<Node,Integer> ids;
+  
+  	private void throwParseException(String mes) throws ParseException {
+		throw new ParseException(mes+" in line " + token.beginLine + ", column " + token.beginColumn);
+	}
+	
+	private void throwParseException(String mes, Token t) throws ParseException {
+		throw new ParseException(mes+" in line " + t.beginLine + ", column " + t.beginColumn);
+	}
+	
+}
+
+
+
+PARSER_END(GParser)
+
+
+SPECIAL_TOKEN : { <WHITESPACE  : " " | "\t" | "\f" > }
+SPECIAL_TOKEN : { <COMMENT     : "#" (~["\n", "\r"])* > }
+SPECIAL_TOKEN : { <INITSTATE   : ".initial state" (~["\n", "\r"])* > }
+SPECIAL_TOKEN : { <CAPACITY    : ".capacity" (~["\n", "\r"])* > }
+SPECIAL_TOKEN : { <SLOWENV     : ".slowenv" (~["\n", "\r"])* > }
+SPECIAL_TOKEN : { <MODEL       : ".model" (~["\n", "\r"])* > }
+SPECIAL_TOKEN : { <NAME        : ".name" (~["\n", "\r"])* > }
+
+
+
+TOKEN : { 
+  < ID           : <GENID> > |
+  < TRANSITION   : <GENID> <DIRECTION> ("/"<NUM>)? > |
+  < DUMMYTRAN    : <GENID> "/" <NUM> > |
+  < NUM          : (<FIG>)+ > |
+  < IN           : ".inputs" > |
+  < OUT          : ".outputs" > |
+  < INT          : ".internal" > |
+  < DUMMY        : ".dummy" > |
+  < GRAPH        : ".graph" > |
+  < END          : ".end" > |
+  < MARKING      : ".marking" > | 
+  < COORDINATES  : ".coordinates" > | 
+  < END_COORD    : ".coordinates_end" > | 
+  < LEFTBRACKET  : "<" > |
+  < RIGHTBRACKET : ">" > |
+  < COMMA        : "," > |  
+  < ARCVALUE     : "(" <NUM> ")" > |
+  < #GENID       : <CHAR> (<CHAR>|<FIG>|("-")*(<CHAR>|<FIG>))* > |
+  < #DIRECTION   : ["-","+"] > |
+  < #CHAR        : ["a"-"z","A"-"Z","_"]  > |
+  < #FIG         : ["0"-"9"] >   
+}
+
+
+STG STG() throws STGException :
+{
+	result = new STG();
+	ids = new HashMap<Node,Integer>();
+}
+{
+  SIGNATURE()
+  <GRAPH>
+  LINES()
+  MARKING()
+  ("\n"|"\r")*
+  <END>
+  ("\n"|"\r")*
+    
+  (
+    <COORDINATES>
+    COORDINATES()
+    <END_COORD>
+  )?
+  ("\n"|"\r")*
+  
+  { 
+  	if (signals.size()!=0) {
+  		System.err.println("Signal(s) '"+ signals +"' were defined but never used");
+  	}
+  	
+  		if (CLW.instance.KEEP_IDS.isEnabled())
+  			result.setIds(ids,true);
+  	return result;
+  	
+  		}
+}
+
+void SIGNATURE() :
+{
+  Signature sign = null;
+}
+{
+  ( ( 
+      <IN>    {sign=Signature.INPUT;}    | 
+      <OUT>   {sign=Signature.OUTPUT;}    | 
+      <INT>   {sign=Signature.INTERNAL;} | 
+      <DUMMY> {sign=Signature.DUMMY;} 
+    ) 
+    SIGNALS(sign)  ("\n"|"\r")  |   ("\n"|"\r") )*
+}
+
+void COORDINATES() :
+{
+	boolean implicit=false;
+	Token token1=null, token2=null;
+	Token x=null, y=null;
+	Node n=null;
+}
+{
+	(
+	((
+		<LEFTBRACKET> 
+			(token1=<TRANSITION>|token1=<DUMMYTRAN>|token1=<ID>) <COMMA> 
+			(token2=<TRANSITION>|token2=<DUMMYTRAN>|token2=<ID>) 
+		<RIGHTBRACKET> {implicit=true;}
+		|
+		((token1=<ID> | token1=<TRANSITION> | token1=<DUMMYTRAN>) {implicit=false;})
+		
+	)
+	x=<NUM> y=<NUM>
+	
+	{
+		if (implicit) {
+			Node s=nodes.get(token1.image);
+      		Node t=nodes.get(token2.image);
+      		
+      		if (s==null)
+      			throwParseException("Unknown source of implicit place transition '"+token1.image+"'", token1);
+      		if (t==null)
+      			throwParseException("Unknown target of implicit place transition '"+token2.image+"'", token2);
+      		
+	   		Collection<Node> ip = Operations.getElements(s.getChildren(), ConditionFactory.getMGPlaceBetweenCondition(s,t));
+	   		
+	   		if (ip.size()<1)
+				throwParseException("Unknown implicit place <"+token1.image+","+token2.image+">", token1);
+				
+	   		if (ip.size()>1)
+				throwParseException("Two or more implicit place candidates: <"+token1.image+","+token2.image+">", token1);
+			
+			n=ip.iterator().next();
+		}
+		else {
+			n=nodes.get(token1.image);
+		}
+		
+		try {
+			result.setCoordinates(n, new Point(Integer.parseInt(x.image), Integer.parseInt(y.image) ));
+		}
+		catch (STGException e) {
+			throwParseException("Error while parsing coordinates.");
+		}
+	}
+	)?
+	  ("\n"|"\r")
+	)*
+}
+
+void SIGNALS(Signature sign) :
+{
+  Token signal;
+}
+{
+  ( 
+    signal=<ID> 
+    {
+    	if (signals.put(signal.image, signal) != null)
+    		throwParseException("Signal already known '"+signal.image+"'");
+    		
+    	signalNames.put(signal.image, currentSignalNumber);
+    	result.setSignature(currentSignalNumber, sign);
+    	try {
+	    	result.setSignalName(currentSignalNumber, signal.image);
+    	}
+    	catch (STGException e) {
+    		throwParseException(e.getMessage());
+    	}
+    	++currentSignalNumber;
+    }
+  )*
+}
+
+
+
+void LINES() :
+{}
+{
+  ( ( NODE(true) (NODE(false))+ ("\n"|"\r")  ) | ("\n"|"\r") )*
+}
+
+
+void NODE(boolean first) : 
+{  
+  Token token, value=null;
+  boolean weighted=false;
+  Node node;
+	}
+{ 
+  ( // *** match kind of token/node
+  token=<TRANSITION> {weighted=false;} (value=<ARCVALUE> {weighted=true;})?
+  {
+  	//is the image already known?
+  	String str=token.image;
+  	node=nodes.get(str);
+  	
+  	//if no, generate new node
+  	if (node==null) {
+  		String tr = str.replaceAll("/\\d*","");
+  		Integer number;
+  		if (str.contains("/"))
+  			number = Integer.parseInt(str.replaceAll(".*/",""));
+  		else
+  			number = 0;
+  		String signalName = str.substring(0,tr.length()-1);
+  		Integer signal = signalNames.get(signalName);
+  		if (result.getSignature(signal)==null)
+  			throwParseException("Unknown signal '"+signal+"'");
+  		EdgeDirection edge=null;
+  		if (tr.endsWith("+"))
+  			edge = EdgeDirection.UP;
+  		else if (tr.endsWith("-"))
+  			edge = EdgeDirection.DOWN;
+  			
+  		//add it to the net
+  		node = result.addTransition( new SignalEdge(signal, edge));
+  		ids.put(node,number);
+  		  
+  		//remove signal from the list of signals which not yet occurred
+  		signals.remove(signalName);
+  		
+  		//and to the list of known nodes
+  		nodes.put(str, node);  
+  	}
+  }     
+|
+  token=<DUMMYTRAN> {weighted=false;} (value=<ARCVALUE> {weighted=true;})?
+  {
+  	//is the image already known?
+  	String str=token.image;
+  	node=nodes.get(str);
+
+  	//if no, generate new node
+  	if (node==null) {
+  		String signalName = str.replaceAll("/\\d*","");
+  		Integer number;
+  		if (str.contains("/"))
+  			number = Integer.parseInt(str.replaceAll(".*/",""));
+  		else
+  			number = 0;
+  		Integer signal = signalNames.get(signalName);
+  		if (result.getSignature(signal)==null)
+  			throwParseException("Unknown signal '"+signal+"'");
+
+  		//add it to the net
+  		node = result.addTransition(new SignalEdge(signal, EdgeDirection.UNKNOWN));
+  		ids.put(node,number);
+  		
+  		//remove signal from the list of signals which not yet occurred
+  		signals.remove(signalName);
+  		  
+  		//and to the list of known nodes
+  		nodes.put(str, node);  
+  	}
+  }  
+|
+  token=<ID> {weighted=false;} (value=<ARCVALUE> {weighted=true;})?
+  {
+  	//is the image already known?
+  	String str=token.image;
+  	node=nodes.get(str);
+  	
+  	//if no, generate new node
+  	if (node==null) {
+  		Signature sign = result.getSignature(signalNames.get(str));
+  		if (sign==null) {
+  			//node is a place
+  			node = result.addPlace(str, 0);  			
+  		}
+  		else if (sign==Signature.DUMMY) {
+  			//node is a dummy transition
+			Integer signal = signalNames.get(str);
+ 			node = result.addTransition(new SignalEdge(signal, EdgeDirection.UNKNOWN));
+ 			
+ 			//remove signal from the list of signals which not yet occurred
+	  		signals.remove(str);
+  		}
+  		else
+  			throwParseException("Signal transition without edge '"+str+"'");
+
+  		//add node to the list of known nodes
+  		nodes.put(str, node);  
+  	}
+  }
+  ) // *** (end)
+  {
+  	if (first) {
+  		source = node;
+  	}
+  	else {
+  		boolean isSourcePlace = source instanceof Place;
+  		boolean isTargetPlace = node instanceof Place;
+
+  		if (isSourcePlace && isTargetPlace)
+  		 	//cannot connect two places
+  		  	throwParseException("Cannot connect two places. '"+source+","+node+"'");
+  		else if (!isSourcePlace && !isTargetPlace) {
+  			if (weighted)
+  				throwParseException("Cannot weight arcs to implicit places");
+  			//connect two transitions by intermediate place
+  			Place place = result.addPlace("p", 0);
+  			source.setChildValue(place, 1);
+  			place.setChildValue(node, 1);
+  		}
+  		else {
+  			//place and transition can be connected directly
+  			if (weighted)
+  				source.setChildValue(node, Integer.parseInt(value.image.replaceAll("[(|)]","")));
+  			else
+	  			source.setChildValue(node, 1);
+  		}
+  	}
+  }
+  
+}
+
+void MARKING() :
+{
+	Token source=null, target=null,value=null;
+	boolean compound=false;
+}
+{
+  <MARKING>
+  "{"   
+    ( 
+      (
+        source=<ID> {compound=false;} |
+        ( <LEFTBRACKET>  (source=<TRANSITION>|source=<DUMMYTRAN>|source=<ID>) <COMMA> // HACK: source = <ID>
+                       (target=<TRANSITION>|target=<DUMMYTRAN>|target=<ID>) <RIGHTBRACKET> // HACK: target = <ID>
+                       {compound=true;} 
+        )
+      ) 
+      ("=" value=<NUM>)?
+      {
+      	int v=1;
+      	if (value!=null)
+	      	v = Integer.parseInt(value.image);
+      	
+      	if (v<0)
+	      	throwParseException("Invalid marking '"+v+"'");
+      	
+      	if (!compound) {
+      		Place pp=(Place)nodes.get(source.image);
+      		if (pp==null)
+      			throwParseException("Unknown place '"+source.image+"'", source);
+      		
+      		pp.setMarking(v);
+      	}
+      	else {
+      		Node s=nodes.get(source.image);
+      		Node t=nodes.get(target.image); 
+      		if (s==null)
+      			throwParseException("Unknown transition '"+source.image+"'", source);
+      		if (t==null)
+      			throwParseException("Unknown transition '"+target.image+"'", target);
+      		
+			Collection<Node> ip=Operations.getElements(s.getChildren(), ConditionFactory.getMGPlaceBetweenCondition(s,t));
+			
+			
+	   		if (ip.size()<1)
+				throwParseException("Unknown implicit place <"+source.image+","+target.image+">", source);
+				
+	   		if (ip.size()>1)
+				throwParseException("Two or more implicit place candidates: <"+source.image+","+target.image+">", source);
+			
+//			if (ip.size()!=1)
+//				throwParseException("Unknown or double marked graph place", source);
+			
+   			((Place)(ip.iterator().next())).setMarking(v);
+      	}
+      	source=target=value=null;
+      }
+    )* 
+  "}"
+}
+
+
+
+
+
