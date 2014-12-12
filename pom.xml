@@ -23,6 +23,12 @@
 					<exclude>**/*</exclude>
 				</excludes>
 			</resource>
+			<resource>
+				<directory>src/main/resources/jar</directory>
+				<includes>
+					<include>**/*</include>
+				</includes>
+			</resource>
 		</resources>
 		<pluginManagement>
 			<plugins>
@@ -126,11 +132,18 @@
 						<program>
 							<mainClass>net.strongdesign.desij.DesiJ</mainClass>
 							<id>DesiJ</id>
+							<jvmSettings>
+								<maxMemorySize>1g</maxMemorySize>
+								<extraArguments>
+									<extraArgument>-Djava.library.path=@BASEDIR@/lib/lpsolve</extraArgument>
+								</extraArguments>
+							</jvmSettings>
 						</program>
 					</programs>
 					<repositoryLayout>flat</repositoryLayout>
 					<repositoryName>lib</repositoryName>
 					<assembleDirectory>${project.build.directory}/release</assembleDirectory>
+					<unixScriptTemplate>src/main/resources/templates/unixtemplate</unixScriptTemplate>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -149,10 +162,12 @@
 								<resource>
 									<directory>src/main/resources</directory>
 									<includes>
-										<include>**/*</include>
+										<include>tools/**/*</include>
+										<include>lib/lpsolve/*</include>
 									</includes>
 									<excludes>
-										<exclude>lib/**/*</exclude>
+										<exclude>lib/lpsolve/*.jar</exclude>
+										<exclude>lib/lpsolve/*.xml</exclude>
 									</excludes>
 								</resource>
 							</resources>

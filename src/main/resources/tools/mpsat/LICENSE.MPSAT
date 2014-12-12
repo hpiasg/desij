@@ -1,0 +1,40 @@
+MPSAT model checking/synthesis system
+Copyright (C) 2000-2012 by Victor Khomenko,
+Newcastle University, UK
+
+
+TERMS AND CONDITIONS 
+
+This License Agreement applies only to the MPSAT model 
+checking/synthesis system - the Software. The Software is owned and
+licensed by the University of Newcastle upon Tyne, UK, Licensors.
+Licensors grant to you, Licensee, a non-exclusive,
+non-transferable license to use the Software without fee. Licensee may
+distribute the Software to third parties provided that
+all the files of the original distribution are included without changes.
+
+The Software must be used only for research purposes. In particular, 
+it must not be included as a part of any commercial software 
+package or product without written permission of the Licensors. 
+
+LICENSORS MAKE NO REPRESENTATIONS OR WARRANTIES ABOUT THE
+SUITABILITY OF THE SOFTWARE, EITHER EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR
+NON-INFRINGEMENT. LICENSORS SHALL NOT BE LIABLE FOR ANY DAMAGES
+SUFFERED EITHER BY LICENSEE OR BY THIRD PARTIES AS A RESULT OF
+USE OR INABILITY TO USE, MODIFYING OR DISTRIBUTING THE 
+SOFTWARE, EVEN IF THE LICENSORS HAVE BEEN ADVISED OF THE POSSIBILITY 
+OF SUCH DAMAGES. THE SOFTWARE IS SUPPLIED AS IS, AND 
+LICENSORS SHALL NOT PROVIDE MAINTENANCE OR USER-ASSISTANCE.
+
+By downloading, using or copying the Software, Licensee
+agrees to abide by the intellectual property laws and the terms
+of this License. Ownership of the software shall remain solely
+in Licensors.
+
+Licensors shall have the right to terminate this license
+immediately by written notice upon Licensee's breach of, or
+non-compliance with, any of its terms. Licensee shall be liable
+for any infringement or damages resulting from Licensee's
+failure to abide by the terms of this License.
