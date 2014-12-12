@@ -16,6 +16,14 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>**/*</exclude>
+				</excludes>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -52,6 +60,25 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.16</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf</groupId>
+			<artifactId>javailp</artifactId>
+			<version>1.1</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/src/main/resources/lib/javailp-1.1.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>lpsolve</groupId>
+			<artifactId>lpsolve</artifactId>
+			<version>5.5</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/src/main/resources/lib/lpsolve/lpsolve55j.jar</systemPath>
 		</dependency>
 	</dependencies>
 </project>

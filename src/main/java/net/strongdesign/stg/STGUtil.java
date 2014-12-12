@@ -40,8 +40,6 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 
-import org.hamcrest.core.IsSame;
-
 import lpsolve.LpSolveException;
 
 import net.strongdesign.balsa.hcexpressionparser.terms.STGCompositionOperations;
