@@ -5,7 +5,7 @@
 	<groupId>net.strongdesign</groupId>
 	<artifactId>DesiJ</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<inceptionYear>2013</inceptionYear>
+	<inceptionYear>2004</inceptionYear>
 	<licenses>
 		<license>
 			<name>GNU General Public License (GPL)</name>
@@ -24,6 +24,34 @@
 				</excludes>
 			</resource>
 		</resources>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.codehaus.mojo</groupId>
+										<artifactId>license-maven-plugin</artifactId>
+										<versionRange>[1.7,)</versionRange>
+										<goals>
+											<goal>download-licenses</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -32,6 +60,105 @@
 					<source>1.6</source>
 					<target>1.6</target>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>1.7</version>
+				<executions>
+					<execution>
+						<id>download-licenses</id>
+						<goals>
+							<goal>download-licenses</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<licensesOutputDirectory>${project.build.directory}/release/lib</licensesOutputDirectory>
+							<licensesOutputFile>${project.build.directory}/release/lib/thirdpartylicenses.xml</licensesOutputFile>
+							<excludedScopes>test</excludedScopes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<manifestEntries>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+							<artifactSet>
+								<includes>
+									<include />
+								</includes>
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>1.8.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<platforms>
+						<platform>unix</platform>
+					</platforms>
+					<programs>
+						<program>
+							<mainClass>net.strongdesign.desij.DesiJ</mainClass>
+							<id>DesiJ</id>
+						</program>
+					</programs>
+					<repositoryLayout>flat</repositoryLayout>
+					<repositoryName>lib</repositoryName>
+					<assembleDirectory>${project.build.directory}/release</assembleDirectory>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.7</version>
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/release</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/resources</directory>
+									<includes>
+										<include>**/*</include>
+									</includes>
+									<excludes>
+										<exclude>lib/**/*</exclude>
+									</excludes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -70,15 +197,11 @@
 			<groupId>net.sf</groupId>
 			<artifactId>javailp</artifactId>
 			<version>1.1</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/src/main/resources/lib/javailp-1.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>lpsolve</groupId>
 			<artifactId>lpsolve</artifactId>
 			<version>5.5</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/src/main/resources/lib/lpsolve/lpsolve55j.jar</systemPath>
 		</dependency>
 	</dependencies>
 </project>
