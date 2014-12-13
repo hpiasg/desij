@@ -42,6 +42,19 @@
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.codehaus.mojo</groupId>
+										<artifactId>javacc-maven-plugin</artifactId>
+										<versionRange>[2.6,)</versionRange>
+										<goals>
+											<goal>javacc</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.codehaus.mojo</groupId>
 										<artifactId>license-maven-plugin</artifactId>
 										<versionRange>[1.7,)</versionRange>
 										<goals>
@@ -59,6 +72,43 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>javacc-maven-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>javacc</id>
+						<goals>
+							<goal>javacc</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${basedir}/src/main/java/net/strongdesign/balsa/breezeparser</sourceDirectory>
+							<outputDirectory>${basedir}/src/main/java</outputDirectory>
+						</configuration>
+					</execution>
+					<execution>
+						<id>javacc2</id>
+						<goals>
+							<goal>javacc</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${basedir}/src/main/java/net/strongdesign/balsa/hcexpressionparser</sourceDirectory>
+							<outputDirectory>${basedir}/src/main/java</outputDirectory>
+						</configuration>
+					</execution>
+					<execution>
+						<id>javacc3</id>
+						<goals>
+							<goal>javacc</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${basedir}/src/main/java/net/strongdesign/stg/parser</sourceDirectory>
+							<outputDirectory>${basedir}/src/main/java</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
@@ -133,11 +183,11 @@
 							<mainClass>net.strongdesign.desij.DesiJ</mainClass>
 							<id>DesiJ</id>
 							<jvmSettings>
-								<maxMemorySize>1g</maxMemorySize>
-								<extraArguments>
-									<extraArgument>-Djava.library.path=@BASEDIR@/lib/lpsolve</extraArgument>
-								</extraArguments>
-							</jvmSettings>
+						<maxMemorySize>1g</maxMemorySize>
+						<extraArguments>
+							<extraArgument>-Djava.library.path=@BASEDIR@/lib/lpsolve</extraArgument>
+						</extraArguments>
+					</jvmSettings>
 						</program>
 					</programs>
 					<repositoryLayout>flat</repositoryLayout>
