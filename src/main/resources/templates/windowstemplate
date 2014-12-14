@@ -44,7 +44,7 @@ set SAVE_DIR=
 goto repoSetup
 
 :WinNTGetScriptDir
-set BASEDIR=%~dp0\..
+set BASEDIR=%~dp0..
 
 :repoSetup
 set REPO=
@@ -63,7 +63,7 @@ if NOT "%CLASSPATH_PREFIX%" == "" set CLASSPATH=%CLASSPATH_PREFIX%;%CLASSPATH%
 
 
 @REM external tools
-set PATH=%PATH%;"%BASEDIR%"\tools\mpsat;"%BASEDIR%"\tools\pcomp;"%BASEDIR%"\tools\petrify;"%BASEDIR%"\tools\punf
+set PATH=%PATH%;%BASEDIR%\tools\mpsat;%BASEDIR%\tools\pcomp;%BASEDIR%\tools\petrify;%BASEDIR%\tools\punf
 
 
 @REM Reaching here means variables are defined and arguments have been captured

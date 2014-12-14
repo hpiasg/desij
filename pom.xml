@@ -310,7 +310,7 @@
 												<include>tools/petrify/petrify_license.txt</include>
 												<include>tools/petrify/petrify.exe</include>
 												<include>tools/petrify/petrify.dll</include>
-												<include>tools/petrify/petrify.def</include>
+												<include>tools/petrify/CYGWIN_LICENSE.txt</include>
 												<include>tools/petrify/cygwin1.dll</include>
 												<include>tools/punf/LICENSE.PUNF</include>
 												<include>tools/punf/punf.exe</include>

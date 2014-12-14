@@ -1,5 +1,5 @@
 /**
- * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ * Copyright 2004-2014 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs, Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -90,6 +90,14 @@ public final class STG implements Cloneable {
 	//private boolean withCoordinates;
 	public boolean isWithCoordinates() {
 		return !coordinates.isEmpty();
+	}
+	
+	/**
+	 * Removes all coordinate entries. Needed for usage with win petrify, which does not support coordinates 
+	 * @author Norman Kluge
+	 */
+	public void clearCoordinates() {
+		coordinates.clear();
 	}
 
 	// *******************************************************************
