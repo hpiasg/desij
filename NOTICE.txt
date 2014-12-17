@@ -2,11 +2,9 @@ DesiJ
 Copyright 2004-2014 Universitaet Augsburg, Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH
 
 This product includes software developed at Universitaet Augsburg.
-
 The Software developed and owned by the Universitaet Augsburg is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
 
 This product includes software developed at Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH.
-
 The Software developed and owned by the Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
 
 This software makes use of the following libraries:
@@ -46,6 +44,10 @@ SSHTools v2.9
 http://sshtools.sourceforge.net/
 Licensed under GNU General Public License (GPL), Version 2.0
 
+Cygwin
+https://cygwin.com/
+License: GNU General Public License (GPL), Version 3.0
+
 This software makes use of the following external software:
 
 MPSAT model checking/synthesis system
@@ -67,7 +69,3 @@ Petrify: a tool for synthesis of Petri Nets and asynchronous circuits
 http://www.lsi.upc.edu/~jordicf/petrify/
 Copyright (C) 1999 The Universitat Politecnica de Catalunya
 License: LICSENSE.PETRIFY.txt
-Optionally, Petrify makes use of the following library:
-Cygwin
-https://cygwin.com/
-License: GNU General Public License (GPL), Version 3.0
