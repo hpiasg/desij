@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.strongdesign</groupId>
 	<artifactId>DesiJ</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<inceptionYear>2004</inceptionYear>
 	<licenses>
 		<license>
@@ -27,6 +27,12 @@
 				<directory>src/main/resources/jar</directory>
 				<includes>
 					<include>**/*</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>.</directory>
+				<includes>
+					<include>LICENSE.txt</include>
 				</includes>
 			</resource>
 		</resources>
@@ -162,6 +168,32 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.7</version>
+				<executions>
+					<execution>
+						<id>copy-txt</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/release</outputDirectory>
+							<resources>
+								<resource>
+									<directory>.</directory>
+									<includes>
+										<include>LICENSE.txt</include>
+										<include>NOTICE.txt</include>
+										<include>README.txt</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	<profiles>
@@ -238,6 +270,7 @@
 											<directory>src/main/resources</directory>
 											<includes>
 												<include>lib/lpsolve/*.so</include>
+												<include>lib/lpsolve/LICENSE.LPSOLVE.txt</include>
 												<include>tools/mpsat/LICENSE.MPSAT</include>
 												<include>tools/mpsat/mpsat</include>
 												<include>tools/pcomp/LICENSE.PCOMP</include>
@@ -329,6 +362,7 @@
 											<directory>src/main/resources</directory>
 											<includes>
 												<include>lib/lpsolve/*.dll</include>
+												<include>lib/lpsolve/LICENSE.LPSOLVE.txt</include>
 												<include>tools/mpsat/LICENSE.MPSAT</include>
 												<include>tools/mpsat/mpsat.exe</include>
 												<include>tools/pcomp/LICENSE.PCOMP</include>
