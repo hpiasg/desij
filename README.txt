@@ -6,7 +6,7 @@ DesiJ requires a Java runtime environment (JRE) v1.5 (or later) in order to run.
 
 To list all commandline options that DesiJ offers, execute DesiJ with the "-h" option or without any options.
 
-For some features of DesiJ these optional software packages are needed:
+For some features of DesiJ these software packages may be required:
 Graphviz (http://www.graphviz.org/)
 Ghostview (http://pages.cs.wisc.edu/~ghost/)
 
