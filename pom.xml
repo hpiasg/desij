@@ -24,7 +24,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.strongdesign</groupId>
-	<artifactId>DesiJ</artifactId>
+	<artifactId>desij</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<inceptionYear>2004</inceptionYear>
 	<licenses>
@@ -39,6 +39,18 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 	<build>
 		<resources>
 			<resource>
+				<directory>.</directory>
+				<includes>
+					<include>LICENSE.txt</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/java</directory>
+				<excludes>
+					<exclude>**/*</exclude>
+				</excludes>
+			</resource>
+			<resource>
 				<directory>src/main/resources</directory>
 				<excludes>
 					<exclude>**/*</exclude>
@@ -51,10 +63,10 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 				</includes>
 			</resource>
 			<resource>
-				<directory>.</directory>
-				<includes>
-					<include>LICENSE.txt</include>
-				</includes>
+				<directory>src/assembly</directory>
+				<excludes>
+					<exclude>**/*</exclude>
+				</excludes>
 			</resource>
 		</resources>
 		<pluginManagement>
@@ -73,19 +85,6 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 										<versionRange>[2.6,)</versionRange>
 										<goals>
 											<goal>javacc</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.codehaus.mojo</groupId>
-										<artifactId>license-maven-plugin</artifactId>
-										<versionRange>[1.7,)</versionRange>
-										<goals>
-											<goal>download-licenses</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
@@ -144,77 +143,6 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 					<target>1.5</target>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>1.8</version>
-				<executions>
-					<execution>
-						<id>download-licenses</id>
-						<goals>
-							<goal>download-licenses</goal>
-						</goals>
-						<phase>package</phase>
-						<configuration>
-							<licensesOutputDirectory>${project.build.directory}/licenses</licensesOutputDirectory>
-							<licensesOutputFile>${project.build.directory}/licenses/thirdpartylicenses.xml</licensesOutputFile>
-							<excludedScopes>test</excludedScopes>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.3</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<transformers>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<manifestEntries>
-									</manifestEntries>
-								</transformer>
-							</transformers>
-							<artifactSet>
-								<includes>
-									<include />
-								</includes>
-							</artifactSet>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>2.7</version>
-				<executions>
-					<execution>
-						<id>copy-txt</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/release</outputDirectory>
-							<resources>
-								<resource>
-									<directory>.</directory>
-									<includes>
-										<include>LICENSE.txt</include>
-										<include>NOTICE.txt</include>
-										<include>README.txt</include>
-									</includes>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 	<profiles>
@@ -233,7 +161,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 						<version>1.8.1</version>
 						<executions>
 							<execution>
-								<phase>package</phase>
+								<phase>prepare-package</phase>
 								<goals>
 									<goal>assemble</goal>
 								</goals>
@@ -270,40 +198,25 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 							</programs>
 							<repositoryLayout>flat</repositoryLayout>
 							<repositoryName>lib</repositoryName>
-							<assembleDirectory>${project.build.directory}/release</assembleDirectory>
-							<unixScriptTemplate>src/main/resources/templates/unixtemplate</unixScriptTemplate>
+							<assembleDirectory>${project.build.directory}</assembleDirectory>
+							<unixScriptTemplate>src/assembly/unix_apptemplate</unixScriptTemplate>
 						</configuration>
 					</plugin>
 					<plugin>
-						<artifactId>maven-resources-plugin</artifactId>
-						<version>2.7</version>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<version>2.5.3</version>
+						<configuration>
+							<descriptors>
+								<descriptor>src/assembly/unix_assembly.xml</descriptor>
+							</descriptors>
+						</configuration>
 						<executions>
 							<execution>
-								<id>copy-resources</id>
-								<phase>validate</phase>
+								<id>make-assembly</id>
+								<phase>package</phase>
 								<goals>
-									<goal>copy-resources</goal>
+									<goal>single</goal>
 								</goals>
-								<configuration>
-									<outputDirectory>${project.build.directory}/release</outputDirectory>
-									<resources>
-										<resource>
-											<directory>src/main/resources</directory>
-											<includes>
-												<include>lib/lpsolve/*.so</include>
-												<include>lib/lpsolve/LICENSE.LPSOLVE.txt</include>
-												<include>tools/mpsat/LICENSE.MPSAT</include>
-												<include>tools/mpsat/mpsat</include>
-												<include>tools/pcomp/LICENSE.PCOMP</include>
-												<include>tools/pcomp/pcomp</include>
-												<include>tools/petrify/LICENSE.PETRIFY.txt</include>
-												<include>tools/petrify/petrify</include>
-												<include>tools/punf/LICENSE.PUNF</include>
-												<include>tools/punf/punf</include>
-											</includes>
-										</resource>
-									</resources>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -362,43 +275,25 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 							</programs>
 							<repositoryLayout>flat</repositoryLayout>
 							<repositoryName>lib</repositoryName>
-							<assembleDirectory>${project.build.directory}/release</assembleDirectory>
-							<windowsScriptTemplate>src/main/resources/templates/windowstemplate</windowsScriptTemplate>
+							<assembleDirectory>${project.build.directory}</assembleDirectory>
+							<windowsScriptTemplate>src/assembly/windows_apptemplate</windowsScriptTemplate>
 						</configuration>
 					</plugin>
 					<plugin>
-						<artifactId>maven-resources-plugin</artifactId>
-						<version>2.7</version>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<version>2.5.3</version>
+						<configuration>
+							<descriptors>
+								<descriptor>src/assembly/windows_assembly.xml</descriptor>
+							</descriptors>
+						</configuration>
 						<executions>
 							<execution>
-								<id>copy-resources</id>
-								<phase>validate</phase>
+								<id>make-assembly</id>
+								<phase>package</phase>
 								<goals>
-									<goal>copy-resources</goal>
+									<goal>single</goal>
 								</goals>
-								<configuration>
-									<outputDirectory>${project.build.directory}/release</outputDirectory>
-									<resources>
-										<resource>
-											<directory>src/main/resources</directory>
-											<includes>
-												<include>lib/lpsolve/*.dll</include>
-												<include>lib/lpsolve/LICENSE.LPSOLVE.txt</include>
-												<include>tools/mpsat/LICENSE.MPSAT</include>
-												<include>tools/mpsat/mpsat.exe</include>
-												<include>tools/pcomp/LICENSE.PCOMP</include>
-												<include>tools/pcomp/pcomp.exe</include>
-												<include>tools/petrify/LICENSE.PETRIFY.txt</include>
-												<include>tools/petrify/petrify.exe</include>
-												<include>tools/petrify/petrify.dll</include>
-												<include>tools/petrify/LICENSE.CYGWIN.txt</include>
-												<include>tools/petrify/cygwin1.dll</include>
-												<include>tools/punf/LICENSE.PUNF</include>
-												<include>tools/punf/punf.exe</include>
-											</includes>
-										</resource>
-									</resources>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>

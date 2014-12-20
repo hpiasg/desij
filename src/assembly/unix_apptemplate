@@ -100,10 +100,6 @@ if $cygwin; then
 fi
 
 # external tools for desij
-chmod +x $BASEDIR/tools/mpsat/mpsat
-chmod +x $BASEDIR/tools/pcomp/pcomp
-chmod +x $BASEDIR/tools/petrify/petrify
-chmod +x $BASEDIR/tools/punf/punf
 PATH=$PATH:$BASEDIR/tools/mpsat:$BASEDIR/tools/pcomp:$BASEDIR/tools/petrify:$BASEDIR/tools/punf
 
 exec "$JAVACMD" $JAVA_OPTS @EXTRA_JVM_ARGUMENTS@ \
