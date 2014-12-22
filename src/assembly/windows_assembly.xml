@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Copyright 2014 Norman Kluge
+ 
+This file is part of DesiJ.
+ 
+DesiJ is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+DesiJ is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+	<id>win</id>
+	<formats>
+		<format>zip</format>
+		<format>dir</format>
+	</formats>
+	<fileSets>
+		<fileSet>
+			<directory>.</directory>
+			<outputDirectory>.</outputDirectory>
+			<includes>
+				<include>LICENSE.txt</include>
+				<include>NOTICE.txt</include>
+				<include>README.txt</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/resources</directory>
+			<outputDirectory>.</outputDirectory>
+			<includes>
+				<include>lib/lpsolve/*.dll</include>
+				<include>lib/lpsolve/LICENSE.LPSOLVE.txt</include>
+				<include>tools/mpsat/LICENSE.MPSAT</include>
+				<include>tools/mpsat/mpsat.exe</include>
+				<include>tools/pcomp/LICENSE.PCOMP</include>
+				<include>tools/pcomp/pcomp.exe</include>
+				<include>tools/petrify/LICENSE.PETRIFY.txt</include>
+				<include>tools/petrify/petrify.exe</include>
+				<include>tools/petrify/petrify.dll</include>
+				<include>tools/petrify/LICENSE.CYGWIN.txt</include>
+				<include>tools/petrify/cygwin1.dll</include>
+				<include>tools/punf/LICENSE.PUNF</include>
+				<include>tools/punf/punf.exe</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>target/bin</directory>
+			<outputDirectory>bin</outputDirectory>
+			<includes>
+				<include>*</include>
+			</includes>
+		</fileSet>
+	</fileSets>
+	<dependencySets>
+		<dependencySet>
+			<outputDirectory>lib</outputDirectory>
+		</dependencySet>
+	</dependencySets>
+</assembly>

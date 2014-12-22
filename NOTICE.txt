@@ -1,0 +1,71 @@
+DesiJ
+Copyright 2004-2014 Universitaet Augsburg, Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH
+
+This product includes software developed at Universitaet Augsburg.
+The Software developed and owned by the Universitaet Augsburg is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
+
+This product includes software developed at Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH.
+The Software developed and owned by the Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
+
+This software makes use of the following libraries:
+
+Apache Commons Logging v1.2
+http://commons.apache.org/proper/commons-logging/
+Copyright 2003-2014 The Apache Software Foundation
+Licensed under Apache License, Version 2.0
+
+JUnit v4.11
+http://junit.org/
+Licensed under Common Public License Version 1.0
+
+Apache log4j(TM) v1.2
+http://logging.apache.org/log4j/1.2/
+Copyright 2007 The Apache Software Foundation
+Licensed under Apache License, Version 2.0
+
+lp_solve v5.5
+http://lpsolve.sourceforge.net/5.5/
+Licensed under GNU Lesser General Public License (LGPL), Version 2.1
+
+Java ILP v1.1
+http://javailp.sourceforge.net
+Licensed under GNU Lesser General Public License (LGPL), Version 3.0
+
+hamcrest-core v1.3
+http://hamcrest.org/JavaHamcrest/
+Licensed under New BSD License
+
+JGraphX v2.3.0.5
+http://www.jgraph.com/
+Copyright (c) 2001-2009, JGraph Ltd
+Licensed under 3 clause BSD license
+
+SSHTools v2.9
+http://sshtools.sourceforge.net/
+Licensed under GNU General Public License (GPL), Version 2.0
+
+Cygwin
+https://cygwin.com/
+License: GNU General Public License (GPL), Version 3.0
+
+This software makes use of the following external software:
+
+MPSAT model checking/synthesis system
+http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/mpsat/
+Copyright (C) 2000-2012 by Victor Khomenko
+License: LICENSE.MPSAT
+
+PCOMP utility for computing the parallel composition of STGs
+http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/pcomp/
+Copyright (C) 2008-2009 by Victor Khomenko, Newcastle University, UK
+License: LICENSE.PCOMP
+
+PUNF Petri net unfolder
+http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/punf/
+Copyright (C) 2000-2012 by Victor Khomenko
+License: LICENSE.PUNF
+
+Petrify: a tool for synthesis of Petri Nets and asynchronous circuits
+http://www.lsi.upc.edu/~jordicf/petrify/
+Copyright (C) 1999 The Universitat Politecnica de Catalunya
+License: LICSENSE.PETRIFY.txt
