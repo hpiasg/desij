@@ -44,7 +44,7 @@ SSHTools v2.9
 http://sshtools.sourceforge.net/
 Licensed under GNU General Public License (GPL), Version 2.0
 
-Cygwin
+Cygwin (Windows version only)
 https://cygwin.com/
 License: GNU General Public License (GPL), Version 3.0
 
@@ -53,19 +53,19 @@ This software makes use of the following external software:
 MPSAT model checking/synthesis system
 http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/mpsat/
 Copyright (C) 2000-2012 by Victor Khomenko
-License: LICENSE.MPSAT
+License: tools/mpsat/LICENSE.MPSAT
 
 PCOMP utility for computing the parallel composition of STGs
 http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/pcomp/
 Copyright (C) 2008-2009 by Victor Khomenko, Newcastle University, UK
-License: LICENSE.PCOMP
+License: tools/pcomp/LICENSE.PCOMP
 
 PUNF Petri net unfolder
 http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/punf/
 Copyright (C) 2000-2012 by Victor Khomenko
-License: LICENSE.PUNF
+License: tools/punf/LICENSE.PUNF
 
 Petrify: a tool for synthesis of Petri Nets and asynchronous circuits
 http://www.lsi.upc.edu/~jordicf/petrify/
 Copyright (C) 1999 The Universitat Politecnica de Catalunya
-License: LICSENSE.PETRIFY.txt
+License: tools/petrify/LICSENSE.PETRIFY.txt
