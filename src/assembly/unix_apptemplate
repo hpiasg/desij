@@ -100,7 +100,8 @@ if $cygwin; then
 fi
 
 # external tools for desij
-PATH=$PATH:$BASEDIR/tools/mpsat:$BASEDIR/tools/pcomp:$BASEDIR/tools/petrify:$BASEDIR/tools/punf
+export PATH=$PATH:$BASEDIR/tools/mpsat:$BASEDIR/tools/pcomp:$BASEDIR/tools/petrify:$BASEDIR/tools/punf
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$BASEDIR/lib/lpsolve
 
 exec "$JAVACMD" $JAVA_OPTS @EXTRA_JVM_ARGUMENTS@ \
   -classpath "$CLASSPATH" \
