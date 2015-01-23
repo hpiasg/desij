@@ -1,5 +1,5 @@
 DesiJ
-Copyright 2004-2014 Universitaet Augsburg, Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH
+Copyright (C) 2004-2014 Universitaet Augsburg, Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH
 
 This product includes software developed at Universitaet Augsburg.
 The Software developed and owned by the Universitaet Augsburg is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
@@ -11,42 +11,42 @@ This software makes use of the following libraries:
 
 Apache Commons Logging v1.2
 http://commons.apache.org/proper/commons-logging/
-Copyright 2003-2014 The Apache Software Foundation
+Copyright (C) 2003-2014 The Apache Software Foundation
 Licensed under Apache License, Version 2.0
 
 JUnit v4.11
 http://junit.org/
-Licensed under Common Public License Version 1.0
+Licensed under the Common Public License Version 1.0
 
 Apache log4j(TM) v1.2
 http://logging.apache.org/log4j/1.2/
-Copyright 2007 The Apache Software Foundation
-Licensed under Apache License, Version 2.0
+Copyright (C) 2007 The Apache Software Foundation
+Licensed under the Apache License, Version 2.0
 
 lp_solve v5.5
 http://lpsolve.sourceforge.net/5.5/
-Licensed under GNU Lesser General Public License (LGPL), Version 2.1
+Licensed under the GNU Lesser General Public License (LGPL), Version 2.1
 
 Java ILP v1.1
 http://javailp.sourceforge.net
-Licensed under GNU Lesser General Public License (LGPL), Version 3.0
+Licensed under the GNU Lesser General Public License (LGPL), Version 3.0
 
 hamcrest-core v1.3
 http://hamcrest.org/JavaHamcrest/
-Licensed under New BSD License
+Licensed under the New BSD License
 
 JGraphX v2.3.0.5
 http://www.jgraph.com/
 Copyright (c) 2001-2009, JGraph Ltd
-Licensed under 3 clause BSD license
+Licensed under the 3 clause BSD license
 
 SSHTools v2.9
 http://sshtools.sourceforge.net/
-Licensed under GNU General Public License (GPL), Version 2.0
+Licensed under the GNU General Public License (GPL), Version 2.0
 
 Cygwin (Windows version only)
 https://cygwin.com/
-License: GNU General Public License (GPL), Version 3.0
+Licensed under the GNU General Public License (GPL), Version 3.0
 
 This software makes use of the following external software:
 
