@@ -177,9 +177,6 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 									<id>DesiJ</id>
 									<jvmSettings>
 										<maxMemorySize>1g</maxMemorySize>
-										<extraArguments>
-											<extraArgument>-Djava.library.path=@BASEDIR@/lib/lpsolve</extraArgument>
-										</extraArguments>
 									</jvmSettings>
 								</program>
 								<program>
@@ -187,9 +184,6 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 									<id>DesiJ_gui</id>
 									<jvmSettings>
 										<maxMemorySize>1g</maxMemorySize>
-										<extraArguments>
-											<extraArgument>-Djava.library.path=@BASEDIR@/lib/lpsolve</extraArgument>
-										</extraArguments>
 									</jvmSettings>
 									<commandLineArguments>
 										<commandLineArgument>-G</commandLineArgument>
