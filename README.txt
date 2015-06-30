@@ -2,7 +2,7 @@ DesiJ: A Tool for STG Decomposition
 
 == Install ==
 
-DesiJ requires a Java runtime environment (JRE) v1.5 (or later) in order to run. To start DesiJ execute bin/DesiJ (Unix) or bin\DesiJ.bat (Windows). If you want to start DesiJ with a graphical user interface, execute bin/DesiJ_gui (Unix) or bin\DesiJ_gui.bat (Windows).
+DesiJ requires a Java runtime environment (JRE) v1.6 (or later) in order to run. To start DesiJ execute bin/DesiJ (Unix) or bin\DesiJ.bat (Windows). If you want to start DesiJ with a graphical user interface, execute bin/DesiJ_gui (Unix) or bin\DesiJ_gui.bat (Windows).
 
 To list all commandline options that DesiJ offers, execute DesiJ with the "-h" option or without any options.
 
@@ -12,7 +12,7 @@ Ghostview (http://pages.cs.wisc.edu/~ghost/)
 
 == Build ==
 
-To build DesiJ, Apache Maven v3 (or later) and the Java Development Kit (JDK) v1.5 (or later) are required.
+To build DesiJ, Apache Maven v3 (or later) and the Java Development Kit (JDK) v1.6 (or later) are required.
 
 1) Install libraries, that can't be obtained from a central Maven repository
 

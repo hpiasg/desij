@@ -1,5 +1,6 @@
 /**
  * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ * Copyright (C) 2015 Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -85,7 +86,7 @@ public class ComponentSTGExpressions {
 		components.put("$BrzCallDemux", "scaled A\nactive B,S,D\n#(#|(A:(rS.aD.B)))");
 		
 		//components.put("$BrzEncode", "scaled A\nactive B\n#(#|(rA+;(oA+||rB+);aB+;aA+;rA-;rB-;aB-;oA-;aA-))");
-		components.put("$BrzEncode", "scaled A,C\nactive B,C,D,E\n#(#|(A:(rC.aD.rB.aB.rE)))");
+		components.put("$BrzEncode", "scaled A,C\nactive B,C,D\n#(#|(A:(rC.aD.rB.aB)))");
 		
 		
 //		components.put("$BrzWireFork", "active B\nscaled B\nrA+; #||(rB+)");
@@ -98,8 +99,13 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzCase", "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)");
 		
-		components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
-				"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
+		//components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
+		//		"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
+		components.put("$BrzCaseFetch", 
+				"scaled C,F,G\n"
+				+ "active B,C,D,E,F,G,H\n"
+				+ "#(rA+;((up(B);up(D);cD+;down(D);down(B));rE+;#|(aF+;up(C.rG.aH);aA+;rA-;cD-;rE-;aF-;down(C.rG.aH));aA-))");
+		
 		
 		components.put("$BrzHalt", "#(rA+;~aA+;rA-;aA-)");
 		components.put("$BrzNullAdapt", "active A\n#(B:(up(A);down(A)))");
