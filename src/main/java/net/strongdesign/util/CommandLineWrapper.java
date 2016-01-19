@@ -1,5 +1,6 @@
 /**
  * Copyright 2004,2005,2006,2007,2008,2009,2010,2011 Mark Schaefer, Dominic Wist
+ * Copyright (C) 2016 Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -86,7 +87,7 @@ public abstract class CommandLineWrapper {
 	
 	protected static final Integer MARKER = new Integer(0); 
 	
-	protected static final String parameterRegex = "[\\w-]*=[%!\\?\\*\\w-\\./:_,;]*";
+	protected static final String parameterRegex = "[\\w-]*=[%!\\?\\*\\w-\\./:_,;\\\\\\~]*";
 	
 	protected Set notAllowedOptions;
 	
