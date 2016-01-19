@@ -63,13 +63,24 @@ if NOT "%CLASSPATH_PREFIX%" == "" set CLASSPATH=%CLASSPATH_PREFIX%;%CLASSPATH%
 
 
 @REM external tools
-set PATH=%PATH%;%BASEDIR%\tools\mpsat;%BASEDIR%\tools\pcomp;%BASEDIR%\tools\petrify;%BASEDIR%\tools\punf
+set "PATH=%PATH%;%BASEDIR%\tools\mpsat;%BASEDIR%\tools\pcomp;%BASEDIR%\tools\petrify;%BASEDIR%\tools\punf"
 
+reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" > NUL && set OSA=32BIT || set OSA=64BIT
+
+if %OSA%==32BIT (
+set "PATH=%PATH%;%BASEDIR%\lib\lpsolve\win32"
+set "LPPATH=%BASEDIR%\lib\lpsolve\win32"
+)
+
+if %OSA%==64BIT (
+set "PATH=%PATH%;%BASEDIR%\lib\lpsolve\win64"
+set "LPPATH=%BASEDIR%\lib\lpsolve\win64"
+)
 
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% #EXTRA_JVM_ARGUMENTS# -classpath %CLASSPATH% -Dapp.name="#APP_NAME#" -Dapp.repo="%REPO%" -Dapp.home="%BASEDIR%" -Dbasedir="%BASEDIR%" #MAINCLASS# #APP_ARGUMENTS#%CMD_LINE_ARGS%
+%JAVACMD% %JAVA_OPTS% -Djava.library.path=%LPPATH% #EXTRA_JVM_ARGUMENTS# -classpath %CLASSPATH% -Dapp.name="#APP_NAME#" -Dapp.repo="%REPO%" -Dapp.home="%BASEDIR%" -Dbasedir="%BASEDIR%" #MAINCLASS# #APP_ARGUMENTS#%CMD_LINE_ARGS%
 if %ERRORLEVEL% NEQ 0 goto error
 goto end
 

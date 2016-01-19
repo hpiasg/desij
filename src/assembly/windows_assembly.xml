@@ -41,7 +41,8 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 			<directory>src/main/resources</directory>
 			<outputDirectory>.</outputDirectory>
 			<includes>
-				<include>lib/lpsolve/*.dll</include>
+				<include>lib/lpsolve/win32/*.dll</include>
+				<include>lib/lpsolve/win64/*.dll</include>
 				<include>lib/lpsolve/LICENSE.LPSOLVE.txt</include>
 				<include>tools/mpsat/LICENSE.MPSAT</include>
 				<include>tools/mpsat/mpsat.exe</include>
