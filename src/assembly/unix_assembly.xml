@@ -34,7 +34,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 			<includes>
 				<include>LICENSE.txt</include>
 				<include>NOTICE.txt</include>
-				<include>README.txt</include>
+				<include>README.md</include>
 			</includes>
 		</fileSet>
 		<fileSet>
