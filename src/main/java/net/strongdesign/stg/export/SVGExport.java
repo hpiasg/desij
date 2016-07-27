@@ -105,7 +105,7 @@ public class SVGExport {
 		}
 		
 		if (stg.getSignature(t.getLabel().getSignal())==Signature.DUMMY) {
-			text.appendChild(doc.createTextNode("\u03bb"));
+			text.appendChild(doc.createTextNode(t.getString(0) + " (\u03bb)"));
 		} else {
 			text.appendChild(doc.createTextNode(t.getString(0)));
 		}
