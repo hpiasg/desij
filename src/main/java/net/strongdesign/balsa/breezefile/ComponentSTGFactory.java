@@ -381,9 +381,24 @@ public class ComponentSTGFactory {
 					}
 				}
 				
+				String tmpname = "";
+				if (CLW.instance.OUTFILE != null) {
+                    tmpname = CLW.instance.OUTFILE.getValue();
+                }
+				if(CLW.instance.BREEZEEXPORTTEMP.isEnabled()) {
+    				int id = 0;
+                    for(STG s : stgs) {
+                        FileSupport.saveToDisk(STGFile.convertToG(s), tmpname + "_tmp_" + (id++) + ".g");
+                    }
+				}
+				
 				mainSTG = ComponentSTGFactory.parallelComposition(stgs, names);
 				// after the main parallel composition remove structurally dead transitions?
 				STGUtil.removeDeadTransitions(mainSTG);
+				
+				if(CLW.instance.BREEZEEXPORTTEMP.isEnabled()) {
+				    FileSupport.saveToDisk(STGFile.convertToG(mainSTG), tmpname + "_tmp_full.g");
+				}
 				
 				// after the parallel composition, selectively remove channel signal transitions, 
 				// if the -g option is given

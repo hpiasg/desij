@@ -1,5 +1,6 @@
 /**
  * Copyright 2004-2013 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ * Copyright (C) 2016 Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -596,6 +597,10 @@ public class CLW extends CommandLineWrapper {
 	@Help("Name of file with breeze expressions")
     public  CommandLineParameter BREEZEEXPRESSIONSFILE = 
         new CommandLineParameter("breezeexpressionsfile", "", "", false);
+	
+	@Help("Export individual STGs of HS-Components and undummyfied STG when creating Balsa-STG")
+	public  CommandLineOption BREEZEEXPORTTEMP = 
+    new CommandLineOption(null, "breeze-export-temp", false);
 	
 	// *******************************************************************
 	
