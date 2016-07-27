@@ -65,8 +65,10 @@ public class ComponentSTGExpressions {
 	    }
 	    
 	    fillExpressionsDefault(); // Use defaults for undefined components in xml
-	    for(Component c : exp.getComponents()) {
-	        components.put(c.getName(), c.getExpression());
+	    if(exp.getComponents() != null) {
+    	    for(Component c : exp.getComponents()) {
+    	        components.put(c.getName(), c.getExpression());
+    	    }
 	    }
 	    
 	    filled = true;
