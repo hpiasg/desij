@@ -593,6 +593,12 @@ public class CLW extends CommandLineWrapper {
 	
 	// *******************************************************************
 	
+	@Help("Name of file with breeze expressions")
+    public  CommandLineParameter BREEZEEXPRESSIONSFILE = 
+        new CommandLineParameter("breezeexpressionsfile", "", "", false);
+	
+	// *******************************************************************
+	
 	@Help("Predefined working sets")
 	public  CommandLineParameter PREDEF = 
 		new CommandLineParameter("predef", "original,advanced", "", false);
