@@ -130,7 +130,7 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzVariable", "scaled B\nactive D\n#(A:D)||(#||(#(B)))");
 		
-		components.put("$BrzCase", "scaled B,D\nactive B,C,D,E\n#(rA+;rC+;((#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B)))|(aE+;aA+;rA-;rC-;aE-));aA-)");
+//		components.put("$BrzCase", "scaled B,D\nactive B,C,D,E\n#(rA+;rC+;((#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B)))|(aE+;aA+;rA-;rC-;aE-));aA-)");
 		
 		//components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
 		//		"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");

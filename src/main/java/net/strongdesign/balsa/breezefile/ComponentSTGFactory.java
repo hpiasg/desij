@@ -1,5 +1,6 @@
 /**
  * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
+ * Copyright (C) 2016 Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -118,7 +119,22 @@ public class ComponentSTGFactory {
 		
 		int scale = ComponentSTGFactory.getScale(channels);
 		
-		String expression = ComponentSTGExpressions.getExpression(compName);
+		//case hack
+		String expression = null;
+		if(compName.equals("$BrzCase")) {
+            String spec = (String)parameters.get(2);
+            String[] split = spec.split(";");
+            int outputcount = (Integer)parameters.get(1);
+            if(split.length == outputcount) {
+                // full
+                expression = "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)";
+            } else {
+                // nonfull
+                expression = "scaled B,D\nactive B,C,D,E\n#(rA+;rC+;((#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B)))|(aE+;aA+;rA-;rC-;aE-));aA-)";
+            }
+        } else {
+    		expression = ComponentSTGExpressions.getExpression(compName);
+        }
 		
 		if (expression==null) return null;
 		
