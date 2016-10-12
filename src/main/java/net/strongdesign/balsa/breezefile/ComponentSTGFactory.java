@@ -123,10 +123,11 @@ public class ComponentSTGFactory {
 		String expression = null;
 		if(compName.equals("$BrzCase")) {
             String spec = (String)parameters.get(2);
-            String[] split = spec.split(";");
-            int outputcount = (Integer)parameters.get(1);
-            if(split.length == outputcount) {
-                // full
+            String[] specsplit = spec.split(";");
+            int inpwidth = (Integer)parameters.get(0);
+            int inpcomb = (int)Math.pow(2, inpwidth);
+            if(specsplit.length == inpcomb) {
+                //full
                 expression = "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)";
             } else {
                 // nonfull
