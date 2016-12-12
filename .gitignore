@@ -1,4 +1,5 @@
 bin
+src/test
 .metadata
 *.*~
 .recommenders

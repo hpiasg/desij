@@ -1,6 +1,6 @@
 /**
  * Copyright 2004,2005,2006,2007,2008,2009,2010,2011,2012 Mark Schaefer, Dominic Wist, Stanislavs Golubcovs
- * Copyright (C) 2015 Norman Kluge
+ * Copyright (C) 2015 - 2016 Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -20,8 +20,13 @@
 
 package net.strongdesign.balsa.breezefile;
 
+import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
+
+import net.strongdesign.balsa.breezefile.xml.BreezeExpressions;
+import net.strongdesign.balsa.breezefile.xml.Component;
+import net.strongdesign.desij.CLW;
 
 public class ComponentSTGExpressions {
 	
@@ -42,7 +47,35 @@ public class ComponentSTGExpressions {
 	}
 	
 	private static void fillExpressions() {
-		
+		boolean xmlresult = false;
+	    if(!CLW.instance.BREEZEEXPRESSIONSFILE.getValue().equals("")) {
+	        xmlresult = fillExpressionsXml();
+	    } 
+	    
+	    if(!xmlresult) {
+	        fillExpressionsDefault();
+	    }
+	}
+	
+	private static boolean fillExpressionsXml() { 
+	    BreezeExpressions exp = BreezeExpressions.readIn(new File(CLW.instance.BREEZEEXPRESSIONSFILE.getValue()));
+	    if(exp == null) {
+	        System.out.print("Failed to read Breeze expressions from xml. Using defaults");
+	        return false;
+	    }
+	    
+	    fillExpressionsDefault(); // Use defaults for undefined components in xml
+	    if(exp.getComponents() != null) {
+    	    for(Component c : exp.getComponents()) {
+    	        components.put(c.getName(), c.getExpression());
+    	    }
+	    }
+	    
+	    filled = true;
+	    return true;
+	}	
+	
+	private static void fillExpressionsDefault() {    
 //		components.put("$BrzFetch", "active B,C\n#(A:(B.C))");
 		//components.put("$BrzCallMux", "scaled A\nactive B\n#(#|(rA+;oA+;up(B);aA+;rA-;oA-;down(B);aA-))");
 //		components.put("$BrzCase", "scaled B\nactive B\n#(rA+;up(#|(iB+;up(B);aA+;rA-;iB-;down(B)));aA-)");
@@ -97,7 +130,7 @@ public class ComponentSTGExpressions {
 		
 		components.put("$BrzVariable", "scaled B\nactive D\n#(A:D)||(#||(#(B)))");
 		
-		components.put("$BrzCase", "scaled B,D\nactive B,C,D\n#(rA+;rC+;#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B));aA-)");
+//		components.put("$BrzCase", "scaled B,D\nactive B,C,D,E\n#(rA+;rC+;((#|(aD+;up(B);aA+;rA-;rC-;aD-;down(B)))|(aE+;aA+;rA-;rC-;aE-));aA-)");
 		
 		//components.put("$BrzCaseFetch", "scaled C,F,G\nactive B,C,D,E,F,G,H\n"+
 		//		"#(rA+;((D.B);rE+;#|(aF+;up(C.rG.aH);aA+;rA-;rE-;aF-;down(C.rG.aH));aA-))");
