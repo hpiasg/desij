@@ -27,16 +27,24 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 		<format>tar.gz</format>
 		<format>dir</format>
 	</formats>
+	<files>
+		<file>
+			<source>LICENSE.txt</source>
+			<outputDirectory>legal</outputDirectory>
+			<destName>DesiJ_LICENSE.txt</destName>
+		</file>
+		<file>
+			<source>NOTICE.txt</source>
+			<outputDirectory>legal</outputDirectory>
+			<destName>DesiJ_NOTICE.txt</destName>
+		</file>
+		<file>
+			<source>README.md</source>
+			<outputDirectory>readme</outputDirectory>
+			<destName>DesiJ_README.md</destName>
+		</file>
+	</files>
 	<fileSets>
-		<fileSet>
-			<directory>.</directory>
-			<outputDirectory>.</outputDirectory>
-			<includes>
-				<include>LICENSE.txt</include>
-				<include>NOTICE.txt</include>
-				<include>README.md</include>
-			</includes>
-		</fileSet>
 		<fileSet>
 			<directory>src/main/resources</directory>
 			<outputDirectory>.</outputDirectory>
