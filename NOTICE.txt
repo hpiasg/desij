@@ -1,4 +1,4 @@
-DesiJ
+DesiJ v3.1.1
 Copyright (C) 2004-2017 Universitaet Augsburg, Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH
 
 This product includes software developed at Universitaet Augsburg.
@@ -14,31 +14,31 @@ http://commons.apache.org/proper/commons-logging/
 Copyright (C) 2003-2014 The Apache Software Foundation
 Licensed under Apache License, Version 2.0
 
-JUnit v4.11
-http://junit.org/
-Licensed under the Common Public License Version 1.0
-
 Apache log4j(TM) v1.2
 http://logging.apache.org/log4j/1.2/
 Copyright (C) 2007 The Apache Software Foundation
 Licensed under the Apache License, Version 2.0
 
-lp_solve v5.5
-http://lpsolve.sourceforge.net/5.5/
-Licensed under the GNU Lesser General Public License (LGPL), Version 2.1
+hamcrest-core v1.3
+http://hamcrest.org/JavaHamcrest/
+Licensed under the New BSD License
 
 Java ILP v1.1
 http://javailp.sourceforge.net
 Licensed under the GNU Lesser General Public License (LGPL), Version 3.0
 
-hamcrest-core v1.3
-http://hamcrest.org/JavaHamcrest/
-Licensed under the New BSD License
-
 JGraphX v2.3.0.5
 http://www.jgraph.com/
 Copyright (c) 2001-2009, JGraph Ltd
 Licensed under the 3 clause BSD license
+
+JUnit v4.11
+http://junit.org/
+Licensed under the Common Public License Version 1.0
+
+lp_solve v5.5
+http://lpsolve.sourceforge.net/5.5/
+Licensed under the GNU Lesser General Public License (LGPL), Version 2.1
 
 SSHTools v2.9
 http://sshtools.sourceforge.net/
@@ -60,12 +60,12 @@ http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/pcomp/
 Copyright (C) 2008-2009 by Victor Khomenko, Newcastle University, UK
 License: tools/pcomp/LICENSE.PCOMP
 
-PUNF Petri net unfolder
-http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/punf/
-Copyright (C) 2000-2012 by Victor Khomenko
-License: tools/punf/LICENSE.PUNF
-
 Petrify: a tool for synthesis of Petri Nets and asynchronous circuits
 http://www.lsi.upc.edu/~jordicf/petrify/
 Copyright (C) 1999 The Universitat Politecnica de Catalunya
 License: tools/petrify/LICSENSE.PETRIFY.txt
+
+PUNF Petri net unfolder
+http://homepages.cs.ncl.ac.uk/victor.khomenko/tools/punf/
+Copyright (C) 2000-2012 by Victor Khomenko
+License: tools/punf/LICENSE.PUNF
