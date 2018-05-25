@@ -106,7 +106,7 @@ public class CLW extends CommandLineWrapper {
 			"\n\t- breeze: Convert given Breeze file *.breeze to a Balsa-STG")
 			
 	public  CommandLineParameter OPERATION = 
-		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,killdummiesrelaxed,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show,breeze", "decompose", false);
+		new CommandLineParameter("operation", "cl,trace,bisim,killdummies,killdummiesrelaxed,killdummiesrelaxedrecover,reduceint,check,info,info1,reddel,info2,decompose,rg,convert,clone,create,show,breeze", "decompose", false);
 	
 	// *******************************************************************
 	
