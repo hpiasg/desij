@@ -482,23 +482,23 @@ public class DesiJ {
         for (String fileName : CLW.instance.getOtherParameters()) {
             
             STG stg;
-            if (fileName.endsWith("breeze")) {
-                
-                for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
-                    
-                    String fname = e.getKey();
-                    if (!fname.endsWith(".g")) 
-                        fname += ".g";
-                    
-                    stg = e.getValue();
-                    killSTGDummies(stg, fname, true, true);
-                }
-                
-            } else {
+//            if (fileName.endsWith("breeze")) {
+//                
+//                for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
+//                    
+//                    String fname = e.getKey();
+//                    if (!fname.endsWith(".g")) 
+//                        fname += ".g";
+//                    
+//                    stg = e.getValue();
+//                    killSTGDummies(stg, fname, true, true);
+//                }
+//                
+//            } else {
                 
                 stg = loadSTG(fileName, true);
                 killSTGDummies(stg, fileName, true, true);
-            }
+//            }
 
         }
     }
