@@ -310,9 +310,10 @@ public abstract class STGUtil {
 			// do not contract problematic signals
 			common.removeAll(exceptionList);
 			
-			if (triggeredSigs.size()+triggerSigs.size()-2*common.size()>8) continue;
-			if (triggeredSigs.size()-common.size()>4) continue;
-			if (triggerSigs.size()-common.size()>4) continue;
+			//TODO: magic numbers
+			if (triggeredSigs.size()+triggerSigs.size()-2*common.size()>12) continue;
+			if (triggeredSigs.size()-common.size()>6) continue;
+			if (triggerSigs.size()-common.size()>6) continue;
 			
 			
 			// dummify all common signals, that occur in both triggers and triggered sets
