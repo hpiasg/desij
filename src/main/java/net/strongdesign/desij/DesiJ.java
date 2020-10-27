@@ -216,6 +216,8 @@ public class DesiJ {
 				killdummies();
 			else if (CLW.instance.OPERATION.getValue().equals("killdummiesrelaxed")) 
 				killDummiesRelaxed();
+			else if (CLW.instance.OPERATION.getValue().equals("killdummiesrelaxedrecover")) 
+                killDummiesRelaxedRecover();
 			else if (CLW.instance.OPERATION.getValue().equals("reduceint"))
 				reduceinternals();
 			else if (CLW.instance.OPERATION.getValue().equals("info")) 
@@ -372,14 +374,14 @@ public class DesiJ {
 
 
 	
-	private static void killSTGDummies(STG stg, String fileName, boolean relaxed) throws IOException, STGException, ParseException {
+	private static void killSTGDummies(STG stg, String fileName, boolean relaxed, boolean recoverUncontracted) throws IOException, STGException, ParseException {
 		
 		RedundantPlaceStatistics.reset();
 		
 		int dum1 = stg.getNumberOfDummies();
 		int pl1 = stg.getNumberOfPlaces();
 
-		STGUtil.removeDummiesBreeze(stg, relaxed, false);
+		STGUtil.removeDummiesBreeze(stg, relaxed, recoverUncontracted);
 		
 		int dum2 = stg.getNumberOfDummies();
 		System.out.println(fileName+": Dummies before: "+dum1+" after:"+dum2);
@@ -434,13 +436,13 @@ public class DesiJ {
 						fname+=".g";
 					
 					stg = e.getValue();
-					killSTGDummies(stg, fname, false);
+					killSTGDummies(stg, fname, false, false);
 				}
 				
 			} else {
 				
 				stg = loadSTG(fileName, true);
-				killSTGDummies(stg, fileName, false);
+				killSTGDummies(stg, fileName, false, false);
 			}
 
 		}
@@ -464,17 +466,43 @@ public class DesiJ {
 						fname += ".g";
 					
 					stg = e.getValue();
-					killSTGDummies(stg, fname, true);
+					killSTGDummies(stg, fname, true, false);
 				}
 				
 			} else {
 				
 				stg = loadSTG(fileName, true);
-				killSTGDummies(stg, fileName, true);
+				killSTGDummies(stg, fileName, true, false);
 			}
 
 		}
 	}
+	
+	private static void killDummiesRelaxedRecover() throws Exception {
+        for (String fileName : CLW.instance.getOtherParameters()) {
+            
+            STG stg;
+//            if (fileName.endsWith("breeze")) {
+//                
+//                for (Entry<String,STG> e: ComponentSTGFactory.breeze2stg().entrySet()) {
+//                    
+//                    String fname = e.getKey();
+//                    if (!fname.endsWith(".g")) 
+//                        fname += ".g";
+//                    
+//                    stg = e.getValue();
+//                    killSTGDummies(stg, fname, true, true);
+//                }
+//                
+//            } else {
+                
+                stg = loadSTG(fileName, true);
+                killSTGDummies(stg, fileName, true, true);
+//            }
+
+        }
+    }
+	
 	
 	private static void reduceinternals() throws ParseException, IOException, STGException {
 		for (String fileName : CLW.instance.getOtherParameters()) {
