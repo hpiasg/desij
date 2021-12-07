@@ -1,4 +1,3 @@
-#LICENSE_HEADER#
 @echo off
 
 set ERROR_CODE=0
