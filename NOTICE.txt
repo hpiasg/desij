@@ -1,11 +1,11 @@
-DesiJ v3.1.1
-Copyright (C) 2004-2017 Universitaet Augsburg, Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH
+DesiJ v3.2.1
+Copyright (C) 2004-2021 Universitaet Augsburg, Hasso-Plattner-Institut für Digital Engineering gGmbH
 
 This product includes software developed at Universitaet Augsburg.
 The Software developed and owned by the Universitaet Augsburg is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
 
-This product includes software developed at Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH.
-The Software developed and owned by the Hasso-Plattner-Institut fuer Softwaresystemtechnik GmbH is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
+This product includes software developed at Hasso-Plattner-Institut für Digital Engineering gGmbH.
+The Software developed and owned by the Hasso-Plattner-Institut für Digital Engineering gGmbH is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL") to all third parties and that license, as required by the GPL, is included in the LICENSE.txt file.
 
 This software makes use of the following libraries:
 
@@ -32,7 +32,7 @@ http://www.jgraph.com/
 Copyright (c) 2001-2009, JGraph Ltd
 Licensed under the 3 clause BSD license
 
-JUnit v4.11
+JUnit v4.13
 http://junit.org/
 Licensed under the Common Public License Version 1.0
 
