@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Norman Kluge
+ * Copyright (C) 2016 - 2021 Norman Kluge
  *
  * This file is part of DesiJ.
  * 
@@ -19,21 +19,22 @@
 
 package net.strongdesign.balsa.breezefile.xml;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlValue;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlValue;
 
 @XmlAccessorType(XmlAccessType.NONE)
 public class Component {
     @XmlAttribute(name = "name")
-    private String name;    
+    private String name;
     @XmlValue
     private String expression;
-    
+
     public String getExpression() {
         return expression;
     }
+
     public String getName() {
         return name;
     }
