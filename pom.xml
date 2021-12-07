@@ -101,6 +101,26 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 		</pluginManagement>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+				<execution>
+					<id>enforce-maven</id>
+					<goals>
+					<goal>enforce</goal>
+					</goals>
+					<configuration>
+					<rules>
+						<requireMavenVersion>
+							<version>3.1.1</version>
+						</requireMavenVersion>
+					</rules>    
+					</configuration>
+				</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>javacc-maven-plugin</artifactId>
 				<version>2.6</version>
@@ -139,10 +159,10 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.1</version>
+				<version>3.8.1</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.7</source>
+					<target>1.7</target>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -160,7 +180,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>appassembler-maven-plugin</artifactId>
-						<version>1.8.1</version>
+						<version>2.1.0</version>
 						<executions>
 							<execution>
 								<phase>prepare-package</phase>
@@ -200,7 +220,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 					</plugin>
 					<plugin>
 						<artifactId>maven-assembly-plugin</artifactId>
-						<version>2.5.3</version>
+						<version>3.3.0</version>
 						<configuration>
 							<descriptors>
 								<descriptor>src/assembly/unix_assembly.xml</descriptor>
@@ -231,7 +251,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>appassembler-maven-plugin</artifactId>
-						<version>1.8.1</version>
+						<version>2.1.0</version>
 						<executions>
 							<execution>
 								<phase>package</phase>
@@ -271,7 +291,7 @@ along with DesiJ.  If not, see <http://www.gnu.org/licenses/>.
 					</plugin>
 					<plugin>
 						<artifactId>maven-assembly-plugin</artifactId>
-						<version>2.5.3</version>
+						<version>3.3.0</version>
 						<configuration>
 							<descriptors>
 								<descriptor>src/assembly/windows_assembly.xml</descriptor>
