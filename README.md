@@ -5,7 +5,7 @@ DesiJ is a Tool for STG decomposition.
 
 ### Installation ###
 
-DesiJ requires a Java runtime environment (JRE) v1.6 (or later) in order to run. 
+DesiJ requires a Java runtime environment (JRE) v1.7 (or later) in order to run. 
 
 For some features of DesiJ these software packages may be required:
 * Graphviz (http://www.graphviz.org/)
@@ -22,7 +22,7 @@ To list all commandline options that DesiJ offers, execute DesiJ with the "-h" o
 
 ### Build instructions ###
 
-To build DesiJ, Apache Maven v3 (or later) and the Java Development Kit (JDK) v1.6 (or later) are required.
+To build DesiJ, Apache Maven v3.1.1 (or later) and the Java Development Kit (JDK) v1.7 (or later) are required.
 
 1. Install libraries, that can't be obtained from a central Maven repository
 
